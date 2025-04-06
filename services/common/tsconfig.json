@@ -1,0 +1,8 @@
+{
+  "exclude": ["../../tsconfig.json"],
+  "compilerOptions": {
+    "outDir": "./build",
+    "baseUrl": "."
+  },
+  "include": ["index.ts"]
+}

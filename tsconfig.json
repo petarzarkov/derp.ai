@@ -1,0 +1,30 @@
+{
+  "extends": "@tsconfig/node22/tsconfig",
+  "compilerOptions": {
+    "strictPropertyInitialization": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "module": "commonjs",
+    "target": "ESNext",
+    "lib": ["ES6"],
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": false,
+    "declaration": false,
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "forceConsistentCasingInFileNames": true,
+    "strictNullChecks": true,
+    "alwaysStrict": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowJs": false,
+    "checkJs": false,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true
+  },
+  "include": ["services/**/*"]
+}

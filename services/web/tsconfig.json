@@ -1,0 +1,26 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "skipLibCheck": true,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@components": ["./app/components"],
+      "@contracts": ["./app/contracts"],
+      "@hooks": ["./app/hooks"],
+      "@screens": ["./app/screens"],
+      "@config": ["./app/config"],
+      "@theme": ["./app/theme"],
+      "@store": ["./app/store"]
+    }
+  },
+  "include": ["./app"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

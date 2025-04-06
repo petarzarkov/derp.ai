@@ -1,0 +1,10 @@
+.husky
+.idea
+coverage
+build
+node_modules
+tmp
+*.md
+dist
+.github
+docs

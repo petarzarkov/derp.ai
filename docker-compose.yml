@@ -1,0 +1,25 @@
+services:
+  db:
+    hostname: pgdb-template
+    image: 'public.ecr.aws/docker/library/postgres:17'
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      PGPASSWORD: ${DB_PASS}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_PORT: ${DB_PORT}
+      PGPORT: ${DB_PORT}
+    networks:
+      - template
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+networks:
+  template:
+    name: template
+    driver: bridge

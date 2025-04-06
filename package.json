@@ -1,0 +1,72 @@
+{
+  "name": "nestjs-monorepo-template",
+  "description": "NestJS Monorepo Template Repository",
+  "keywords": [
+    "NestJS",
+    "Monorepo",
+    "Template",
+    "Repository"
+  ],
+  "author": {
+    "name": "Petar Zarkov",
+    "email": "pzarko1@gmail.com"
+  },
+  "license": "MIT",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">= 22.14.0",
+    "pnpm": ">= 8.6.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/petarzarkov/js-monorepo-template.git"
+  },
+  "homepage": "https://github.com/petarzarkov/js-monorepo-template",
+  "scripts": {
+    "prepare": "husky",
+    "preinstall": "npx only-allow pnpm",
+    "format": "prettier --write --cache .",
+    "typecheck": "pnpm -r --parallel tsc --noEmit",
+    "build": "pnpm -r --parallel --stream run build",
+    "dev": "pnpm -r --parallel --stream run dev",
+    "test": "pnpm -r --parallel --stream run test",
+    "lint": "eslint --cache services/**",
+    "pretty": "prettier --cache --ignore-unknown --write ."
+  },
+  "dependencies": {
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@tsconfig/node22": "^22.0.0",
+    "@tsconfig/strictest": "^2.0.5",
+    "@types/eslint-config-prettier": "^6.11.3",
+    "@types/node": "^22.13.4",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.24.0",
+    "@typescript-eslint/parser": "^8.24.0",
+    "eslint": "^9.20.1",
+    "eslint-config-prettier": "^10.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "nodemon": "^3.1.9",
+    "prettier": "^3.5.1",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.0"
+  },
+  "packageManager": "pnpm@10.4.0+sha512.6b849d0787d97f8f4e1f03a9b8ff8f038e79e153d6f11ae539ae7c435ff9e796df6a862c991502695c7f9e8fac8aeafc1ac5a8dab47e36148d183832d886dd52",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@scarf/scarf",
+      "@swc/core",
+      "bcrypt",
+      "cpu-features",
+      "esbuild",
+      "protobufjs",
+      "ssh2"
+    ]
+  }
+}

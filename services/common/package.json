@@ -1,0 +1,29 @@
+{
+  "name": "@common",
+  "description": "Template Common",
+  "author": {
+    "name": "Petar Zarkov",
+    "email": "pzarko1@gmail.com"
+  },
+  "license": "MIT",
+  "version": "0.0.1",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "module": "build/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/petarzarkov/js-monorepo-template.git"
+  },
+  "homepage": "https://github.com/petarzarkov/js-monorepo-template/tree/main/services/common",
+  "scripts": {
+    "clean": "rm -rf build",
+    "prebuild": "npm run clean",
+    "build": "tsc -p tsconfig.json --diagnostics",
+    "build:watch": "npm run build:speed -- --watch",
+    "start": "node build/index.js",
+    "dev": "ts-node ./src/index.ts",
+    "test": "echo tests to be implemented"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
