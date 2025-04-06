@@ -53,7 +53,7 @@ _(This compiles TypeScript to JavaScript in the `build` folder)_
 
     ```bash
     # You can override the default port during build if needed
-    docker build --build-arg SERVICE_PORT=3033 -t js-template-server .
+    docker build --build-arg SERVICE_PORT=3033 -t derpai .
     ```
 
 2.  **Run the container:**
@@ -62,7 +62,7 @@ _(This compiles TypeScript to JavaScript in the `build` folder)_
       ```bash
       # docker-compose created a network named 'template' (check with 'docker network ls')
       # and the DB container is named 'pgdb-template'
-      docker run --rm -it --name js-template-server \
+      docker run --rm -it --name derpai \
         -p 3033:3033 \
         --network template \
         -e SERVICE_PORT=3033 \
@@ -71,16 +71,16 @@ _(This compiles TypeScript to JavaScript in the `build` folder)_
         -e DB_USER=postgres \
         -e DB_PASS=postgres \
         -e DB_NAME=postgres \
-        js-template-server
+        derpai
       ```
     - **Connecting to DB on Host Machine (Example):**
       Use `host.docker.internal` as `DB_HOST` on Docker Desktop (Windows/Mac). On Linux, use `--network host` or the host's IP address on the Docker bridge network.
       ```bash
       # Example for Docker Desktop (adjust DB params as needed)
-      docker run --rm -it --name js-template-server \
+      docker run --rm -it --name derpai \
         -p 3033:3033 \
         -e SERVICE_PORT=3033 \
         -e DB_HOST=host.docker.internal \
         -e DB_PORT=6571 \
-        js-template-server
+        derpai
       ```

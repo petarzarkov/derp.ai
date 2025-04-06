@@ -1,4 +1,9 @@
-import 'dotenv/config';
+import { resolve } from 'node:path';
+import { config } from 'dotenv';
+
+config({
+  path: [resolve(__dirname, '../../../../', '.env'), resolve(__dirname, '../../../../', '.env.dev')],
+});
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -60,7 +65,7 @@ async function bootstrap(module: typeof AppModule) {
   const document = SwaggerModule.createDocument(app, config.build());
 
   SwaggerModule.setup(appConfig.docs.apiPath, app, document, {
-    customSiteTitle: `NestJS Template API ${appEnv}`,
+    customSiteTitle: `NestJS Derp AI API ${appEnv}`,
     customCss: '.swagger-ui .topbar { display: none }',
     swaggerOptions: {
       persistAuthorization: true,

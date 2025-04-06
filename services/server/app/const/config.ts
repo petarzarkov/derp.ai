@@ -14,6 +14,9 @@ export class EnvVars {
   JWT_SECRET: string;
 
   @IsString()
+  GOOGLE_API_KEY: string;
+
+  @IsString()
   DB_NAME: string;
 
   @IsString()
@@ -39,6 +42,9 @@ export const validateConfig = (config: Record<string, unknown>) => {
 
   return {
     env: validatedConfig.APP_ENV,
+    google: {
+      apiKey: validatedConfig.GOOGLE_API_KEY,
+    },
     auth: {
       secret: validatedConfig.JWT_SECRET,
       expiresIn: '24h',

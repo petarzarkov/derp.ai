@@ -1,10 +1,8 @@
-# Fullstack JavaScript Monorepo Template (NestJS, Vite, React Native)
+# Fullstack JavaScript Monorepo Derp AI (NestJS, Vite, React Native)
 
 ## Overview
 
-This template provides a solid foundation for building full-stack JavaScript/TypeScript applications, encompassing a web frontend, a robust backend server, and a placeholder for a mobile application, all managed within a single monorepo structure using `pnpm` workspaces.
-
-The goal is to accelerate development by providing a pre-configured setup with modern tooling and common features like database integration, basic authentication, and testing.
+This derp ai provides a solid foundation for derping
 
 ## Core Components
 
@@ -57,8 +55,8 @@ Ensure you have the following tools installed on your system:
 1.  **Clone the repository:**
 
     ```bash
-    git clone https://github.com/petarzarkov/js-monorepo-template
-    cd js-monorepo-template
+    git clone https://github.com/petarzarkov/derp.ai derpai
+    cd derpai
     ```
 
 2.  **Install pnpm (if not already installed globally):**

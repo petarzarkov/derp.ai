@@ -21,6 +21,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
+      - name: Pull PG image before integration tests
+        run: docker pull public.ecr.aws/docker/library/postgres:17
       - name: Install
         run: pnpm install
       - name: Build

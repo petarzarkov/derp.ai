@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react'; // Added useContext
 import { io } from 'socket.io-client';
 import type {
   SocketClient,
@@ -12,6 +12,7 @@ import type {
 export interface SocketContextState {
   messages: MessageProps[];
   isConnected: boolean;
+  isBotThinking: boolean; // <-- Add thinking state
   sendMessage: (messageText: string) => void;
 }
 
@@ -23,67 +24,70 @@ interface SocketProviderProps {
   children: ReactNode;
   serverUrl?: string; // Allow overriding server URL via prop
   userNickname?: string; // Allow passing user nickname via prop
+  botNickname?: string; // Allow defining bot nickname
 }
 
 const DEFAULT_SERVER_URL = 'http://localhost:3033';
 const DEFAULT_USER_NICKNAME = 'user';
+const DEFAULT_BOT_NICKNAME = 'DerpAI'; // Define bot name
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({
   children,
   serverUrl = DEFAULT_SERVER_URL,
   userNickname = DEFAULT_USER_NICKNAME,
+  botNickname = DEFAULT_BOT_NICKNAME, // Use prop or default
 }) => {
   const [socket, setSocket] = useState<SocketClient | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [isBotThinking, setIsBotThinking] = useState(false); // <-- Initialize thinking state
   const [messages, setMessages] = useState<MessageProps[]>([
-    { text: 'Connecting to chat...', nickname: 'system', time: Date.now() },
+    // Initial message can be simpler now
+    { text: 'Connecting...', nickname: 'system', time: Date.now() },
   ]);
 
   useEffect(() => {
-    console.log('Attempting to connect to Socket.IO server at:', serverUrl);
     const newSocket = io(serverUrl, {
-      // Optional: Add connection options if needed
-      // transports: ['websocket'],
-      // reconnectionAttempts: 5,
+      // transports: ['websocket'], // Usually not needed unless specific proxy issues
+      reconnectionAttempts: 5, // Example: Limit reconnection attempts
+      timeout: 10000, // Connection timeout
     });
     setSocket(newSocket);
 
     const handleConnect = () => {
-      console.log('Socket.IO Connected:', newSocket.id);
       setIsConnected(true);
-      setMessages((prev) => {
-        const filtered = prev.filter((msg) => msg.text !== 'Connecting to chat...');
-        return [...filtered, { text: 'Connected! How may I help you?', nickname: 'bot', time: Date.now() }];
-      });
+      // Remove client-side welcome message generation
+      setMessages((prev) => prev.filter((msg) => msg.nickname !== 'system'));
+      // Server will now send the welcome message via 'chat' event
     };
 
     const handleDisconnect = (reason: string) => {
-      console.log('Socket.IO Disconnected:', reason);
       setIsConnected(false);
-      // Keep socket instance for potential reconnection attempts by socket.io client
-      // setSocket(null); // Don't nullify immediately if relying on auto-reconnect
+      setIsBotThinking(false); // Stop thinking if disconnected
       setMessages((prev) => [
         ...prev,
-        { text: `Disconnected: ${reason}. Reconnecting...`, nickname: 'error', time: Date.now() },
+        { text: `Disconnected: ${reason}. Attempting to reconnect...`, nickname: 'error', time: Date.now() },
       ]);
     };
 
     const handleConnectError = (error: Error) => {
-      console.error('Socket.IO Connection Error:', error);
       setIsConnected(false);
+      setIsBotThinking(false); // Stop thinking on connection error
       setMessages((prev) => {
-        const filtered = prev.filter((msg) => msg.text !== 'Connecting to chat...');
+        const filtered = prev.filter((msg) => msg.nickname !== 'system');
         return [...filtered, { text: `Connection failed: ${error.message}.`, nickname: 'error', time: Date.now() }];
       });
     };
 
     const handleChatMessage = (receivedMsg: ServerChatMessage) => {
-      console.log('Message received:', receivedMsg);
+      // Check if it's a valid message structure
       if (receivedMsg && typeof receivedMsg.message === 'string' && typeof receivedMsg.nickname === 'string') {
+        // If this message is from the bot, stop the "thinking" indicator
+        if (receivedMsg.nickname === botNickname) {
+          setIsBotThinking(false);
+        }
+
         setMessages((prev) => [
           ...prev,
-          // Use nickname from server, map 'message' to 'text'
-          // Use server time if available, otherwise current time
           {
             text: receivedMsg.message,
             nickname: receivedMsg.nickname,
@@ -99,11 +103,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
     };
 
     const handleException = (errorData: SocketExceptionData) => {
-      console.error('Server Exception:', errorData);
+      setIsBotThinking(false); // Stop thinking on server error
       if (errorData && errorData.status === 'error' && typeof errorData.message === 'string') {
-        setMessages((prev) => [...prev, { text: errorData.message, nickname: 'error', time: Date.now() }]);
+        setMessages((prev) => [
+          ...prev,
+          { text: `Server Error: ${errorData.message}`, nickname: 'error', time: Date.now() },
+        ]);
       } else {
-        console.warn('Received unexpected error format:', errorData);
         setMessages((prev) => [
           ...prev,
           { text: 'An unknown server error occurred.', nickname: 'error', time: Date.now() },
@@ -120,7 +126,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
 
     // Cleanup function
     return () => {
-      console.log('Cleaning up Socket.IO connection...');
       newSocket.off('connect', handleConnect);
       newSocket.off('disconnect', handleDisconnect);
       newSocket.off('connect_error', handleConnectError);
@@ -129,49 +134,38 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
       newSocket.disconnect();
       setSocket(null);
       setIsConnected(false);
+      setIsBotThinking(false); // Reset on unmount
     };
-  }, [serverUrl]);
+  }, [serverUrl, botNickname]); // Add botNickname dependency if it can change
 
   const sendMessage = useCallback(
     (messageText: string) => {
       const trimmedMessage = messageText.trim();
-      if (!trimmedMessage || !socket || !isConnected) {
-        console.warn('Cannot send message: No text, socket not available, or not connected.');
+      if (!trimmedMessage || !socket || !isConnected || isBotThinking) {
+        // Prevent sending while bot is thinking
         return;
       }
 
       const messageToSend: ClientChatMessage = {
         nickname: userNickname,
         message: trimmedMessage,
+        // Consider adding a client-side timestamp if needed for ordering
+        // time: Date.now()
       };
 
-      // Add user message locally immediately for better UX
       setMessages((prev) => [...prev, { text: messageToSend.message, nickname: userNickname, time: Date.now() }]);
-
-      // Emit the message to the server
-      socket.emit('chat', messageToSend, (ack: Record<string, unknown> | undefined) => {
-        // Handle acknowledgment from server (optional)
-        if (ack?.error) {
-          console.error('Message delivery failed (server ACK):', ack.error);
-          setMessages((prev) => [
-            ...prev,
-            { text: `Message failed to send: ${ack.error}`, nickname: 'error', time: Date.now() },
-          ]);
-          // TODO: Consider removing the optimistic message or marking it as failed
-        } else if (ack) {
-          console.log('Message acknowledged by server:', ack);
-          // Optional: Update message status based on ACK
-        } else {
-          console.log('Message sent (no ACK received or configured):', messageToSend);
-        }
+      setIsBotThinking(true);
+      socket.emit('chat', messageToSend, (/* Optional ACK handling */) => {
+        // ACK handling remains the same
       });
     },
-    [socket, isConnected, userNickname],
+    [socket, isConnected, userNickname, isBotThinking, botNickname], // Added dependencies
   );
 
   const contextValue: SocketContextState = {
     messages,
     isConnected,
+    isBotThinking,
     sendMessage,
   };
 

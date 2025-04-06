@@ -10,8 +10,8 @@ export interface ServerChatMessage extends ClientChatMessage {
 }
 
 export interface MessageProps {
-  text: string; // We'll map server 'message' to 'text' for the UI component
-  nickname: 'user' | 'bot' | 'error' | string; // Allow specific + general strings
+  text: string;
+  nickname: 'user' | 'DerpAI' | 'error' | string;
   time: number;
 }
 

@@ -1,6 +1,6 @@
 {
-  "name": "template-web",
-  "description": "Template Web Client",
+  "name": "derp-ai-web",
+  "description": "Derp AI Web Client",
   "author": {
     "name": "Petar Zarkov",
     "email": "pzarko1@gmail.com"
@@ -10,9 +10,9 @@
   "main": "./build/services/web/dist",
   "repository": {
     "type": "git",
-    "url": "https://github.com/petarzarkov/js-monorepo-template.git"
+    "url": "https://github.com/petarzarkov/derp.ai.git"
   },
-  "homepage": "https://github.com/petarzarkov/js-monorepo-template/tree/main/services/web",
+  "homepage": "https://github.com/petarzarkov/derp.ai/tree/main/services/web",
   "scripts": {
     "start": "vite --host",
     "dev": "vite",

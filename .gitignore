@@ -133,3 +133,6 @@ build
 
 # tmp folder
 tmp
+
+# all non base env files
+.env.*

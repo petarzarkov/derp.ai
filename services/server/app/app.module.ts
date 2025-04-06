@@ -8,6 +8,7 @@ import { HttpLoggerModule } from './modules/http-logger/http-logger.module';
 import { ServiceModule } from './api/service/service.module';
 import { RequestIdMiddleware } from './middlewares/request-id.middleware';
 import { EventsModule } from './modules/events/events.module';
+import { QnAModule } from './modules/qna/qna.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { EventsModule } from './modules/events/events.module';
       validate: validateConfig,
       isGlobal: true,
     }),
+    QnAModule,
     HttpLoggerModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

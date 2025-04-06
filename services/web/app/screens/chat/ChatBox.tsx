@@ -1,36 +1,37 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Button, Flex, Heading, HStack, Stack, Text, useColorModeValue, Textarea } from '@chakra-ui/react';
-
+import { Button, Flex, Heading, HStack, Stack, Text, useColorModeValue, Textarea, Spinner } from '@chakra-ui/react';
+import { PiRobotLight } from 'react-icons/pi';
 import { useSocket } from '@hooks';
 import Message from './Message';
 
 export function ChatBox() {
-  const { messages, isConnected, sendMessage } = useSocket();
+  const { messages, isConnected, isBotThinking, sendMessage } = useSocket();
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [messageInput, setMessageInput] = useState('');
 
-  // Scroll to bottom when messages from context change
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Use timeout to allow DOM update before scrolling
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 100);
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]); // Depend on messages from context
+  }, [messages, isBotThinking]);
 
   // Handle sending message using context function
   const handleSendMessage = () => {
     const trimmedMessage = messageInput.trim();
-    if (trimmedMessage && isConnected) {
+    if (trimmedMessage && isConnected && !isBotThinking) {
       sendMessage(trimmedMessage);
       setMessageInput('');
       inputRef.current?.focus();
     }
   };
 
-  // Handle Enter key press
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -47,7 +48,7 @@ export function ChatBox() {
       rounded="3xl"
       overflow="hidden"
       bg={useColorModeValue('white', 'gray.700')}
-      borderColor={useColorModeValue('gray.200', 'gray.600')} // Border color
+      borderColor={useColorModeValue('gray.200', 'gray.600')}
     >
       <HStack
         p={4}
@@ -57,7 +58,10 @@ export function ChatBox() {
         borderColor={useColorModeValue('gray.200', 'gray.500')}
       >
         <Heading size="lg" color="white">
-          Chat App
+          <HStack>
+            <PiRobotLight />
+            <Text>DerpAI</Text>
+          </HStack>
         </Heading>
         <Flex flex={1} justify="flex-end" align="center">
           <Flex boxSize="10px" borderRadius="full" bg={isConnected ? 'green.400' : 'red.400'} mr={2} />
@@ -88,6 +92,8 @@ export function ChatBox() {
           <Message key={`msg-${idx}-${msg.time}-${msg.nickname}`} {...msg} />
         ))}
 
+        {isBotThinking && <Message text="Thinking..." nickname={'DerpAI'} time={Date.now()} />}
+
         <div ref={messagesEndRef} />
       </Stack>
 
@@ -104,8 +110,8 @@ export function ChatBox() {
           onChange={(e) => setMessageInput(e.target.value)}
           onKeyDown={handleKeyDown}
           bg={useColorModeValue('white', 'gray.700')}
-          placeholder={!isConnected ? 'Connecting...' : 'Ask me anything...'}
-          isDisabled={!isConnected}
+          placeholder={!isConnected ? 'Connecting...' : isBotThinking ? 'DerpAI is thinking...' : 'Ask me anything...'}
+          isDisabled={!isConnected || isBotThinking}
           variant="filled"
           _focus={{ borderColor: useColorModeValue('primary.500', 'primary.300') }}
           overflowY="auto"
@@ -118,9 +124,11 @@ export function ChatBox() {
           color="white"
           _hover={{ bg: useColorModeValue('primary.600', 'primary.300') }}
           onClick={handleSendMessage}
-          isDisabled={!messageInput.trim() || !isConnected} // Use context state
+          isDisabled={!messageInput.trim() || !isConnected || isBotThinking}
+          isLoading={isBotThinking} // Show spinner on button while thinking
+          spinner={<Spinner size="sm" />}
         >
-          Ask
+          {isBotThinking ? '' : 'Ask'}
         </Button>
       </HStack>
     </Flex>

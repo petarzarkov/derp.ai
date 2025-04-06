@@ -1,6 +1,6 @@
 {
   "name": "@common",
-  "description": "Template Common",
+  "description": "Derp AI Common",
   "author": {
     "name": "Petar Zarkov",
     "email": "pzarko1@gmail.com"
@@ -12,9 +12,9 @@
   "module": "build/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/petarzarkov/js-monorepo-template.git"
+    "url": "https://github.com/petarzarkov/derp.ai.git"
   },
-  "homepage": "https://github.com/petarzarkov/js-monorepo-template/tree/main/services/common",
+  "homepage": "https://github.com/petarzarkov/derp.ai/tree/main/services/common",
   "scripts": {
     "clean": "rm -rf build",
     "prebuild": "npm run clean",

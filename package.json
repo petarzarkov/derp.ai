@@ -1,11 +1,11 @@
 {
-  "name": "nestjs-monorepo-template",
-  "description": "NestJS Monorepo Template Repository",
+  "name": "derp-ai-monorepo",
+  "description": "NestJS Monorepo Derp AI Monorepo",
   "keywords": [
     "NestJS",
     "Monorepo",
-    "Template",
-    "Repository"
+    "Derp",
+    "AI"
   ],
   "author": {
     "name": "Petar Zarkov",
@@ -19,9 +19,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/petarzarkov/js-monorepo-template.git"
+    "url": "https://github.com/petarzarkov/derp.ai.git"
   },
-  "homepage": "https://github.com/petarzarkov/js-monorepo-template",
+  "homepage": "https://github.com/petarzarkov/derp.ai",
   "scripts": {
     "prepare": "husky",
     "preinstall": "npx only-allow pnpm",
@@ -62,7 +62,9 @@
       "@nestjs/core",
       "@scarf/scarf",
       "@swc/core",
+      "@tensorflow/tfjs-node",
       "bcrypt",
+      "core-js",
       "cpu-features",
       "esbuild",
       "protobufjs",
