@@ -53,18 +53,18 @@ export const validateConfig = (config: Record<string, unknown>) => {
         model: geminiModel,
         apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
       },
-      ...(validatedConfig.HUGGINGFACE_API_KEY && {
-        'google/flan-t5-xxl': {
-          url: 'https://api-inference.huggingface.co/models/google/flan-t5-xxl',
-          model: 'google/flan-t5-xxl',
-          apiKey: validatedConfig.HUGGINGFACE_API_KEY,
-        },
-        'facebook/bart-large-cnn': {
-          url: 'https://api-inference.huggingface.co/models/facebook/bart-large-cnn',
-          model: 'facebook/bart-large-cnn',
-          apiKey: validatedConfig.HUGGINGFACE_API_KEY,
-        },
-      }),
+      // ...(validatedConfig.HUGGINGFACE_API_KEY && {
+      //   'google/flan-t5-base': {
+      //     url: 'https://api-inference.huggingface.co/models/google/flan-t5-base',
+      //     model: 'google/flan-t5-base',
+      //     apiKey: validatedConfig.HUGGINGFACE_API_KEY,
+      //   },
+      //   'facebook/bart-large-cnn': {
+      //     url: 'https://api-inference.huggingface.co/models/facebook/bart-large-cnn',
+      //     model: 'facebook/bart-large-cnn',
+      //     apiKey: validatedConfig.HUGGINGFACE_API_KEY,
+      //   },
+      // }),
     },
     auth: {
       secret: validatedConfig.JWT_SECRET,

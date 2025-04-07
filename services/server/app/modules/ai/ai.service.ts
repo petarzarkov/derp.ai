@@ -30,7 +30,7 @@ export class AIService {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    let targetUrl = config.url;
+    let targetUrl = `${config.url}`;
 
     switch (provider) {
       case 'google':
@@ -40,24 +40,24 @@ export class AIService {
         targetUrl = `${config.url}:generateContent?key=${config.apiKey}`;
         break;
 
-      case 'google/flan-t5-xxl':
-      case 'facebook/bart-large-cnn':
-        requestBody = JSON.stringify({
-          inputs: prompt,
-          parameters: { max_new_tokens: 500, max_split_size_mb: 128 },
-        });
-        headers['Authorization'] = `Bearer ${config.apiKey}`;
-        break;
+      // case 'google/flan-t5-base':
+      // case 'facebook/bart-large-cnn':
+      //   requestBody = JSON.stringify({
+      //     inputs: prompt,
+      //     parameters: { max_new_tokens: 250 },
+      //   });
+      //   headers['Authorization'] = `Bearer ${config.apiKey}`;
+      //   break;
 
       default:
         this.#logger.error(`Unsupported provider type: ${provider}`);
         return null;
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 9000);
     try {
-      const controller = new AbortController();
       this.#logger.log(`Querying ${provider} with prompt: ${prompt.substring(0, 50)}...`);
-      setTimeout(() => controller.abort(), 3500);
       const response = await fetch(targetUrl, {
         method: 'POST',
         body: requestBody,
@@ -78,32 +78,40 @@ export class AIService {
         case 'google':
           text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
           break;
-        case 'google/flan-t5-xxl':
-        case 'facebook/bart-large-cnn':
-          if (Array.isArray(data) && data[0]?.generated_text) {
-            text = data[0].generated_text;
-            if (text?.startsWith(prompt)) {
-              text = text.substring(prompt.length).trim();
-            }
-          } else if (typeof data?.generated_text === 'string') {
-            text = data.generated_text;
-          }
-          break;
+        // case 'google/flan-t5-base':
+        // case 'facebook/bart-large-cnn':
+        //   if (Array.isArray(data) && data[0]?.generated_text) {
+        //     text = data[0].generated_text;
+        //     if (text?.startsWith(prompt)) {
+        //       text = text.substring(prompt.length).trim();
+        //     }
+        //   } else if (typeof data?.generated_text === 'string') {
+        //     text = data.generated_text;
+        //   }
+        //   break;
       }
 
       if (!text) {
         this.#logger.warn(`Could not extract text from ${provider} response: ${JSON.stringify(data)}`);
       }
       return text;
-    } catch (error) {
-      this.#logger.error(`Network or parsing error with ${provider}: ${(error as Error).message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        this.#logger.error(`Request to ${provider} timed out: ${error.message}`);
+      } else if (error instanceof Error) {
+        this.#logger.error(`Network or parsing error with ${provider}: ${error.message}, ${error.stack}`);
+      } else {
+        this.#logger.error(`Network or parsing error with ${provider}: ${String(error)}`);
+      }
       return null;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
   private getMasterProvider(): AIProvider | null {
     if (this.#config.google) return 'google';
-    if (this.#config['google/flan-t5-xxl']) return 'google/flan-t5-xxl';
+    // if (this.#config['google/flan-t5-base']) return 'google/flan-t5-base';
     return this.#providers[0] ?? null;
   }
 
@@ -116,7 +124,7 @@ export class AIService {
     settledResults.forEach((result, index) => {
       const provider = this.#providers[index];
       if (result.status === 'fulfilled' && result.value) {
-        this.#logger.log(`Response from ${provider}: ${result.value.substring(0, 50)}...`);
+        this.#logger.log(`Response from ${provider}:`, result.value);
         successfulResponses.push(result.value);
       } else if (result.status === 'rejected') {
         const reason = result.reason instanceof Error ? result.reason.message : result.reason;

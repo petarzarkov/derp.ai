@@ -1,6 +1,21 @@
-import { useColorModeValue, Flex, HStack, Text, Code, Box } from '@chakra-ui/react';
+import {
+  useColorModeValue,
+  Flex,
+  HStack,
+  Text,
+  Code,
+  Box,
+  useClipboard,
+  Tooltip,
+  IconButton,
+  UnorderedList,
+  OrderedList,
+  Heading,
+  ListItem,
+} from '@chakra-ui/react';
 import type { MessageProps } from '../../socket/Chat.types';
 import ReactMarkdown, { Components } from 'react-markdown';
+import { FaCopy, FaCheck } from 'react-icons/fa';
 
 const Message = ({ text, nickname, time }: MessageProps) => {
   const isUser = nickname === 'user';
@@ -12,8 +27,8 @@ const Message = ({ text, nickname, time }: MessageProps) => {
   // Define base colors
   const userBg = useColorModeValue('primary.700', 'primary.100');
   const userText = useColorModeValue('primary.100', 'primary.700');
-  const botBg = useColorModeValue('green.700', 'green.100');
-  const botText = useColorModeValue('green.100', 'green.700');
+  const botBg = useColorModeValue('primary.300', 'primary.900');
+  const botText = useColorModeValue('primary.900', 'primary.100');
   const errorBg = useColorModeValue('red.600', 'red.300');
   const errorText = useColorModeValue('white', 'red.900');
   const systemBg = useColorModeValue('gray.500', 'gray.300');
@@ -45,31 +60,54 @@ const Message = ({ text, nickname, time }: MessageProps) => {
     code(component) {
       const { className, children, ...props } = component;
       const match = /language-(\w+)/.exec(className || ''); // Extract language if specified (e.g., ```javascript)
-      const lang = match ? match[1] : 'plaintext'; //
+      const lang = match ? match[1] : 'plaintext';
+      const codeString = String(children).replace(/\n$/, ''); // Get the code content
+      const { hasCopied, onCopy } = useClipboard(codeString);
       // Handle block code (using ```)
       if ('inline' in component && component.inline === false) {
         return (
-          <Box
-            as="pre" // Use <pre> for semantic code blocks
-            p={3} // Padding inside the block
-            my={2} // Margin above/below the block
-            bg={codeBlockBg} // Specific background for code blocks
-            color={codeBlockText} // Specific text color for code blocks
-            borderRadius="md"
-            overflowX="auto" // Allow horizontal scrolling for long lines
-            fontSize="sm" // Often looks better slightly smaller
-            boxShadow="inner" // Subtle visual distinction
-            data-language={lang}
-          >
-            <Code bg="transparent" {...props}>
-              {String(children).replace(/\n$/, '')}
-            </Code>
+          <Box position="relative" my={2} className="code-block-wrapper">
+            <Box
+              as="pre" // Use <pre> for semantic code blocks
+              p={3} // Padding inside the block
+              my={2} // Margin above/below the block
+              bg={codeBlockBg} // Specific background for code blocks
+              color={codeBlockText} // Specific text color for code blocks
+              borderRadius="md"
+              overflowX="auto" // Allow horizontal scrolling for long lines
+              fontSize="sm"
+              boxShadow="inner" // Subtle visual distinction
+              data-language={lang}
+            >
+              <Code
+                bg="transparent"
+                borderRadius="md"
+                {...props}
+                className={className?.startsWith('language-') ? undefined : className}
+              >
+                {codeString}
+              </Code>
+            </Box>
+            <Tooltip label={hasCopied ? 'Copied!' : 'Copy code'} placement="top" hasArrow>
+              <IconButton
+                aria-label={hasCopied ? 'Copied!' : 'Copy code'}
+                icon={hasCopied ? <FaCheck /> : <FaCopy />}
+                size="sm"
+                position="absolute"
+                top="0.5rem" // Position button in the top right
+                right="0.5rem"
+                colorScheme={hasCopied ? 'green' : 'gray'}
+                variant="ghost" // Use ghost variant for less intrusion
+                onClick={onCopy}
+                zIndex="1" // Ensure button is clickable
+              />
+            </Tooltip>
           </Box>
         );
       }
       // Handle inline code (using `)
       return (
-        <Code bg={inlineCodeBg} color={inlineCodeText} px="0.3em" py="0.1em" borderRadius="sm" fontSize="sm" {...props}>
+        <Code bg={inlineCodeBg} color={inlineCodeText} px="0.3em" py="0.1em" borderRadius="md" fontSize="sm" {...props}>
           {String(children)}
         </Code>
       );
@@ -81,6 +119,28 @@ const Message = ({ text, nickname, time }: MessageProps) => {
         </Text>
       );
     },
+    // Add overrides for other elements
+    ul: ({ children }) => (
+      <UnorderedList ml={4} mb={2}>
+        {children}
+      </UnorderedList>
+    ),
+    ol: ({ children }) => (
+      <OrderedList ml={4} mb={2}>
+        {children}
+      </OrderedList>
+    ),
+    li: ({ children }) => <ListItem>{children}</ListItem>,
+    h1: ({ children }) => (
+      <Heading as="h1" size="lg" my={3}>
+        {children}
+      </Heading>
+    ),
+    h2: ({ children }) => (
+      <Heading as="h2" size="md" my={2}>
+        {children}
+      </Heading>
+    ),
   };
 
   return (

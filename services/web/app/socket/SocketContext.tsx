@@ -50,7 +50,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   }, [botNickname]);
 
   useEffect(() => {
-    const newSocket = io(serverUrl);
+    const newSocket = io(serverUrl, {
+      requestTimeout: 10000,
+    });
     setSocket(newSocket);
 
     const handleConnect = () => {
