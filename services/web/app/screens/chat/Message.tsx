@@ -5,7 +5,7 @@ import {
   Text,
   Code,
   Box,
-  useClipboard,
+  useClipboard, // Correctly scoped now
   Tooltip,
   IconButton,
   UnorderedList,
@@ -24,7 +24,7 @@ const Message = ({ text, nickname, time }: MessageProps) => {
 
   const align = isUser ? 'flex-end' : 'flex-start';
 
-  // Define base colors
+  // --- Colors remain the same ---
   const userBg = useColorModeValue('primary.700', 'primary.100');
   const userText = useColorModeValue('primary.100', 'primary.700');
   const botBg = useColorModeValue('primary.300', 'primary.900');
@@ -33,12 +33,11 @@ const Message = ({ text, nickname, time }: MessageProps) => {
   const errorText = useColorModeValue('white', 'red.900');
   const systemBg = useColorModeValue('gray.500', 'gray.300');
   const systemText = useColorModeValue('white', 'gray.900');
-
-  // Define specific colors for code elements (adjust as needed)
-  const codeBlockBg = useColorModeValue('gray.100', 'gray.800'); // Background for ``` blocks
-  const codeBlockText = useColorModeValue('gray.800', 'gray.100'); // Text color for ``` blocks
-  const inlineCodeBg = useColorModeValue('gray.200', 'gray.600'); // Background for `inline` code
-  const inlineCodeText = useColorModeValue('black', 'white'); // Text color for `inline` code
+  const codeBlockBg = useColorModeValue('gray.100', 'gray.800');
+  const codeBlockText = useColorModeValue('gray.800', 'gray.100');
+  const inlineCodeBg = useColorModeValue('gray.200', 'gray.600');
+  const inlineCodeText = useColorModeValue('black', 'white');
+  // --- End Colors ---
 
   let bgColor = botBg;
   let textColor = botText;
@@ -54,29 +53,35 @@ const Message = ({ text, nickname, time }: MessageProps) => {
   }
 
   const date = new Date(time);
-  const formattedTime = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  const formattedTime = `${date
+    .getHours()
+    .toString()
+    .padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
   const markdownComponents: Components = {
     code(component) {
-      const { className, children, ...props } = component;
-      const match = /language-(\w+)/.exec(className || ''); // Extract language if specified (e.g., ```javascript)
+      const { className, children, node, ...props } = component;
+      const match = /language-(\w+)/.exec(className || '');
       const lang = match ? match[1] : 'plaintext';
-      const codeString = String(children).replace(/\n$/, ''); // Get the code content
-      const { hasCopied, onCopy } = useClipboard(codeString);
-      // Handle block code (using ```)
-      if ('inline' in component && component.inline === false) {
+
+      // --- Handle BLOCK code (using ```) ---
+      if (!('inline' in component) || (!component.inline && node?.type === 'element' && node?.tagName === 'code')) {
+        const codeString = String(children).replace(/\n$/, '');
+        const { hasCopied, onCopy } = useClipboard(codeString);
+
         return (
           <Box position="relative" my={2} className="code-block-wrapper">
             <Box
-              as="pre" // Use <pre> for semantic code blocks
-              p={3} // Padding inside the block
-              my={2} // Margin above/below the block
-              bg={codeBlockBg} // Specific background for code blocks
-              color={codeBlockText} // Specific text color for code blocks
+              as="pre"
+              p={4}
+              pt={8}
+              my={2}
+              bg={codeBlockBg}
+              color={codeBlockText}
               borderRadius="md"
-              overflowX="auto" // Allow horizontal scrolling for long lines
+              overflowX="auto"
               fontSize="sm"
-              boxShadow="inner" // Subtle visual distinction
+              boxShadow="inner"
               data-language={lang}
             >
               <Code
@@ -94,24 +99,28 @@ const Message = ({ text, nickname, time }: MessageProps) => {
                 icon={hasCopied ? <FaCheck /> : <FaCopy />}
                 size="sm"
                 position="absolute"
-                top="0.5rem" // Position button in the top right
+                top="0.5rem"
                 right="0.5rem"
                 colorScheme={hasCopied ? 'green' : 'gray'}
-                variant="ghost" // Use ghost variant for less intrusion
-                onClick={onCopy}
-                zIndex="1" // Ensure button is clickable
+                variant="ghost"
+                onClick={() => {
+                  onCopy();
+                }}
+                zIndex="1"
               />
             </Tooltip>
           </Box>
         );
       }
-      // Handle inline code (using `)
+
+      // --- Handle INLINE code (using `) ---
       return (
-        <Code bg={inlineCodeBg} color={inlineCodeText} px="0.3em" py="0.1em" borderRadius="md" fontSize="sm" {...props}>
+        <Code bg={inlineCodeBg} color={inlineCodeText} px="0.4em" py="0.2em" borderRadius="sm" fontSize="sm" {...props}>
           {String(children)}
         </Code>
       );
     },
+    // Other component overrides remain the same
     p({ children, ...props }) {
       return (
         <Text mb={1} {...props}>
@@ -119,7 +128,6 @@ const Message = ({ text, nickname, time }: MessageProps) => {
         </Text>
       );
     },
-    // Add overrides for other elements
     ul: ({ children }) => (
       <UnorderedList ml={4} mb={2}>
         {children}
@@ -141,8 +149,10 @@ const Message = ({ text, nickname, time }: MessageProps) => {
         {children}
       </Heading>
     ),
+    // Add h3, h4, blockquote etc. if needed
   };
 
+  // --- Return statement remains the same ---
   return (
     <Flex
       p={3}
@@ -157,7 +167,7 @@ const Message = ({ text, nickname, time }: MessageProps) => {
     >
       <HStack justify="space-between" w="full" mb={1}>
         <Text fontSize="xs" fontWeight="bold" opacity={0.9}>
-          {!isSystem ? nickname : ''}
+          {!isSystem && !isUser ? nickname : ''}
         </Text>
         {!!time && (
           <Text fontSize="xs" opacity={0.7}>
@@ -172,7 +182,12 @@ const Message = ({ text, nickname, time }: MessageProps) => {
           </Text>
         )}
         <Box wordBreak="break-word" width="100%">
-          <ReactMarkdown components={markdownComponents}>{text}</ReactMarkdown>
+          <ReactMarkdown
+            components={markdownComponents}
+            // remarkPlugins={[remarkGfm]} // Add if needed
+          >
+            {text}
+          </ReactMarkdown>
         </Box>
       </Flex>
     </Flex>
