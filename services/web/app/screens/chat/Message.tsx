@@ -22,11 +22,6 @@ const Message = ({ text, nickname, time }: MessageProps) => {
   const isError = nickname === 'error';
   const isSystem = nickname === 'system';
 
-  const codeBlockBg = useColorModeValue('gray.100', 'gray.800');
-  const codeBlockText = useColorModeValue('gray.800', 'gray.100');
-  const inlineCodeBg = useColorModeValue('gray.200', 'gray.600');
-  const inlineCodeText = useColorModeValue('black', 'white');
-
   const colorStyles = {
     user: {
       bg: useColorModeValue('primary.700', 'primary.100'),
@@ -62,64 +57,74 @@ const Message = ({ text, nickname, time }: MessageProps) => {
       const { className, children, ...props } = component;
       const match = /language-(\w+)/.exec(className || '');
       const lang = match ? match[1] : 'plaintext';
+      // Process children once
+      const codeString = String(children).replace(/\n$/, '');
 
-      if ('inline' in component && component.inline === false) {
-        const codeString = String(children).replace(/\n$/, '');
+      // Detect block code by checking for newline character
+      if (codeString.includes('\n')) {
         const { hasCopied, onCopy } = useClipboard(codeString);
 
         return (
-          <Box position="relative" my={2}>
-            <Box
-              as="pre"
-              p={4}
-              pt={8}
-              my={2}
-              bg={codeBlockBg}
-              color={codeBlockText}
-              borderRadius="md"
-              overflowX="auto"
-              fontSize="sm"
-              boxShadow="inner"
-              data-language={lang}
-            >
-              <Code
-                bg="transparent"
-                borderRadius="md"
-                className={className?.startsWith('language-') ? undefined : className}
-              >
-                {codeString}
-              </Code>
-            </Box>
+          <Box
+            as="pre"
+            position="relative" // Make this the positioning context
+            p={4}
+            pt={8} // Keep padding for button
+            my={2}
+            bg={useColorModeValue('gray.100', 'gray.800')}
+            color={useColorModeValue('gray.800', 'gray.100')}
+            borderRadius="md"
+            overflowX="auto" // Still useful if long unwrappable lines exist
+            fontSize="sm"
+            boxShadow="inner"
+            data-language={lang}
+            whiteSpace="pre-wrap" // Enable wrapping
+            wordBreak="break-word" // Allow breaking long words/lines
+            borderWidth="1px" // Add border
+            borderColor={useColorModeValue('gray.200', 'gray.700')} // Use defined border color
+          >
+            {/* Button goes INSIDE the pre box */}
             <Tooltip label={hasCopied ? 'Copied!' : 'Copy code'} placement="top" hasArrow>
               <IconButton
                 aria-label={hasCopied ? 'Copied!' : 'Copy code'}
                 icon={hasCopied ? <FaCheck /> : <FaCopy />}
                 size="sm"
-                position="absolute"
+                position="absolute" // Position relative to the <Box as="pre">
                 top="0.5rem"
                 right="0.5rem"
                 colorScheme={hasCopied ? 'green' : 'gray'}
                 variant="ghost"
                 onClick={onCopy}
-                zIndex="1"
+                zIndex="1" // Ensure it's clickable
               />
             </Tooltip>
+            <Code
+              bg="transparent" // Inner code should be transparent
+              borderRadius="md" // Might not be needed if pre has it
+              display="block" // Ensure code takes block display within pre if needed
+              className={className?.startsWith('language-') ? undefined : className}
+            >
+              {codeString}
+            </Code>
           </Box>
         );
       }
 
+      // Handle inline code
       return (
         <Code
-          bg={inlineCodeBg}
-          color={inlineCodeText}
+          bg={useColorModeValue('gray.200', 'gray.600')}
+          color={useColorModeValue('black', 'white')}
           px="0.4em"
           py="0.2em"
           borderRadius="sm"
           fontSize="sm"
-          {...props}
+          whiteSpace="normal" // Allow wrapping for inline code
+          wordBreak="break-word" // Allow breaking long words/lines
+          {...props} // Spread props here
           className={className?.startsWith('language-') ? undefined : className}
         >
-          {String(children)}
+          {codeString}
         </Code>
       );
     },
@@ -160,7 +165,7 @@ const Message = ({ text, nickname, time }: MessageProps) => {
       color={textColor}
       borderRadius="lg"
       w="fit-content"
-      maxW="80%"
+      maxW="80%" // Message bubble max width
       alignSelf={align}
       boxShadow="sm"
       flexDirection="column"
@@ -181,7 +186,8 @@ const Message = ({ text, nickname, time }: MessageProps) => {
             ⚠️
           </Text>
         )}
-        <Box wordBreak="break-word" width="100%">
+        {/* Ensure content box respects parent width */}
+        <Box wordBreak="break-word" width="100%" overflowX="hidden">
           <ReactMarkdown components={markdownComponents}>{text}</ReactMarkdown>
         </Box>
       </Flex>
