@@ -99,7 +99,7 @@ export function ChatBox() {
 
       <HStack
         p={4}
-        bg={useColorModeValue('gray.100', 'gray.600')}
+        bg={useColorModeValue('primary.500', 'primary.600')}
         borderTopWidth="1px"
         borderColor={useColorModeValue('gray.200', 'gray.500')}
         flexShrink={0}
@@ -120,7 +120,7 @@ export function ChatBox() {
         />
         <Button
           variant={isConnected ? 'solid' : 'outline'}
-          bg={useColorModeValue('primary.500', 'primary.400')}
+          bg={useColorModeValue('primary.300', 'primary.400')}
           color="white"
           _hover={{ bg: useColorModeValue('primary.600', 'primary.300') }}
           onClick={handleSendMessage}

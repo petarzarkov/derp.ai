@@ -35,7 +35,7 @@ export class EventsGateway implements OnGatewayConnection {
 
   handleConnection(client: Socket) {
     this.#logger.log(`WSClient connected: ${client.id}`);
-    this.server.to(client.id).emit('chat', {
+    this.server.to(client.id).emit('init', {
       message: 'Connected! How may I help you?',
       nickname: this.#botName,
       time: Date.now(),
@@ -46,7 +46,7 @@ export class EventsGateway implements OnGatewayConnection {
   @UsePipes(new ValidationPipe())
   handleMessage(@MessageBody() event: ChatMessage, @ConnectedSocket() client: Socket) {
     this.qnaService.getAnswer(event.message).then((answer) => {
-      this.#logger.log(`Sending message ${answer} to WSClient: ${client.id}`);
+      this.#logger.log(`Sending message ${answer.length} to WSClient: ${client.id}`);
       this.server.to(client.id).emit('chat', {
         message: answer,
         nickname: this.#botName,

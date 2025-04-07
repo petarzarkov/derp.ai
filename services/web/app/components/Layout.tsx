@@ -1,5 +1,5 @@
 import { FC, useRef } from 'react';
-import { Box, Flex, useColorModeValue } from '@chakra-ui/react';
+import { Flex, useColorModeValue } from '@chakra-ui/react';
 import { Outlet } from 'react-router-dom';
 import { BackTop } from './BackTop';
 import { NavBar } from './NavBar';
@@ -13,21 +13,21 @@ export const Layout: FC = () => {
 
       <Flex
         ref={flexRef}
-        minH={`calc(100vh - ${navBarRef.current?.clientHeight})`}
+        minH={`calc(100vh - ${navBarRef.current?.clientHeight || 0}px)`}
         bgColor={useColorModeValue('primary.100', 'primary.800')}
         justify="center"
-        align={'center'}
+        alignItems="stretch"
       >
-        <Box
+        <Flex
+          flexDirection="column"
+          flexGrow={1} // Add flexGrow to make it expand
           borderRadius="md"
           p={4}
           w={{ base: '95%', sm: '90%', lg: '85%' }}
-          h={{ base: '88vh', md: '85vh' }}
-          maxH={`calc(100vh - ${flexRef.current?.clientHeight})`}
           maxW="container.xl"
         >
           <Outlet />
-        </Box>
+        </Flex>
       </Flex>
 
       <BackTop />

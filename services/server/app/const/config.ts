@@ -1,4 +1,4 @@
-import { IsNumber, IsString, Max, Min, validateSync } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Max, Min, validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 
 export class EnvVars {
@@ -14,7 +14,11 @@ export class EnvVars {
   JWT_SECRET: string;
 
   @IsString()
-  GOOGLE_API_KEY: string;
+  GOOGLE_GEMINI_API_KEY: string;
+
+  @IsString()
+  @IsOptional()
+  HUGGINGFACE_API_KEY?: string;
 
   @IsString()
   DB_NAME: string;
@@ -40,10 +44,27 @@ export const validateConfig = (config: Record<string, unknown>) => {
     throw new Error(errors.toString());
   }
 
+  const geminiModel = 'gemini-1.5-flash-latest';
   return {
     env: validatedConfig.APP_ENV,
-    google: {
-      apiKey: validatedConfig.GOOGLE_API_KEY,
+    aiProviders: {
+      google: {
+        url: `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}`,
+        model: geminiModel,
+        apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
+      },
+      ...(validatedConfig.HUGGINGFACE_API_KEY && {
+        'google/flan-t5-xxl': {
+          url: 'https://api-inference.huggingface.co/models/google/flan-t5-xxl',
+          model: 'google/flan-t5-xxl',
+          apiKey: validatedConfig.HUGGINGFACE_API_KEY,
+        },
+        'facebook/bart-large-cnn': {
+          url: 'https://api-inference.huggingface.co/models/facebook/bart-large-cnn',
+          model: 'facebook/bart-large-cnn',
+          apiKey: validatedConfig.HUGGINGFACE_API_KEY,
+        },
+      }),
     },
     auth: {
       secret: validatedConfig.JWT_SECRET,
@@ -63,7 +84,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
       username: validatedConfig.DB_USER,
       password: validatedConfig.DB_PASS,
     },
-  };
+  } as const;
 };
 
 export type ValidatedConfig = ReturnType<typeof validateConfig>;

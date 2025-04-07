@@ -5,7 +5,7 @@
     "noPropertyAccessFromIndexSignature": false,
     "module": "commonjs",
     "target": "ESNext",
-    "lib": ["ES6"],
+    "lib": ["ESNext"],
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "skipLibCheck": true,

@@ -79,8 +79,9 @@ async function bootstrap(module: typeof AppModule) {
         body: { access_token: string };
       }) {
         if (response.ok && response?.url?.includes('auth/login')) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (window as unknown as Window & { ui: any }).ui.preauthorizeApiKey('bearerAuth', response.body.access_token);
+          (
+            window as unknown as Window & { ui: { preauthorizeApiKey: (name: string, apiKey: string) => void } }
+          ).ui.preauthorizeApiKey('bearerAuth', response.body.access_token);
         }
 
         return response;

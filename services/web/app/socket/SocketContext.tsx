@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react'; // Added useContext
+import React, { createContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react'; // Added useRef
 import { io } from 'socket.io-client';
 import type {
   SocketClient,
@@ -24,20 +24,18 @@ interface SocketProviderProps {
   children: ReactNode;
   serverUrl?: string; // Allow overriding server URL via prop
   userNickname?: string; // Allow passing user nickname via prop
-  botNickname?: string; // Allow defining bot nickname
 }
 
 const DEFAULT_SERVER_URL = 'http://localhost:3033';
 const DEFAULT_USER_NICKNAME = 'user';
-const DEFAULT_BOT_NICKNAME = 'DerpAI'; // Define bot name
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({
   children,
   serverUrl = DEFAULT_SERVER_URL,
   userNickname = DEFAULT_USER_NICKNAME,
-  botNickname = DEFAULT_BOT_NICKNAME, // Use prop or default
 }) => {
   const [socket, setSocket] = useState<SocketClient | null>(null);
+  const [botNickname, setBotNickname] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isBotThinking, setIsBotThinking] = useState(false); // <-- Initialize thinking state
   const [messages, setMessages] = useState<MessageProps[]>([
@@ -45,19 +43,20 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
     { text: 'Connecting...', nickname: 'system', time: Date.now() },
   ]);
 
+  // Ref to hold the current bot nickname for access within event handlers
+  const botNicknameRef = useRef(botNickname);
   useEffect(() => {
-    const newSocket = io(serverUrl, {
-      // transports: ['websocket'], // Usually not needed unless specific proxy issues
-      reconnectionAttempts: 5, // Example: Limit reconnection attempts
-      timeout: 10000, // Connection timeout
-    });
+    botNicknameRef.current = botNickname;
+  }, [botNickname]);
+
+  useEffect(() => {
+    const newSocket = io(serverUrl);
     setSocket(newSocket);
 
     const handleConnect = () => {
       setIsConnected(true);
-      // Remove client-side welcome message generation
-      setMessages((prev) => prev.filter((msg) => msg.nickname !== 'system'));
-      // Server will now send the welcome message via 'chat' event
+      // Remove client-side welcome message and any disconnect messages
+      setMessages((prev) => prev.filter((msg) => msg.nickname !== 'system' && msg.nickname !== 'error'));
     };
 
     const handleDisconnect = (reason: string) => {
@@ -81,8 +80,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
     const handleChatMessage = (receivedMsg: ServerChatMessage) => {
       // Check if it's a valid message structure
       if (receivedMsg && typeof receivedMsg.message === 'string' && typeof receivedMsg.nickname === 'string') {
-        // If this message is from the bot, stop the "thinking" indicator
-        if (receivedMsg.nickname === botNickname) {
+        // Use the ref to check against the latest bot nickname
+        if (receivedMsg.nickname === botNicknameRef.current) {
           setIsBotThinking(false);
         }
 
@@ -99,6 +98,29 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
         ]);
       } else {
         console.warn('Received invalid chat message format:', receivedMsg);
+      }
+    };
+
+    const handleInit = (receivedMsg: ServerChatMessage) => {
+      // Check ref to prevent setting nickname multiple times if init is somehow emitted again
+      if (!botNicknameRef.current) {
+        setBotNickname(receivedMsg.nickname);
+        // Add the init message directly to avoid duplication if also sent via 'chat'
+        if (receivedMsg && typeof receivedMsg.message === 'string' && typeof receivedMsg.nickname === 'string') {
+          setMessages((prev) => [
+            ...prev,
+            {
+              text: receivedMsg.message,
+              nickname: receivedMsg.nickname,
+              time:
+                typeof receivedMsg.time === 'number' || typeof receivedMsg.time === 'string'
+                  ? new Date(receivedMsg.time).getTime()
+                  : Date.now(),
+            },
+          ]);
+        } else {
+          console.warn('Received invalid init message format:', receivedMsg);
+        }
       }
     };
 
@@ -119,6 +141,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
 
     // Attach listeners
     newSocket.on('connect', handleConnect);
+    newSocket.on('init', handleInit);
     newSocket.on('disconnect', handleDisconnect);
     newSocket.on('connect_error', handleConnectError);
     newSocket.on('chat', handleChatMessage);
@@ -127,6 +150,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
     // Cleanup function
     return () => {
       newSocket.off('connect', handleConnect);
+      newSocket.off('init', handleInit);
       newSocket.off('disconnect', handleDisconnect);
       newSocket.off('connect_error', handleConnectError);
       newSocket.off('chat', handleChatMessage);
@@ -136,7 +160,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
       setIsConnected(false);
       setIsBotThinking(false); // Reset on unmount
     };
-  }, [serverUrl, botNickname]); // Add botNickname dependency if it can change
+  }, [serverUrl]);
 
   const sendMessage = useCallback(
     (messageText: string) => {
@@ -159,7 +183,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
         // ACK handling remains the same
       });
     },
-    [socket, isConnected, userNickname, isBotThinking, botNickname], // Added dependencies
+    [socket, isConnected, userNickname, isBotThinking],
   );
 
   const contextValue: SocketContextState = {
