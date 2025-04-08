@@ -3,6 +3,7 @@
 ## Overview
 
 This derp ai provides a solid foundation for derping
+Check it out here: https://derp.ai.petarzarkov.com/
 
 ## Core Components
 
