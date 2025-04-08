@@ -29,6 +29,7 @@ import { QnAModule } from './modules/qna/qna.module';
           type: 'postgres',
           host: dbConfig.host,
           port: dbConfig.port,
+          ssl: dbConfig.ssl,
           username: dbConfig.username,
           password: dbConfig.password,
           database: dbConfig.name,

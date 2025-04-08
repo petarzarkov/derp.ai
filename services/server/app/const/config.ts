@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, Max, Min, validateSync } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, Max, Min, validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 
 export class EnvVars {
@@ -25,14 +25,22 @@ export class EnvVars {
 
   @IsString()
   DB_HOST: string;
+
   @IsNumber()
   @Min(0)
   @Max(65535)
-  DB_PORT: number;
+  @IsOptional()
+  DB_PORT?: number;
+
   @IsString()
   DB_USER: string;
+
   @IsString()
   DB_PASS: string;
+
+  @IsBoolean()
+  @IsOptional()
+  DB_SSL?: boolean;
 }
 
 export const validateConfig = (config: Record<string, unknown>) => {
@@ -83,6 +91,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
       port: validatedConfig.DB_PORT,
       username: validatedConfig.DB_USER,
       password: validatedConfig.DB_PASS,
+      ssl: validatedConfig.DB_SSL,
     },
   } as const;
 };
