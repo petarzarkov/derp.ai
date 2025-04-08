@@ -26,7 +26,7 @@ interface SocketProviderProps {
   userNickname?: string; // Allow passing user nickname via prop
 }
 
-const DEFAULT_SERVER_URL = 'http://localhost:3033';
+const DEFAULT_SERVER_URL = window.location.host.includes('localhost') ? 'http://localhost:3033' : window.location.host;
 const DEFAULT_USER_NICKNAME = 'user';
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({
