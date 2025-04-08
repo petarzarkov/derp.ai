@@ -94,3 +94,30 @@ Ensure you have the following tools installed on your system:
 ### Server
 
 - more detailed dev steps [here](./services/server/README.md)
+
+## Docker
+
+1.  **Build the Docker image:**
+
+    ```bash
+    # You can override the default port during build if needed
+    docker build --build-arg SERVICE_PORT=3033 -t derpai .
+    ```
+
+2.  **Run the container:**
+    - **Ensure PostgreSQL is accessible:** The container needs access to a PostgreSQL database. You can run the DB via `docker-compose up -d` first, or connect to an external one.
+      ```bash
+      docker run --rm -it --name derpai \
+        -p 3033:3033 \
+        --network template \
+        -e SERVICE_PORT=3033 \
+        -e APP_ENV=prod \
+        -e DB_HOST=pgdb-template \
+        -e DB_PORT=6570 \
+        -e DB_USER=postgres \
+        -e DB_PASS=postgres \
+        -e DB_NAME=postgres \
+        -e JWT_SECRET=secret \
+        -e GOOGLE_GEMINI_API_KEY=<your_api_key> \
+        derpai
+      ```

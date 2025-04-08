@@ -73,7 +73,7 @@ export const NavBar: FC<{ sidebarWidth: string }> = ({ sidebarWidth }) => {
         </VStack>
 
         <Spacer />
-        <Tooltip label="Settings" placement="right" hasArrow>
+        <Tooltip label="Nothing here" placement="right" hasArrow>
           <IconButton aria-label="Settings" icon={<SettingsIcon />} variant="ghost" />
         </Tooltip>
       </Flex>

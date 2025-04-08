@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/petarzarkov/derp.ai",
   "scripts": {
-    "prepare": "husky",
+    "prepare": "node -e \"process.env.CI || process.env.DOCKER || process.exit(1)\" || husky",
     "preinstall": "npx only-allow pnpm",
     "format": "prettier --write --cache .",
     "typecheck": "pnpm -r --parallel tsc --noEmit",
@@ -33,9 +33,7 @@
     "lint": "eslint --cache services/**",
     "pretty": "prettier --cache --ignore-unknown --write ."
   },
-  "dependencies": {
-    "uuid": "^9.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@eslint/js": "^9.20.0",
     "@tsconfig/node22": "^22.0.0",

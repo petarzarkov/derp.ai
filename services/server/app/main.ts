@@ -1,21 +1,31 @@
 import { resolve } from 'node:path';
-import { config } from 'dotenv';
+// optionally import dotenv, as in prod it would not be installed, TODO: migrate to es6 modules, huge refactor
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { config } = require('dotenv');
 
-config({
-  path: [resolve(__dirname, '../../../../', '.env'), resolve(__dirname, '../../../../', '.env.dev')],
-});
+  config({
+    path: [resolve(__dirname, '../../../', '.env'), resolve(__dirname, '../../../', '.env.dev')],
+  });
+} catch (error) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.error('Error importing dotenv', { error: error as Error });
+  }
+}
 
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from './app.module.js';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { v4 } from 'uuid';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
-
-import { name, description, author, homepage, version } from '../package.json';
 import { ConfigService } from '@nestjs/config';
 import { REQUEST_ID_HEADER_KEY, ValidatedConfig } from './const';
 import { UnhandledRoutes } from './filters/unhandled-routes.filter';
+
+// use cjs import as es6 import will copy the package json in the compilation folder which would confuse pnpm for monorepo mgmt
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { name, version, description, author, homepage } = require('../package.json');
 
 async function bootstrap(module: typeof AppModule) {
   const logger = new ConsoleLogger({

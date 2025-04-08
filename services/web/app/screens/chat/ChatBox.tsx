@@ -3,6 +3,7 @@ import { Button, Flex, Heading, HStack, Stack, Text, useColorModeValue, Textarea
 import { PiRobotLight } from 'react-icons/pi';
 import { useSocket } from '@hooks';
 import Message from './Message';
+import ThinkingMessage from './ThinkingMessage';
 
 export function ChatBox() {
   const { messages, isConnected, isBotThinking, sendMessage } = useSocket();
@@ -43,15 +44,16 @@ export function ChatBox() {
     <Flex
       w="100%"
       h="100%"
+      maxHeight={'900px'}
       flexDirection="column"
       borderWidth="1px"
       rounded="3xl"
-      overflow="hidden"
       bg={useColorModeValue('white', 'gray.700')}
       borderColor={useColorModeValue('gray.200', 'gray.600')}
     >
       <HStack
         p={4}
+        roundedTop="3xl"
         bg={useColorModeValue('primary.500', 'primary.600')}
         flexShrink={0}
         borderBottomWidth="1px"
@@ -92,12 +94,13 @@ export function ChatBox() {
           <Message key={`msg-${idx}-${msg.time}-${msg.nickname}`} {...msg} />
         ))}
 
-        {isBotThinking && <Message text="Thinking..." nickname={'DerpAI'} time={Date.now()} />}
+        {isBotThinking && <ThinkingMessage />}
 
         <div ref={messagesEndRef} />
       </Stack>
 
       <HStack
+        roundedBottom="3xl"
         p={4}
         bg={useColorModeValue('primary.500', 'primary.600')}
         borderTopWidth="1px"

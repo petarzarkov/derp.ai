@@ -186,7 +186,6 @@ const Message = ({ text, nickname, time }: MessageProps) => {
             ⚠️
           </Text>
         )}
-        {/* Ensure content box respects parent width */}
         <Box wordBreak="break-word" width="100%" overflowX="hidden">
           <ReactMarkdown components={markdownComponents}>{text}</ReactMarkdown>
         </Box>
