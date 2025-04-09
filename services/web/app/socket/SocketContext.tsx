@@ -132,20 +132,32 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
       console.error('Socket exception:', errorData);
     };
 
+    const handleReconnectAttempt = (attempt: number) => {
+      console.log(`Socket attempting to reconnect... Attempt ${attempt}`);
+      setConnectionStatus('reconnecting');
+      setIsConnected(false);
+      setIsBotThinking(false);
+    };
+
     // Attach listeners
     newSocket.on('connect', handleConnect);
-    newSocket.on('init', handleInit);
     newSocket.on('disconnect', handleDisconnect);
     newSocket.on('connect_error', handleConnectError);
+    newSocket.io.on('reconnect_attempt', handleReconnectAttempt);
+
+    // App listeners
+    newSocket.on('init', handleInit);
     newSocket.on('chat', handleChatMessage);
     newSocket.on('exception', handleException);
 
     // Cleanup function
     return () => {
       newSocket.off('connect', handleConnect);
-      newSocket.off('init', handleInit);
       newSocket.off('disconnect', handleDisconnect);
       newSocket.off('connect_error', handleConnectError);
+      newSocket.io.off('reconnect_attempt', handleReconnectAttempt);
+
+      newSocket.off('init', handleInit);
       newSocket.off('chat', handleChatMessage);
       newSocket.off('exception', handleException);
       newSocket.disconnect();

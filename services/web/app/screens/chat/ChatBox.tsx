@@ -49,11 +49,11 @@ export function ChatBox() {
       statusText = 'Connected';
       break;
     case 'connecting':
-      statusColor = 'yellow.400'; // Use yellow/orange for connecting
+      statusColor = 'yellow.400';
       statusText = 'Connecting...';
       break;
     case 'reconnecting':
-      statusColor = 'red.500';
+      statusColor = 'orange.400';
       statusText = 'Reconnecting...';
       break;
     case 'disconnected':
