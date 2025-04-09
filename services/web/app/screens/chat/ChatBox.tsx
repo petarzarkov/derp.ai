@@ -6,7 +6,7 @@ import Message from './Message';
 import ThinkingMessage from './ThinkingMessage';
 
 export function ChatBox() {
-  const { messages, isConnected, isBotThinking, sendMessage } = useSocket();
+  const { messages, isConnected, connectionStatus, isBotThinking, botNickname, sendMessage } = useSocket();
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +40,31 @@ export function ChatBox() {
     }
   };
 
+  let statusColor: string;
+  let statusText: string;
+
+  switch (connectionStatus) {
+    case 'connected':
+      statusColor = 'green.400';
+      statusText = 'Connected';
+      break;
+    case 'connecting':
+      statusColor = 'yellow.400'; // Use yellow/orange for connecting
+      statusText = 'Connecting...';
+      break;
+    case 'disconnected':
+      statusColor = 'red.400';
+      statusText = 'Disconnected';
+      break;
+    case 'failed':
+      statusColor = 'red.500'; // Darker red for failed
+      statusText = 'Failed';
+      break;
+    default:
+      statusColor = 'gray.400';
+      statusText = 'Unknown';
+  }
+
   return (
     <Flex
       w="100%"
@@ -66,9 +91,9 @@ export function ChatBox() {
           </HStack>
         </Heading>
         <Flex flex={1} justify="flex-end" align="center">
-          <Flex boxSize="10px" borderRadius="full" bg={isConnected ? 'green.400' : 'red.400'} mr={2} />
+          <Flex boxSize="10px" borderRadius="full" bg={statusColor} mr={2} transition="background-color 0.3s ease" />
           <Text fontSize="xs" color="whiteAlpha.800">
-            {isConnected ? 'Connected' : 'Disconnected'}
+            {statusText}
           </Text>
         </Flex>
       </HStack>
@@ -113,8 +138,19 @@ export function ChatBox() {
           onChange={(e) => setMessageInput(e.target.value)}
           onKeyDown={handleKeyDown}
           bg={useColorModeValue('white', 'gray.700')}
-          placeholder={!isConnected ? 'Connecting...' : isBotThinking ? 'DerpAI is thinking...' : 'Ask me anything...'}
-          isDisabled={!isConnected || isBotThinking}
+          placeholder={
+            connectionStatus === 'connecting'
+              ? 'Connecting...'
+              : connectionStatus === 'connected'
+                ? isBotThinking
+                  ? `${botNickname || 'AI'} is thinking...`
+                  : 'Ask me anything...'
+                : connectionStatus === 'disconnected'
+                  ? 'Disconnected. Trying to reconnect...'
+                  : 'Connection failed.'
+          }
+          // Disable based on connection status and thinking state
+          isDisabled={connectionStatus !== 'connected' || isBotThinking}
           variant="filled"
           _focus={{ borderColor: useColorModeValue('primary.500', 'primary.300') }}
           overflowY="auto"
@@ -127,7 +163,7 @@ export function ChatBox() {
           color="white"
           _hover={{ bg: useColorModeValue('primary.600', 'primary.300') }}
           onClick={handleSendMessage}
-          isDisabled={!messageInput.trim() || !isConnected || isBotThinking}
+          isDisabled={!messageInput.trim() || connectionStatus !== 'connected' || isBotThinking}
           isLoading={isBotThinking} // Show spinner on button while thinking
           spinner={<Spinner size="sm" />}
         >

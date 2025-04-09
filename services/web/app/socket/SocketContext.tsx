@@ -8,12 +8,15 @@ import type {
   ClientChatMessage,
 } from './Chat.types';
 
-// Define the shape of the context state
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'failed';
+
 export interface SocketContextState {
   messages: MessageProps[];
   isConnected: boolean;
-  isBotThinking: boolean; // <-- Add thinking state
+  isBotThinking: boolean;
+  connectionStatus: ConnectionStatus;
   sendMessage: (messageText: string) => void;
+  botNickname: string | null;
 }
 
 // Create the context with an undefined default value
@@ -37,11 +40,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   const [socket, setSocket] = useState<SocketClient | null>(null);
   const [botNickname, setBotNickname] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [isBotThinking, setIsBotThinking] = useState(false); // <-- Initialize thinking state
-  const [messages, setMessages] = useState<MessageProps[]>([
-    // Initial message can be simpler now
-    { text: 'Connecting...', nickname: 'system', time: Date.now() },
-  ]);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
+  const [isBotThinking, setIsBotThinking] = useState(false);
+  const [messages, setMessages] = useState<MessageProps[]>([]);
 
   // Ref to hold the current bot nickname for access within event handlers
   const botNicknameRef = useRef(botNickname);
@@ -50,6 +51,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   }, [botNickname]);
 
   useEffect(() => {
+    setIsConnected(false);
+    setIsBotThinking(false);
+    setConnectionStatus('connecting');
+    setMessages([]);
+
     const newSocket = io(serverUrl, {
       requestTimeout: 10000,
     });
@@ -57,8 +63,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
 
     const handleConnect = () => {
       setIsConnected(true);
-      // Remove client-side welcome message and any disconnect messages
-      setMessages((prev) => prev.filter((msg) => msg.nickname !== 'system' && msg.nickname !== 'error'));
+      setConnectionStatus('connected');
     };
 
     const handleDisconnect = (reason: string) => {
@@ -72,11 +77,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
 
     const handleConnectError = (error: Error) => {
       setIsConnected(false);
-      setIsBotThinking(false); // Stop thinking on connection error
-      setMessages((prev) => {
-        const filtered = prev.filter((msg) => msg.nickname !== 'system');
-        return [...filtered, { text: `Connection failed: ${error.message}.`, nickname: 'error', time: Date.now() }];
-      });
+      setConnectionStatus('disconnected');
+      setIsBotThinking(false);
+      console.log(`Socket disconnected`, error);
     };
 
     const handleChatMessage = (receivedMsg: ServerChatMessage) => {
@@ -160,7 +163,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
       newSocket.disconnect();
       setSocket(null);
       setIsConnected(false);
-      setIsBotThinking(false); // Reset on unmount
+      setIsBotThinking(false);
+      setConnectionStatus('disconnected');
     };
   }, [serverUrl]);
 
@@ -175,8 +179,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
       const messageToSend: ClientChatMessage = {
         nickname: userNickname,
         message: trimmedMessage,
-        // Consider adding a client-side timestamp if needed for ordering
-        // time: Date.now()
       };
 
       setMessages((prev) => [...prev, { text: messageToSend.message, nickname: userNickname, time: Date.now() }]);
@@ -191,7 +193,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   const contextValue: SocketContextState = {
     messages,
     isConnected,
+    connectionStatus,
     isBotThinking,
+    botNickname,
     sendMessage,
   };
 
