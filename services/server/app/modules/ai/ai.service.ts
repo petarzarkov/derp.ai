@@ -54,7 +54,7 @@ export class AIService {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 9000);
+    const timeoutId = setTimeout(() => controller.abort(), this.configService.get('app.aiReqTimeout', { infer: true }));
     try {
       this.#logger.log(`Querying ${provider} with prompt: ${prompt.substring(0, 50)}...`);
       const response = await fetch(targetUrl, {

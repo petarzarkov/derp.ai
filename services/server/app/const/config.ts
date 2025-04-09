@@ -41,6 +41,10 @@ export class EnvVars {
   @IsBoolean()
   @IsOptional()
   DB_SSL?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  AI_REQ_TIMEOUT?: number;
 }
 
 export const validateConfig = (config: Record<string, unknown>) => {
@@ -85,6 +89,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
       docs: {
         apiPath: process.env.API_DOCS_PATH || 'api',
       },
+      aiReqTimeout: validatedConfig.AI_REQ_TIMEOUT || 25000,
     },
     db: {
       name: validatedConfig.DB_NAME,
