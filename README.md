@@ -148,10 +148,8 @@ This section focuses on building and running the **backend server** as a Docker 
     ```bash
     # Ensure you are in the root directory
     # You can override the default port (3000) during build if needed
-    docker build --build-arg SERVICE_PORT=3033 -t derpai-server -f services/server/Dockerfile .
+    docker build --build-arg SERVICE_PORT=3033 -t derpai-server .
     ```
-
-    _(Note: Adjust Dockerfile path if needed. This example assumes a Dockerfile exists at `services/server/Dockerfile` and the build context is the root)_
 
 2.  **Run the container:**
 

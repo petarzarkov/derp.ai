@@ -52,13 +52,13 @@ export function ChatBox() {
       statusColor = 'yellow.400'; // Use yellow/orange for connecting
       statusText = 'Connecting...';
       break;
-    case 'disconnected':
-      statusColor = 'red.400';
-      statusText = 'Disconnected';
+    case 'reconnecting':
+      statusColor = 'red.500';
+      statusText = 'Reconnecting...';
       break;
-    case 'failed':
-      statusColor = 'red.500'; // Darker red for failed
-      statusText = 'Failed';
+    case 'disconnected':
+      statusColor = 'red.500';
+      statusText = 'Disconnected';
       break;
     default:
       statusColor = 'gray.400';

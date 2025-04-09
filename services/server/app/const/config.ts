@@ -52,7 +52,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
     throw new Error(errors.toString());
   }
 
-  const geminiModel = 'gemini-1.5-flash-latest';
+  const geminiModel = 'gemini-2.0-flash';
   return {
     env: validatedConfig.APP_ENV,
     aiProviders: {
@@ -61,6 +61,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
         model: geminiModel,
         apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
       },
+
       // ...(validatedConfig.HUGGINGFACE_API_KEY && {
       //   'google/flan-t5-base': {
       //     url: 'https://api-inference.huggingface.co/models/google/flan-t5-base',

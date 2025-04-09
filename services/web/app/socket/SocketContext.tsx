@@ -8,7 +8,7 @@ import type {
   ClientChatMessage,
 } from './Chat.types';
 
-export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'failed';
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
 
 export interface SocketContextState {
   messages: MessageProps[];
@@ -63,23 +63,21 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
 
     const handleConnect = () => {
       setIsConnected(true);
-      setConnectionStatus('connected');
+      setConnectionStatus(connectionStatus === 'disconnected' ? 'reconnecting' : 'connected');
     };
 
     const handleDisconnect = (reason: string) => {
       setIsConnected(false);
-      setIsBotThinking(false); // Stop thinking if disconnected
-      setMessages((prev) => [
-        ...prev,
-        { text: `Disconnected: ${reason}. Attempting to reconnect...`, nickname: 'error', time: Date.now() },
-      ]);
+      setIsBotThinking(false);
+      console.warn('Socket disconnected', reason);
+      setConnectionStatus('disconnected');
     };
 
     const handleConnectError = (error: Error) => {
       setIsConnected(false);
-      setConnectionStatus('disconnected');
       setIsBotThinking(false);
-      console.log(`Socket disconnected`, error);
+      setConnectionStatus('disconnected');
+      console.log(`Socket connection error`, error);
     };
 
     const handleChatMessage = (receivedMsg: ServerChatMessage) => {
@@ -130,18 +128,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
     };
 
     const handleException = (errorData: SocketExceptionData) => {
-      setIsBotThinking(false); // Stop thinking on server error
-      if (errorData && errorData.status === 'error' && typeof errorData.message === 'string') {
-        setMessages((prev) => [
-          ...prev,
-          { text: `Server Error: ${errorData.message}`, nickname: 'error', time: Date.now() },
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { text: 'An unknown server error occurred.', nickname: 'error', time: Date.now() },
-        ]);
-      }
+      setIsBotThinking(false);
+      console.error('Socket exception:', errorData);
     };
 
     // Attach listeners

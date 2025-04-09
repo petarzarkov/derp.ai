@@ -1,4 +1,3 @@
-/* eslint-disable max-len */
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { validateConfig, ValidatedConfig } from '../../const';
@@ -13,7 +12,7 @@ export class AIService {
   constructor(private configService: ConfigService<ValidatedConfig, true>) {
     const providers = this.configService.get('aiProviders', { infer: true });
     if (!providers) {
-      throw new Error('config providers are not set!');
+      throw new Error('config aiProviders are not set!');
     }
     this.#config = providers;
     this.#providers = Object.keys(providers) as AIProvider[];
@@ -152,14 +151,15 @@ export class AIService {
     this.#logger.log(`Using master provider "${masterProvider}" for synthesis.`);
 
     const synthesisPrompt = `
-Original User Prompt: "${originalPrompt}"
+      Original User Prompt: "${originalPrompt}"
 
-Multiple AI models provided the following responses:
-${successfulResponses.map((r, i) => `--- Response ${i + 1} ---\n${r}`).join('\n\n')}
+      Multiple AI models provided the following responses:
+      ${successfulResponses.map((r, i) => `--- Response ${i + 1} ---\n${r}`).join('\n\n')}
 
-Synthesize these responses into a single, coherent, accurate, and helpful final answer that directly addresses the original user prompt. Do not simply list the responses. Combine the best elements and information into one unified response. Return ONLY the final synthesized answer.
-Final Answer:
-`;
+      Synthesize these responses into a single, coherent, accurate, and helpful final answer that directly addresses the original user prompt.
+      Do not simply list the responses. Combine the best elements and information into one unified response. Return ONLY the final synthesized answer.
+      Final Answer:
+    `;
 
     const finalAnswer = await this.queryProvider(masterProvider, synthesisPrompt);
 
