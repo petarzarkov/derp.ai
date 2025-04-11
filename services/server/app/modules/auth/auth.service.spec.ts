@@ -126,7 +126,12 @@ describe('AuthService', () => {
 
       const result = await service.validateToken(mockToken);
 
-      expect(result).toEqual({ ...mockUser, jwtToken: mockToken });
+      expect(result).toEqual({
+        id: mockUser.id,
+        username: mockUser.username,
+        createdAt: mockUser.createdAt,
+        updatedAt: mockUser.updatedAt,
+      });
       expect(mockJwtService.verify).toHaveBeenCalledWith(mockToken);
       expect(mockRepository.findOne).toHaveBeenCalledWith({
         where: { id: mockPayload.sub },
