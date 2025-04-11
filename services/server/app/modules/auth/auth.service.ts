@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../db/entities/users/user.entity';
 import * as bcrypt from 'bcrypt';
-import { LoginResponse } from './auth.entity';
+import { AuthUser, LoginResponse } from './auth.entity';
 
 @Injectable()
 export class AuthService {
@@ -51,14 +51,20 @@ export class AuthService {
     }
   }
 
-  async validateToken(token: string): Promise<User> {
+  async validateToken(token: string): Promise<AuthUser> {
     try {
       const payload = this.jwtService.verify(token);
       const user = await this.userRepository.findOne({ where: { id: payload.sub } });
       if (!user || user.jwtToken !== token) {
         throw new UnauthorizedException();
       }
-      return user;
+
+      return {
+        id: user.id,
+        username: user.username,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      };
     } catch (error) {
       this.logger.error(error);
       throw new UnauthorizedException();

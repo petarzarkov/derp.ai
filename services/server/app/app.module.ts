@@ -1,6 +1,6 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { MiddlewareConsumer, Module, NestModule, OnApplicationShutdown } from '@nestjs/common';
+import { Logger, MiddlewareConsumer, Module, NestModule, OnApplicationShutdown } from '@nestjs/common';
 import { ValidatedConfig, validateConfig } from './const';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { resolve, join } from 'node:path';
@@ -10,6 +10,8 @@ import { ServiceModule } from './api/service/service.module';
 import { RequestIdMiddleware } from './middlewares/request-id.middleware';
 import { EventsModule } from './modules/events/events.module';
 import { QnAModule } from './modules/qna/qna.module';
+import { EventsGateway } from './modules/events/events.gateway';
+import { ModuleRef } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -55,11 +57,21 @@ import { QnAModule } from './modules/qna/qna.module';
   ],
 })
 export class AppModule implements NestModule, OnApplicationShutdown {
+  logger = new Logger(AppModule.name);
+
+  constructor(
+    public readonly configService: ConfigService<ValidatedConfig, true>,
+    private readonly moduleRef: ModuleRef,
+  ) {}
+
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(RequestIdMiddleware).forRoutes('*');
   }
 
-  onApplicationShutdown(signal?: string) {
-    console.log('Received shutdown signal', signal);
+  async onApplicationShutdown(signal?: string) {
+    this.logger.debug(`Graceful shutdown signal: ${signal}`);
+    const wsServer = this.moduleRef.get(EventsGateway, { strict: false });
+
+    await wsServer.server.close(this.logger.error.bind(this.logger));
   }
 }

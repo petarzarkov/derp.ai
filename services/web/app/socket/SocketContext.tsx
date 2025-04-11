@@ -7,6 +7,7 @@ import type {
   SocketExceptionData,
   ClientChatMessage,
 } from './Chat.types';
+import { useAuth } from '../auth/AuthContext';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
 
@@ -19,22 +20,19 @@ export interface SocketContextState {
   botNickname: string | null;
 }
 
-// Create the context with an undefined default value
 export const SocketContext = createContext<SocketContextState | undefined>(undefined);
 
-// Define props for the provider
 interface SocketProviderProps {
   children: ReactNode;
-  serverUrl?: string; // Allow overriding server URL via prop
-  userNickname?: string; // Allow passing user nickname via prop
+  serverUrl: string;
+  userNickname?: string;
 }
 
-const DEFAULT_SERVER_URL = window.location.host.includes('localhost') ? 'http://localhost:3033' : window.location.host;
 const DEFAULT_USER_NICKNAME = 'user';
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({
   children,
-  serverUrl = DEFAULT_SERVER_URL,
+  serverUrl,
   userNickname = DEFAULT_USER_NICKNAME,
 }) => {
   const [socket, setSocket] = useState<SocketClient | null>(null);
@@ -43,6 +41,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [isBotThinking, setIsBotThinking] = useState(false);
   const [messages, setMessages] = useState<MessageProps[]>([]);
+  const { authToken } = useAuth();
 
   // Ref to hold the current bot nickname for access within event handlers
   const botNicknameRef = useRef(botNickname);
@@ -51,6 +50,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   }, [botNickname]);
 
   useEffect(() => {
+    if (!authToken) {
+      return;
+    }
+
     setIsConnected(false);
     setIsBotThinking(false);
     setConnectionStatus('connecting');
@@ -58,6 +61,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
 
     const newSocket = io(serverUrl, {
       requestTimeout: 10000,
+      extraHeaders: {
+        authorization: `bearer ${authToken}`,
+      },
     });
     setSocket(newSocket);
 
@@ -166,7 +172,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
       setIsBotThinking(false);
       setConnectionStatus('disconnected');
     };
-  }, [serverUrl]);
+  }, [serverUrl, authToken]);
 
   const sendMessage = useCallback(
     (messageText: string) => {

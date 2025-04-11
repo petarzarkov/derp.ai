@@ -1,16 +1,22 @@
-import { Inject, Logger, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Inject, Logger, UnauthorizedException, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
+  OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
-import { Server, ServerOptions, Socket } from 'socket.io';
+import { DefaultEventsMap, Server, ServerOptions, Socket } from 'socket.io';
 import { ChatMessage } from './chat.entity';
 import { WebsocketsExceptionFilter } from './events.filter';
 import { QnAService } from '../qna/qna.service';
+import { AuthService } from '../auth/auth.service';
+import { AuthUser } from '../auth/auth.entity';
+
+type ExtendedSocket = Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: AuthUser }>;
 
 @WebSocketGateway<Partial<ServerOptions>>({
   cors: {
@@ -21,33 +27,68 @@ import { QnAService } from '../qna/qna.service';
   pingTimeout: 5000,
 })
 @UseFilters(new WebsocketsExceptionFilter())
-export class EventsGateway implements OnGatewayConnection {
+export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   #botName = 'DerpAI';
   #logger = new Logger(this.constructor.name);
 
   @WebSocketServer()
-  server: Server;
+  server: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: AuthUser }>;
 
   constructor(
     @Inject(QnAService)
     private readonly qnaService: QnAService,
+    @Inject(AuthService)
+    private readonly authService: AuthService,
   ) {}
 
-  handleConnection(client: Socket) {
-    this.#logger.log(`WSClient connected: ${client.id}`);
-    this.server.to(client.id).emit('init', {
-      message: 'Connected! How may I help you?',
+  afterInit(server: typeof this.server) {
+    server.use(async (socket, next) => {
+      const header = socket.request.headers['authorization'];
+      if (!header) {
+        return next(new Error('no auth header'));
+      }
+
+      if (!header.startsWith('bearer ')) {
+        return next(new Error('invalid auth header'));
+      }
+
+      const token = header.split(' ')[1];
+      if (!token) {
+        return next(new Error('no token'));
+      }
+
+      try {
+        socket.data.user = await this.authService.validateToken(token);
+      } catch (error) {
+        next(error as UnauthorizedException);
+      }
+
+      next();
+    });
+  }
+
+  handleConnection(socket: ExtendedSocket) {
+    const user = socket.data.user;
+    this.#logger.log(`WSClient connected: ${socket.id}, user: ${user.id}`);
+    this.server.to(socket.id).emit('init', {
+      message: `Hello! How may I help you?`,
       nickname: this.#botName,
       time: Date.now(),
     });
   }
 
+  handleDisconnect(socket: ExtendedSocket) {
+    const user = socket.data.user;
+    this.#logger.log(`WSClient disconnected: ${socket.id}, user: ${user.id}`);
+    return this.server.emit('event', { disconnected: socket.id });
+  }
+
   @SubscribeMessage('chat')
   @UsePipes(new ValidationPipe())
-  handleMessage(@MessageBody() event: ChatMessage, @ConnectedSocket() client: Socket) {
+  handleMessage(@MessageBody() event: ChatMessage, @ConnectedSocket() socket: ExtendedSocket) {
     this.qnaService.getAnswer(event.message).then((answer) => {
-      this.#logger.log(`Sending message ${answer.length} to WSClient: ${client.id}`);
-      this.server.to(client.id).emit('chat', {
+      this.#logger.log(`Sending message ${answer.length} to WSClient: ${socket.id}`);
+      this.server.to(socket.id).emit('chat', {
         message: answer,
         nickname: this.#botName,
         time: Date.now(),

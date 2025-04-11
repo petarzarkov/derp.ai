@@ -1,14 +1,14 @@
 import { Injectable, ExecutionContext } from '@nestjs/common';
 import { AuthService } from '../auth.service';
 import { FastifyRequest } from 'fastify';
-import { User } from '../../../db/entities/users/user.entity';
+import { AuthUser } from '../auth.entity';
 
 @Injectable()
 export class JwtAuthGuard {
   constructor(private authService: AuthService) {}
 
   async canActivate(context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest<FastifyRequest & { user?: User }>();
+    const request = context.switchToHttp().getRequest<FastifyRequest & { user?: AuthUser }>();
     const authHeader = request.headers?.authorization;
 
     // If no auth header is present, allow the request to proceed
