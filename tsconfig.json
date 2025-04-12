@@ -24,7 +24,8 @@
     "allowJs": false,
     "checkJs": false,
     "noUnusedParameters": true,
-    "noUnusedLocals": true
+    "noUnusedLocals": true,
+    "incremental": false
   },
   "include": ["services/**/*"]
 }

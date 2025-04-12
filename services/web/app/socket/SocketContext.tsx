@@ -62,7 +62,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
     const newSocket = io(serverUrl, {
       requestTimeout: 10000,
       extraHeaders: {
-        authorization: `bearer ${authToken}`,
+        authorization: `Bearer ${authToken}`,
       },
     });
     setSocket(newSocket);

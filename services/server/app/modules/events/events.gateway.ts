@@ -14,9 +14,9 @@ import { ChatMessage } from './chat.entity';
 import { WebsocketsExceptionFilter } from './events.filter';
 import { QnAService } from '../qna/qna.service';
 import { AuthService } from '../auth/auth.service';
-import { AuthUser } from '../auth/auth.entity';
+import { JWTPayload } from '../auth/auth.entity';
 
-type ExtendedSocket = Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: AuthUser }>;
+type ExtendedSocket = Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: JWTPayload }>;
 
 @WebSocketGateway<Partial<ServerOptions>>({
   cors: {
@@ -32,7 +32,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
   #logger = new Logger(this.constructor.name);
 
   @WebSocketServer()
-  server: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: AuthUser }>;
+  server: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: JWTPayload }>;
 
   constructor(
     @Inject(QnAService)
@@ -48,7 +48,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
         return next(new Error('no auth header'));
       }
 
-      if (!header.startsWith('bearer ')) {
+      if (!header.startsWith('Bearer ')) {
         return next(new Error('invalid auth header'));
       }
 
@@ -69,7 +69,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
 
   handleConnection(socket: ExtendedSocket) {
     const user = socket.data.user;
-    this.#logger.log(`WSClient connected: ${socket.id}, user: ${user.id}`);
+    this.#logger.log(`WSClient connected: ${socket.id}, user: ${user.sub}`);
     this.server.to(socket.id).emit('init', {
       message: `Hello! How may I help you?`,
       nickname: this.#botName,
@@ -79,7 +79,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
 
   handleDisconnect(socket: ExtendedSocket) {
     const user = socket.data.user;
-    this.#logger.log(`WSClient disconnected: ${socket.id}, user: ${user.id}`);
+    this.#logger.log(`WSClient disconnected: ${socket.id}, user: ${user.sub}`);
     return this.server.emit('event', { disconnected: socket.id });
   }
 

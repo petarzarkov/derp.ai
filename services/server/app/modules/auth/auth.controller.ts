@@ -1,13 +1,15 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
+import { Controller, Request, Post, Body, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { LoginRequest, LoginResponse } from './auth.entity';
+import { BaseRequest, LoginRequest, LoginResponse } from './auth.entity';
+import { LocalAuthGuard } from './guards/local-auth.guard';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @UseGuards(LocalAuthGuard)
   @Post('login')
   @ApiOperation({ summary: 'Login user and get JWT token' })
   @ApiResponse({ status: 200, description: 'Login successful' })
@@ -20,5 +22,11 @@ export class AuthController {
     }
 
     return this.authService.login(user);
+  }
+
+  @UseGuards(LocalAuthGuard)
+  @Post('auth/logout')
+  async logout(@Request() req: BaseRequest) {
+    return req.body;
   }
 }

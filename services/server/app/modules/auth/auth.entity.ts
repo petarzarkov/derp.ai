@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, MinLength } from 'class-validator';
+import { FastifyRequest } from 'fastify';
 
-export interface AuthUser {
-  id: string;
+export interface JWTPayload {
+  sub: string;
   username: string;
   createdAt: Date;
-  updatedAt: Date;
 }
 
 export class LoginRequest {
@@ -28,3 +28,5 @@ export class LoginResponse {
   @ApiProperty()
   accessToken: string;
 }
+
+export type BaseRequest = FastifyRequest & { user: JWTPayload };

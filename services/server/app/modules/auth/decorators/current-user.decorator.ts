@@ -1,8 +1,8 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
-import { AuthUser } from '../auth.entity';
+import { JWTPayload } from '../auth.entity';
 
 export const CurrentUser = createParamDecorator((_: unknown, ctx: ExecutionContext) => {
-  const request = ctx.switchToHttp().getRequest<FastifyRequest & { user?: AuthUser }>();
+  const request = ctx.switchToHttp().getRequest<FastifyRequest & { user?: JWTPayload }>();
   return request.user;
 });

@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../db/entities/users/user.entity';
 import * as bcrypt from 'bcrypt';
-import { AuthUser, LoginResponse } from './auth.entity';
+import { JWTPayload, LoginResponse } from './auth.entity';
 
 @Injectable()
 export class AuthService {
@@ -30,9 +30,9 @@ export class AuthService {
     }
   }
 
-  async login(user: Pick<User, 'id' | 'username'>): Promise<LoginResponse> {
+  async login(user: User): Promise<LoginResponse> {
     try {
-      const payload = { username: user.username, sub: user.id };
+      const payload: JWTPayload = { sub: user.id, username: user.username, createdAt: user.createdAt };
       const token = this.jwtService.sign(payload);
 
       const updatedUser = {
@@ -51,20 +51,16 @@ export class AuthService {
     }
   }
 
-  async validateToken(token: string): Promise<AuthUser> {
+  async validateToken(token: string): Promise<JWTPayload> {
     try {
-      const payload = this.jwtService.verify(token);
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
-      if (!user || user.jwtToken !== token) {
+      const payload = this.jwtService.verify<JWTPayload>(token);
+      // const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      // add the user && user.jwtToken !== token check when proper implementation of users
+      if (!payload) {
         throw new UnauthorizedException();
       }
 
-      return {
-        id: user.id,
-        username: user.username,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      };
+      return payload;
     } catch (error) {
       this.logger.error(error);
       throw new UnauthorizedException();
