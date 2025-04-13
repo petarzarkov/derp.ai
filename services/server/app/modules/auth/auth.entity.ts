@@ -1,32 +1,47 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength } from 'class-validator';
+import { SanitizedUser } from '../../db/entities/users/user.entity';
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 import { FastifyRequest } from 'fastify';
 
-export interface JWTPayload {
-  sub: string;
-  username: string;
-  createdAt: Date;
+export class RegisterRequest {
+  @IsEmail()
+  @ApiProperty({ example: 'bob@example.com' })
+  email: string;
+
+  @IsString()
+  @MinLength(8) // Enforce minimum password length
+  @ApiProperty({ example: 'Password123!' })
+  password: string;
+
+  @IsString()
+  @MinLength(2)
+  @IsOptional()
+  @ApiProperty({ example: 'Bob The Builder', required: false })
+  displayName?: string;
 }
 
 export class LoginRequest {
-  @IsString()
-  @MinLength(2)
-  @ApiProperty({
-    example: 'alice',
-  })
-  username: string;
+  @IsEmail()
+  @ApiProperty({ example: 'alice@example.com' })
+  email: string;
 
   @IsString()
   @MinLength(2)
-  @ApiProperty({
-    example: 'alice',
-  })
+  @ApiProperty({ example: 'alice_password' })
   password: string;
 }
 
-export class LoginResponse {
+export interface JWTPayload {
+  sub: string;
+  email: string;
+}
+
+export class AuthResponse {
   @ApiProperty()
   accessToken: string;
 }
 
-export type BaseRequest = FastifyRequest & { user: JWTPayload };
+/**
+ * Auth strategies attach the user to the request ctx
+ */
+export type BaseRequest = FastifyRequest & { user: SanitizedUser };

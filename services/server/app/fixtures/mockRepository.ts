@@ -1,8 +1,7 @@
-export const createMockRepo = () => ({
+export const mockRepository = () => ({
   find: jest.fn(),
+  create: jest.fn(),
   findOne: jest.fn(),
   save: jest.fn(),
   upsert: jest.fn(),
 });
-
-export const mockRepository = createMockRepo();

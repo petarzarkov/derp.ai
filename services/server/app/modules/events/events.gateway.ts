@@ -8,6 +8,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsException,
 } from '@nestjs/websockets';
 import { DefaultEventsMap, Server, ServerOptions, Socket } from 'socket.io';
 import { ChatMessage } from './chat.entity';
@@ -15,8 +16,10 @@ import { WebsocketsExceptionFilter } from './events.filter';
 import { QnAService } from '../qna/qna.service';
 import { AuthService } from '../auth/auth.service';
 import { JWTPayload } from '../auth/auth.entity';
+import { JwtService } from '@nestjs/jwt';
+import { SanitizedUser } from '../../db/entities/users/user.entity';
 
-type ExtendedSocket = Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: JWTPayload }>;
+type ExtendedSocket = Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: SanitizedUser }>;
 
 @WebSocketGateway<Partial<ServerOptions>>({
   cors: {
@@ -32,67 +35,99 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
   #logger = new Logger(this.constructor.name);
 
   @WebSocketServer()
-  server: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: JWTPayload }>;
+  server: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: SanitizedUser }>;
 
   constructor(
-    @Inject(QnAService)
-    private readonly qnaService: QnAService,
-    @Inject(AuthService)
-    private readonly authService: AuthService,
+    @Inject(QnAService) private readonly qnaService: QnAService,
+    @Inject(AuthService) private readonly authService: AuthService,
+    @Inject(JwtService) private readonly jwtService: JwtService,
   ) {}
 
-  afterInit(server: typeof this.server) {
-    server.use(async (socket, next) => {
-      const header = socket.request.headers['authorization'];
-      if (!header) {
-        return next(new Error('no auth header'));
+  async afterInit(server: typeof this.server) {
+    server.use(async (socket: ExtendedSocket, next) => {
+      const authHeader = socket.handshake.headers['authorization'] || socket.handshake.auth?.token;
+      if (!authHeader) {
+        this.#logger.warn(`WS Connection Rejected: Auth header missing (Socket ID: ${socket.id})`);
+        return next(new WsException('Authentication header not provided.'));
       }
 
-      if (!header.startsWith('Bearer ')) {
-        return next(new Error('invalid auth header'));
-      }
-
-      const token = header.split(' ')[1];
+      const token: string = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
       if (!token) {
-        return next(new Error('no token'));
+        this.#logger.warn(`WS Connection Rejected: No token provided (Socket ID: ${socket.id})`);
+        return next(new WsException('Authentication token not provided.'));
       }
 
       try {
-        socket.data.user = await this.authService.validateToken(token);
-      } catch (error) {
-        next(error as UnauthorizedException);
-      }
+        const payload = this.jwtService.verify<JWTPayload>(token);
+        if (!payload || !payload.sub) {
+          throw new WsException('Invalid token payload.');
+        }
 
-      next();
+        const user = await this.authService.validateUserById(payload.sub);
+        if (!user) {
+          this.#logger.warn(
+            `WS Connection Rejected: User not found for token sub ${payload.sub} (Socket ID: ${socket.id})`,
+          );
+          throw new WsException('User associated with token not found.');
+        }
+
+        socket.data.user = user;
+        next();
+      } catch (err) {
+        const error = err as Error;
+        this.#logger.error(`WS Authentication Error (Socket ID: ${socket.id}): ${error.message}`);
+        if (error instanceof WsException || error instanceof UnauthorizedException) {
+          next(error);
+        } else if (error.name === 'JsonWebTokenError') {
+          next(new WsException('Invalid authentication token.'));
+        } else if (error.name === 'TokenExpiredError') {
+          next(new WsException('Authentication token expired.'));
+        } else {
+          next(new WsException('Authentication failed.'));
+        }
+      }
     });
   }
 
   handleConnection(socket: ExtendedSocket) {
     const user = socket.data.user;
-    this.#logger.log(`WSClient connected: ${socket.id}, user: ${user.sub}`);
+    this.#logger.log(`WSClient connected: ${socket.id}, UserID: ${user.id}, Email: ${user.email}`);
+
     this.server.to(socket.id).emit('init', {
-      message: `Hello! How may I help you?`,
+      message: `Hello ${user.displayName || user.email}! How may I help you?`,
       nickname: this.#botName,
       time: Date.now(),
     });
   }
 
   handleDisconnect(socket: ExtendedSocket) {
-    const user = socket.data.user;
-    this.#logger.log(`WSClient disconnected: ${socket.id}, user: ${user.sub}`);
-    return this.server.emit('event', { disconnected: socket.id });
+    const userId = socket.data.user?.id || 'Unknown';
+    this.#logger.log(`WSClient disconnected: ${socket.id}, UserID: ${userId}`);
   }
 
   @SubscribeMessage('chat')
   @UsePipes(new ValidationPipe())
-  handleMessage(@MessageBody() event: ChatMessage, @ConnectedSocket() socket: ExtendedSocket) {
-    this.qnaService.getAnswer(event.message).then((answer) => {
-      this.#logger.log(`Sending message ${answer.length} to WSClient: ${socket.id}`);
+  async handleMessage(@MessageBody() event: ChatMessage, @ConnectedSocket() socket: ExtendedSocket) {
+    // Make async
+    const user = socket.data.user;
+
+    this.#logger.log(`Received message from ${user.email} (${socket.id}): ${event.message}`);
+
+    try {
+      const answer = await this.qnaService.getAnswer(event.message);
+      this.#logger.log(`Sending answer (${answer.length} chars) to WSClient: ${socket.id}`);
       this.server.to(socket.id).emit('chat', {
         message: answer,
         nickname: this.#botName,
         time: Date.now(),
       });
-    });
+    } catch (error) {
+      this.#logger.error(`Error getting QnA answer for user ${user.email}:`, error);
+      this.server.to(socket.id).emit('chat', {
+        message: 'Sorry, I had trouble thinking about that.',
+        nickname: this.#botName,
+        time: Date.now(),
+      });
+    }
   }
 }

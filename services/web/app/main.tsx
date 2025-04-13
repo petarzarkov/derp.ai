@@ -9,7 +9,10 @@ import { AuthProvider } from './auth/AuthContext';
 
 const container = document.getElementById('app');
 const root = createRoot(container!);
-const serverUrl = window.location.host.includes('localhost') ? 'http://localhost:3033' : window.location.origin;
+const serverUrl =
+  window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1')
+    ? 'http://localhost:3033'
+    : window.location.origin;
 
 root.render(
   <React.StrictMode>

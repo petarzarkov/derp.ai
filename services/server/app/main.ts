@@ -22,6 +22,7 @@ import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { REQUEST_ID_HEADER_KEY, ValidatedConfig } from './const';
 import { UnhandledRoutes } from './filters/unhandled-routes.filter';
+import fastifyCookie from '@fastify/cookie';
 
 // use cjs import as es6 import will copy the package json in the compilation folder which would confuse pnpm for monorepo mgmt
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -100,6 +101,11 @@ async function bootstrap(module: typeof AppModule) {
   });
 
   app.enableCors();
+
+  const cookieSecret = configService.get('auth.cookieSecret', { infer: true });
+  await app.register(fastifyCookie, {
+    secret: cookieSecret,
+  });
 
   await app.listen(appConfig.port, '0.0.0.0');
 

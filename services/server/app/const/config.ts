@@ -14,7 +14,16 @@ export class EnvVars {
   JWT_SECRET: string;
 
   @IsString()
+  COOKIE_SECRET: string;
+
+  @IsString()
   GOOGLE_GEMINI_API_KEY: string;
+
+  @IsString()
+  GOOGLE_OAUTH_CLIENT_ID: string;
+
+  @IsString()
+  GOOGLE_OAUTH_CLIENT_SECRET: string;
 
   @IsString()
   @IsOptional()
@@ -65,23 +74,19 @@ export const validateConfig = (config: Record<string, unknown>) => {
         model: geminiModel,
         apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
       },
-
-      // ...(validatedConfig.HUGGINGFACE_API_KEY && {
-      //   'google/flan-t5-base': {
-      //     url: 'https://api-inference.huggingface.co/models/google/flan-t5-base',
-      //     model: 'google/flan-t5-base',
-      //     apiKey: validatedConfig.HUGGINGFACE_API_KEY,
-      //   },
-      //   'facebook/bart-large-cnn': {
-      //     url: 'https://api-inference.huggingface.co/models/facebook/bart-large-cnn',
-      //     model: 'facebook/bart-large-cnn',
-      //     apiKey: validatedConfig.HUGGINGFACE_API_KEY,
-      //   },
-      // }),
     },
     auth: {
       secret: validatedConfig.JWT_SECRET,
       expiresIn: '24h',
+      cookieSecret: validatedConfig.COOKIE_SECRET,
+      cookieExpiresIn: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
+    authProviders: {
+      google: {
+        clientId: validatedConfig.GOOGLE_OAUTH_CLIENT_ID,
+        clientSecret: validatedConfig.GOOGLE_OAUTH_CLIENT_SECRET,
+        callbackUrl: '/api/auth/google/callback',
+      },
     },
     isDev: !validatedConfig.APP_ENV || validatedConfig.APP_ENV === 'dev',
     app: {

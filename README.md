@@ -162,7 +162,7 @@ This section focuses on building and running the **backend server** as a Docker 
       --network your_docker_network \ # e.g., the network created by docker-compose
       -e SERVICE_PORT=3033 \
       -e APP_ENV=production \
-      -e DB_HOST=your_db_host_accessible_from_docker \ # e.g., pgdb-template if using default docker-compose
+      -e DB_HOST=your_db_host_accessible_from_docker \ # e.g., pgdb-derpai if using default docker-compose
       -e DB_PORT=6570 \
       -e DB_USER=postgres \
       -e DB_PASS=postgres \

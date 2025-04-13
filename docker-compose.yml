@@ -1,6 +1,6 @@
 services:
   db:
-    hostname: pgdb-template
+    hostname: pgdb-derpai
     image: 'public.ecr.aws/docker/library/postgres:17'
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -10,7 +10,7 @@ services:
       POSTGRES_PORT: ${DB_PORT}
       PGPORT: ${DB_PORT}
     networks:
-      - template
+      - derpai
     ports:
       - ${DB_PORT}:${DB_PORT}
     healthcheck:
@@ -20,6 +20,6 @@ services:
       retries: 10
 
 networks:
-  template:
-    name: template
+  derpai:
+    name: derpai
     driver: bridge

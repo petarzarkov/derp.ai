@@ -1,10 +1,10 @@
+import { resolve } from 'node:path';
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { config } = require('dotenv');
 
   config({
-    path: [resolve(__dirname, '../../../', '.env')],
-    debug: true,
+    path: [resolve(__dirname, '../../../../', '.env'), resolve(__dirname, '../../../../', '.env.dev')],
   });
 } catch (error) {
   if (process.env.NODE_ENV !== 'production') {
@@ -14,7 +14,6 @@ try {
 
 import { validateConfig } from '../const';
 import { DataSource } from 'typeorm';
-import { resolve } from 'node:path';
 
 const { db } = validateConfig(process.env);
 
@@ -27,5 +26,4 @@ export default new DataSource({
   database: db.name,
   entities: [resolve(__dirname, './entities/**/*.entity{.ts,.js}')],
   migrations: [resolve(__dirname, './migrations/**/*{.ts,.js}')],
-  migrationsRun: true,
 });

@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, serverUrl 
     async (username: string, password: string) => {
       setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
       try {
-        const authRes = await fetch(`${serverUrl}/auth/login`, {
+        const authRes = await fetch(`${serverUrl}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),
