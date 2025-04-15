@@ -1,4 +1,4 @@
-import { Inject, Logger, UnauthorizedException, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Inject, UnauthorizedException, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -18,13 +18,14 @@ import { JWTPayload } from '../auth/auth.entity';
 import { JwtService } from '@nestjs/jwt';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { parse as parseCookie } from 'cookie';
+import { ContextLogger } from 'nestjs-context-logger';
 
 type ExtendedSocket = Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: SanitizedUser }>;
 
 @UseFilters(new WebsocketsExceptionFilter())
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   readonly #botName = 'DerpAI';
-  readonly #logger = new Logger(this.constructor.name);
+  readonly #logger = new ContextLogger(this.constructor.name);
 
   @WebSocketServer()
   server: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: SanitizedUser }>;
@@ -64,6 +65,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
         }
 
         socket.data.user = user;
+        ContextLogger.updateContext({ userId: user.id, email: user.email });
         next();
       } catch (err) {
         const error = err as Error;
@@ -113,7 +115,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
         time: Date.now(),
       });
     } catch (error) {
-      this.#logger.error(`Error getting QnA answer for user ${user.email}:`, error);
+      this.#logger.error(`Error getting QnA answer for user ${user.email}:`, error as Error);
       this.server.to(socket.id).emit('chat', {
         message: 'Sorry, I had trouble thinking about that.',
         nickname: this.#botName,

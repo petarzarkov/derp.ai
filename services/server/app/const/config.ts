@@ -3,10 +3,15 @@ import { plainToInstance } from 'class-transformer';
 
 const envs = ['dev', 'prod'] as const;
 export type AppEnv = (typeof envs)[number];
+export type LogLevel = 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
 
 export class EnvVars {
   @IsIn(envs)
   APP_ENV: AppEnv;
+
+  @IsString()
+  @IsOptional()
+  LOG_LEVEL: LogLevel = 'info';
 
   @IsString()
   @IsOptional()
@@ -91,6 +96,9 @@ export const validateConfig = (config: Record<string, unknown>) => {
 
   return {
     env: validatedConfig.APP_ENV,
+    log: {
+      level: validatedConfig.LOG_LEVEL,
+    },
     cors: {
       allowedOrigins: allowedOrigins,
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',

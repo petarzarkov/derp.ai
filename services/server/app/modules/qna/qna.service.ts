@@ -1,9 +1,10 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { AIService } from '../ai/ai.service';
+import { ContextLogger } from 'nestjs-context-logger';
 
 @Injectable()
 export class QnAService {
-  #logger = new Logger(this.constructor.name);
+  #logger = new ContextLogger(this.constructor.name);
 
   constructor(
     @Inject(AIService)
@@ -25,7 +26,7 @@ export class QnAService {
 
       return answer;
     } catch (error) {
-      this.#logger.error(`Error getting answer for "${question}":`, error);
+      this.#logger.error(`Error getting answer for "${question}":`, error as Error);
       return 'Oops, I encountered an error while thinking about that.';
     }
   }

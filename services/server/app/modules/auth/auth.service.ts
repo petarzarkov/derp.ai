@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  UnauthorizedException,
-  ConflictException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,10 +6,11 @@ import { User, SanitizedUser } from '../../db/entities/users/user.entity';
 import { AuthProvider } from '../../db/entities/auth/auth-provider.entity';
 import * as bcrypt from 'bcrypt';
 import { JWTPayload, AuthResponse, RegisterRequest } from './auth.entity';
+import { ContextLogger } from 'nestjs-context-logger';
 
 @Injectable()
 export class AuthService {
-  #logger = new Logger(this.constructor.name);
+  #logger = new ContextLogger(this.constructor.name);
 
   constructor(
     @InjectRepository(User)
@@ -64,10 +59,7 @@ export class AuthService {
       this.#logger.warn(`Invalid password attempt for: ${email}`);
       return null;
     } catch (error) {
-      this.#logger.error(
-        `Error during local user validation for ${email}`,
-        error instanceof Error ? error.stack : error,
-      );
+      this.#logger.error(`Error during local user validation for ${email}`, error as Error);
 
       return null;
     }
@@ -138,7 +130,7 @@ export class AuthService {
       if (error instanceof Error && 'code' in error && error?.code === '23505') {
         this.#logger.warn(
           `OAuth Validation: Possible race condition or constraint violation for ${email} / ${provider}:${providerId}. Attempting recovery.`,
-          error.message,
+          { error, provider, providerId, email },
         );
 
         const finalUser = await this.findUserByProviderOrEmail(provider, providerId, email);
@@ -149,10 +141,7 @@ export class AuthService {
         throw new ConflictException(`Failed to link or create account due to existing constraints for ${email}.`);
       }
 
-      this.#logger.error(
-        `Error in findOrCreateUserFromOAuth for ${provider} user ${email}`,
-        error instanceof Error ? error.stack : error,
-      );
+      this.#logger.error(`Error in findOrCreateUserFromOAuth for ${provider} user ${email}`, error as Error);
       throw new InternalServerErrorException('Authentication failed during OAuth processing.');
     }
   }
@@ -208,10 +197,7 @@ export class AuthService {
         throw new ConflictException(`Email ${email} is already registered. Please try logging in.`);
       }
 
-      this.#logger.error(
-        `Error creating user during registration for ${email}`,
-        error instanceof Error ? error.stack : error,
-      );
+      this.#logger.error(`Error creating user during registration for ${email}`, error as Error);
       throw new InternalServerErrorException('Failed to create user account.');
     }
     try {
@@ -225,7 +211,7 @@ export class AuthService {
     } catch (error) {
       this.#logger.error(
         `Failed to create local auth provider for user ${savedUser.id} after user creation. User is orphaned.`,
-        error instanceof Error ? error.stack : error,
+        error as Error,
       );
 
       throw new InternalServerErrorException('Failed to finalize user registration. Please try again later.');
@@ -254,10 +240,7 @@ export class AuthService {
       const user = await this.userRepository.findOne({ where: { id: userId } });
       return user ? this.sanitizeUser(user) : null;
     } catch (error) {
-      this.#logger.error(
-        `Error validating user by ID ${userId} from JWT`,
-        error instanceof Error ? error.stack : error,
-      );
+      this.#logger.error(`Error validating user by ID ${userId} from JWT`, error as Error);
       return null;
     }
   }

@@ -6,6 +6,7 @@ import { ValidatedConfig } from '../../../const'; // Adjust path if needed
 import { JWTPayload } from '../auth.entity';
 import { AuthService } from '../auth.service'; // Inject AuthService
 import { Request } from 'express';
+import { ContextLogger } from 'nestjs-context-logger';
 
 const cookieExtractor = (req: Request): string | null => {
   let token = null;
@@ -45,6 +46,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found for token');
     }
 
+    ContextLogger.updateContext({ userId: user.id, email: user.email });
     return user;
   }
 }

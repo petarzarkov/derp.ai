@@ -127,6 +127,9 @@ importers:
       express-session:
         specifier: ^1.18.1
         version: 1.18.1
+      nestjs-context-logger:
+        specifier: ^1.6.0
+        version: 1.6.0(@nestjs/common@11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7))(@nestjs/core@11.0.13)(nestjs-pino@4.4.0(@nestjs/common@11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7))(pino-http@10.4.0)(pino@9.6.0)(rxjs@7.5.7))(pino@9.6.0)(reflect-metadata@0.2.2)(rxjs@7.5.7)
       passport:
         specifier: ^0.7.0
         version: 0.7.0
@@ -142,6 +145,9 @@ importers:
       pg:
         specifier: ^8.14.1
         version: 8.14.1
+      pino:
+        specifier: ^9.6.0
+        version: 9.6.0
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -5000,6 +5006,27 @@ packages:
     resolution:
       { integrity: sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw== }
 
+  nestjs-context-logger@1.6.0:
+    resolution:
+      { integrity: sha512-Bq4uBenYnlbXcB5lHpfRJZMVdRolbOY0QyqYAifcfthy4Akq0vc91eOHhIjrSGyl1APlOCAmROy5DubxPro/dw== }
+    peerDependencies:
+      '@nestjs/common': ^10.0.0
+      '@nestjs/core': ^10.0.0
+      nestjs-pino: '>=3.5.0'
+      pino: ^8.0.0
+      reflect-metadata: '>=0.1.13'
+      rxjs: ^7.0.0
+
+  nestjs-pino@4.4.0:
+    resolution:
+      { integrity: sha512-+GMNlcNWDRrMtlQftfcxN+5pV2C25A4wsYIY7cfRJTMW4b8IFKYReDrG1lUp5LGql9fXemmnVJ2Ww10iIkCZPQ== }
+    engines: { node: '>= 14' }
+    peerDependencies:
+      '@nestjs/common': ^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0
+      pino: ^7.5.0 || ^8.0.0 || ^9.0.0
+      pino-http: ^6.4.0 || ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
+      rxjs: ^7.1.0
+
   node-abort-controller@3.1.1:
     resolution:
       { integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ== }
@@ -5360,6 +5387,10 @@ packages:
   pino-abstract-transport@2.0.0:
     resolution:
       { integrity: sha512-F63x5tizV6WCh4R6RHyi2Ml+M70DNRXt/+HANowMflpgGFMAym/VKm6G7ZOQRjqN7XbGxK1Lg9t6ZrtzOaivMw== }
+
+  pino-http@10.4.0:
+    resolution:
+      { integrity: sha512-vjQsKBE+VN1LVchjbfLE7B6nBeGASZNRNKsR68VS0DolTm5R3zo+47JX1wjm0O96dcbvA7vnqt8YqOWlG5nN0w== }
 
   pino-std-serializers@7.0.0:
     resolution:
@@ -9005,8 +9036,7 @@ snapshots:
 
   async@3.2.6: {}
 
-  atomic-sleep@1.0.0:
-    optional: true
+  atomic-sleep@1.0.0: {}
 
   avvio@9.1.0:
     dependencies:
@@ -9930,8 +9960,7 @@ snapshots:
       fast-decode-uri-component: 1.0.1
     optional: true
 
-  fast-redact@3.5.0:
-    optional: true
+  fast-redact@3.5.0: {}
 
   fast-safe-stringify@2.1.1: {}
 
@@ -11293,6 +11322,24 @@ snapshots:
 
   neo-async@2.6.2: {}
 
+  nestjs-context-logger@1.6.0(@nestjs/common@11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7))(@nestjs/core@11.0.13)(nestjs-pino@4.4.0(@nestjs/common@11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7))(pino-http@10.4.0)(pino@9.6.0)(rxjs@7.5.7))(pino@9.6.0)(reflect-metadata@0.2.2)(rxjs@7.5.7):
+    dependencies:
+      '@nestjs/common': 11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7)
+      '@nestjs/core': 11.0.13(@nestjs/common@11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7))(@nestjs/microservices@11.0.13)(@nestjs/platform-express@11.0.16)(@nestjs/websockets@11.0.15)(reflect-metadata@0.2.2)(rxjs@7.5.7)
+      lodash: 4.17.21
+      nestjs-pino: 4.4.0(@nestjs/common@11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7))(pino-http@10.4.0)(pino@9.6.0)(rxjs@7.5.7)
+      pino: 9.6.0
+      reflect-metadata: 0.2.2
+      rxjs: 7.5.7
+      uuid: 9.0.1
+
+  nestjs-pino@4.4.0(@nestjs/common@11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7))(pino-http@10.4.0)(pino@9.6.0)(rxjs@7.5.7):
+    dependencies:
+      '@nestjs/common': 11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7)
+      pino: 9.6.0
+      pino-http: 10.4.0
+      rxjs: 7.5.7
+
   node-abort-controller@3.1.1: {}
 
   node-addon-api@5.1.0: {}
@@ -11357,8 +11404,7 @@ snapshots:
 
   object-inspect@1.13.4: {}
 
-  on-exit-leak-free@2.1.2:
-    optional: true
+  on-exit-leak-free@2.1.2: {}
 
   on-finished@2.4.1:
     dependencies:
@@ -11563,10 +11609,15 @@ snapshots:
   pino-abstract-transport@2.0.0:
     dependencies:
       split2: 4.2.0
-    optional: true
 
-  pino-std-serializers@7.0.0:
-    optional: true
+  pino-http@10.4.0:
+    dependencies:
+      get-caller-file: 2.0.5
+      pino: 9.6.0
+      pino-std-serializers: 7.0.0
+      process-warning: 4.0.1
+
+  pino-std-serializers@7.0.0: {}
 
   pino@9.6.0:
     dependencies:
@@ -11581,7 +11632,6 @@ snapshots:
       safe-stable-stringify: 2.5.0
       sonic-boom: 4.2.0
       thread-stream: 3.1.0
-    optional: true
 
   pirates@4.0.7: {}
 
@@ -11623,8 +11673,7 @@ snapshots:
 
   process-nextick-args@2.0.1: {}
 
-  process-warning@4.0.1:
-    optional: true
+  process-warning@4.0.1: {}
 
   process@0.11.10: {}
 
@@ -11690,8 +11739,7 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  quick-format-unescaped@4.0.4:
-    optional: true
+  quick-format-unescaped@4.0.4: {}
 
   quick-lru@5.1.1: {}
 
@@ -11845,8 +11893,7 @@ snapshots:
 
   readdirp@4.1.2: {}
 
-  real-require@0.2.0:
-    optional: true
+  real-require@0.2.0: {}
 
   reflect-metadata@0.2.2: {}
 
@@ -11976,8 +12023,7 @@ snapshots:
       ret: 0.5.0
     optional: true
 
-  safe-stable-stringify@2.5.0:
-    optional: true
+  safe-stable-stringify@2.5.0: {}
 
   safer-buffer@2.1.2: {}
 
@@ -12155,7 +12201,6 @@ snapshots:
   sonic-boom@4.2.0:
     dependencies:
       atomic-sleep: 1.0.0
-    optional: true
 
   sort-keys-length@1.0.1:
     dependencies:
@@ -12410,7 +12455,6 @@ snapshots:
   thread-stream@3.1.0:
     dependencies:
       real-require: 0.2.0
-    optional: true
 
   tmp@0.0.33:
     dependencies:

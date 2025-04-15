@@ -33,7 +33,6 @@
     "lint": "eslint --cache services/**",
     "pretty": "prettier --cache --ignore-unknown --write ."
   },
-  "dependencies": {},
   "devDependencies": {
     "@eslint/js": "^9.20.0",
     "@tsconfig/node22": "^22.0.0",
@@ -65,6 +64,7 @@
       "core-js",
       "cpu-features",
       "esbuild",
+      "nestjs-pino",
       "protobufjs",
       "ssh2"
     ]

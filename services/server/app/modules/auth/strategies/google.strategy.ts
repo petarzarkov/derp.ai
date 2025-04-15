@@ -1,13 +1,14 @@
-import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback, Profile } from 'passport-google-oauth20';
 import { ValidatedConfig } from '../../../const/config';
 import { AuthService } from '../auth.service';
+import { ContextLogger } from 'nestjs-context-logger';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
-  private readonly logger = new Logger(GoogleStrategy.name);
+  private readonly logger = new ContextLogger(GoogleStrategy.name);
 
   constructor(
     @Inject() readonly configService: ConfigService<ValidatedConfig, true>,
@@ -33,9 +34,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     try {
       const user = await this.authService.findOrCreateUserFromOAuth(id, 'google', email, displayName, picture);
+
+      ContextLogger.updateContext({ userId: user.id, email: user.email, provider: 'google' });
       done(null, user);
     } catch (err) {
-      this.logger.error('Error during Google OAuth validation', err);
+      this.logger.error('Error during Google OAuth validation', err as Error);
       done(err, false);
     }
   }

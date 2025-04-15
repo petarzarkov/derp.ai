@@ -1,11 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { validateConfig, ValidatedConfig } from '../../const';
 import { AIProvider } from './ai.entity';
+import { ContextLogger } from 'nestjs-context-logger';
 
 @Injectable()
 export class AIService {
-  #logger = new Logger(AIService.name);
+  #logger = new ContextLogger(AIService.name);
   #config: ReturnType<typeof validateConfig>['aiProviders'];
   #providers: AIProvider[];
 
@@ -123,7 +124,7 @@ export class AIService {
     settledResults.forEach((result, index) => {
       const provider = this.#providers[index];
       if (result.status === 'fulfilled' && result.value) {
-        this.#logger.log(`Response from ${provider}:`, result.value);
+        this.#logger.log(`Response from ${provider}:`, { response: result.value });
         successfulResponses.push(result.value);
       } else if (result.status === 'rejected') {
         const reason = result.reason instanceof Error ? result.reason.message : result.reason;

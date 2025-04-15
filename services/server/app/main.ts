@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ConsoleLogger, INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ValidatedConfig } from './const';
 import { UnhandledRoutes } from './filters/unhandled-routes.filter';
@@ -12,18 +12,16 @@ import cookieParser from 'cookie-parser';
 import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface.js';
 import { WebSocketGateway } from '@nestjs/websockets';
 import { EventsGateway } from './modules/events/events.gateway.js';
+import { ContextLogger } from 'nestjs-context-logger';
 
 // use cjs import as es6 import will copy the package json in the compilation folder which would confuse pnpm for monorepo mgmt
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { name, version, description, author, homepage } = require('../package.json');
 
 async function bootstrap(module: typeof AppModule) {
-  const logger = new ConsoleLogger({
-    context: name,
-    json: true,
-  });
-
+  const logger = new ContextLogger(name);
   const app = await NestFactory.create<INestApplication<Express.Application>>(module, {
+    bufferLogs: true,
     logger,
   });
 

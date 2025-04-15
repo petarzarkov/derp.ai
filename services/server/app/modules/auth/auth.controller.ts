@@ -10,7 +10,6 @@ import {
   Query,
   HttpCode,
   Body,
-  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiExcludeEndpoint } from '@nestjs/swagger';
@@ -21,11 +20,12 @@ import { GoogleOAuthGuard } from './guards/google-auth.guard';
 import { ConfigService } from '@nestjs/config';
 import { ValidatedConfig } from '../../const';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
+import { ContextLogger } from 'nestjs-context-logger';
 
 @ApiTags('api', 'auth')
 @Controller('/api/auth')
 export class AuthController {
-  #logger = new Logger(this.constructor.name);
+  #logger = new ContextLogger(this.constructor.name);
   #cookieOptions: ValidatedConfig['auth']['session']['cookie'];
 
   constructor(
@@ -110,7 +110,7 @@ export class AuthController {
       res.cookie('access_token', token, this.cookieOptions);
       res.redirect(HttpStatus.FOUND, redirectUrl);
     } catch (cookieError) {
-      this.#logger.error('Failed to set cookie', cookieError, state);
+      this.#logger.error('Failed to set cookie', cookieError as Error, { state });
       res.status(500).send({ message: 'Login successful, but failed to set cookie.' });
     }
   }
@@ -155,7 +155,7 @@ export class AuthController {
 
       res.status(HttpStatus.OK).send({ message: 'Logged out successfully' });
     } catch (error) {
-      this.#logger.error('Logout process failed', error);
+      this.#logger.error('Logout process failed', error as Error);
       if (!res.headersSent) {
         res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ message: 'Logout failed.' });
       }
