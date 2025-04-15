@@ -79,8 +79,6 @@ describe('AuthService', () => {
       providerId: null,
       userId: userId,
       passwordHash: hashedPassword,
-      accessToken: null,
-      refreshToken: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       user: mockDbUser, // Include the related user
@@ -191,8 +189,6 @@ describe('AuthService', () => {
       providerId: oAuthProfile.providerId,
       userId: existingUserId,
       passwordHash: null,
-      accessToken: null,
-      refreshToken: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       user: existingUser,
@@ -435,8 +431,6 @@ describe('AuthService', () => {
       provider: 'local',
       providerId: null,
       passwordHash: hashedPassword,
-      accessToken: null,
-      refreshToken: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       user: createdUser, // Link back - might not be needed for mock return value
@@ -689,8 +683,6 @@ describe('AuthService', () => {
             provider: 'local',
             providerId: null,
             passwordHash: 'secretHash',
-            accessToken: 'token',
-            refreshToken: 'refresh',
             createdAt: new Date(),
             updatedAt: new Date(),
             user: undefined as unknown as User, // Avoid circular ref in test data

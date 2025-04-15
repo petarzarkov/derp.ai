@@ -18,12 +18,23 @@ import { AuthService } from '../auth/auth.service';
 import { JWTPayload } from '../auth/auth.entity';
 import { JwtService } from '@nestjs/jwt';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
+import { parse as parseCookie } from 'cookie';
+import { allowedOrigins } from '../../const';
 
 type ExtendedSocket = Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: SanitizedUser }>;
 
 @WebSocketGateway<Partial<ServerOptions>>({
   cors: {
-    origin: '*',
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by WebSocketGateway CORS'));
+      }
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+    credentials: true,
   },
   connectTimeout: 50000,
   pingInterval: 25000,
@@ -45,19 +56,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
 
   async afterInit(server: typeof this.server) {
     server.use(async (socket: ExtendedSocket, next) => {
-      const authHeader = socket.handshake.headers['authorization'] || socket.handshake.auth?.token;
-      if (!authHeader) {
-        this.#logger.warn(`WS Connection Rejected: Auth header missing (Socket ID: ${socket.id})`);
-        return next(new WsException('Authentication header not provided.'));
-      }
-
-      const token: string = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-      if (!token) {
-        this.#logger.warn(`WS Connection Rejected: No token provided (Socket ID: ${socket.id})`);
-        return next(new WsException('Authentication token not provided.'));
+      const cookie = socket.handshake.headers?.cookie;
+      if (!cookie) {
+        this.#logger.warn(`WS Connection Rejected: Auth cookie missing (Socket ID: ${socket.id})`);
+        return next(new WsException('Authentication cookie not provided.'));
       }
 
       try {
+        const token = parseCookie(cookie)?.['access_token'];
+        if (!token) {
+          this.#logger.warn(`WS Connection Rejected: No access_token provided (Socket ID: ${socket.id})`);
+          return next(new WsException('Authentication access_token not provided.'));
+        }
+
         const payload = this.jwtService.verify<JWTPayload>(token);
         if (!payload || !payload.sub) {
           throw new WsException('Invalid token payload.');

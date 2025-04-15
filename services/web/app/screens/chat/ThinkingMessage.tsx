@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import Message from './Message';
 import { useInterval } from '@chakra-ui/react';
 
-const ThinkingMessage: React.FC = () => {
+const ThinkingMessage: React.FC<{ botName: string | null }> = ({ botName }) => {
   const baseText = 'Thinking';
   const [dots, setDots] = useState('.');
   const thinkingStartTime = useMemo(() => Date.now(), []);
@@ -16,7 +16,7 @@ const ThinkingMessage: React.FC = () => {
 
   useInterval(updateDotsCallback, 500);
 
-  return <Message text={`${baseText}${dots}`} nickname={'DerpAI'} time={thinkingStartTime} />;
+  return <Message text={`${baseText}${dots}`} nickname={botName || 'DerpAI'} time={thinkingStartTime} />;
 };
 
 export default ThinkingMessage;

@@ -5,6 +5,18 @@ import { ConfigService } from '@nestjs/config';
 import { ValidatedConfig } from '../../../const'; // Adjust path if needed
 import { JWTPayload } from '../auth.entity';
 import { AuthService } from '../auth.service'; // Inject AuthService
+import { Request } from 'express';
+
+const cookieExtractor = (req: Request): string | null => {
+  let token = null;
+  if (req && req.cookies) {
+    token = req.cookies['access_token'];
+  }
+  if (!token && req && req.headers.authorization) {
+    token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+  }
+  return token;
+};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -13,9 +25,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private authService: AuthService, // Inject AuthService
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: cookieExtractor,
       ignoreExpiration: false,
-      secretOrKey: configService.get('auth.secret', { infer: true }),
+      secretOrKey: configService.get('auth.jwt.secret', { infer: true }),
     });
   }
 

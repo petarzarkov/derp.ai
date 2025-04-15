@@ -9,6 +9,7 @@ import {
   Relation,
 } from 'typeorm';
 import { AuthProvider } from '../auth/auth-provider.entity';
+import { OmitType } from '@nestjs/swagger';
 
 @Entity('users')
 export class User {
@@ -35,4 +36,4 @@ export class User {
   authProviders: Relation<AuthProvider>[];
 }
 
-export type SanitizedUser = Omit<User, 'authProviders'>;
+export class SanitizedUser extends OmitType(User, ['authProviders']) {}

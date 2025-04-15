@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
-import { FastifyRequest } from 'fastify';
+import { Request } from 'express';
 
 export class RegisterRequest {
   @IsEmail()
@@ -9,7 +9,7 @@ export class RegisterRequest {
   email: string;
 
   @IsString()
-  @MinLength(8) // Enforce minimum password length
+  @MinLength(8)
   @ApiProperty({ example: 'Password123!' })
   password: string;
 
@@ -26,7 +26,7 @@ export class LoginRequest {
   email: string;
 
   @IsString()
-  @MinLength(2)
+  @MinLength(8)
   @ApiProperty({ example: 'alice_password' })
   password: string;
 }
@@ -44,4 +44,4 @@ export class AuthResponse {
 /**
  * Auth strategies attach the user to the request ctx
  */
-export type BaseRequest = FastifyRequest & { user: SanitizedUser };
+export type BaseRequest = Request & { user: SanitizedUser };

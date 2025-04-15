@@ -1,4 +1,4 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, Max, Min, validateSync } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 
 export class EnvVars {
@@ -14,7 +14,8 @@ export class EnvVars {
   JWT_SECRET: string;
 
   @IsString()
-  COOKIE_SECRET: string;
+  @MinLength(18)
+  SESSION_SECRET: string;
 
   @IsString()
   GOOGLE_GEMINI_API_KEY: string;
@@ -76,10 +77,20 @@ export const validateConfig = (config: Record<string, unknown>) => {
       },
     },
     auth: {
-      secret: validatedConfig.JWT_SECRET,
-      expiresIn: '24h',
-      cookieSecret: validatedConfig.COOKIE_SECRET,
-      cookieExpiresIn: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      jwt: {
+        secret: validatedConfig.JWT_SECRET,
+        expiresIn: '24h',
+      },
+      session: {
+        secret: validatedConfig.SESSION_SECRET,
+        cookie: {
+          maxAge: 1000 * 60 * 60 * 24 * 7,
+          httpOnly: true,
+          secure: validatedConfig.APP_ENV === 'prod',
+          sameSite: 'lax',
+          path: '/',
+        },
+      },
     },
     authProviders: {
       google: {

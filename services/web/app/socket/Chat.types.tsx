@@ -11,7 +11,7 @@ export interface ServerChatMessage extends ClientChatMessage {
 
 export interface MessageProps {
   text: string;
-  nickname: 'user' | 'DerpAI' | 'error' | string;
+  nickname: 'system' | 'error' | string;
   time: number;
 }
 

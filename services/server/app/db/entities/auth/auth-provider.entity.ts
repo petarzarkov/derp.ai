@@ -30,12 +30,6 @@ export class AuthProvider {
   @Column({ type: 'text', nullable: true, select: false })
   passwordHash: string | null;
 
-  @Column({ type: 'text', nullable: true, select: false })
-  accessToken: string | null;
-
-  @Column({ type: 'text', nullable: true, select: false })
-  refreshToken: string | null;
-
   @CreateDateColumn()
   createdAt: Date;
 

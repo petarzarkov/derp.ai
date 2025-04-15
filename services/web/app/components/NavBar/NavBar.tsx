@@ -15,14 +15,16 @@ import {
   VStack,
   Tooltip,
   Button,
-  Spacer,
+  Avatar,
 } from '@chakra-ui/react';
-import { MoonIcon, SettingsIcon, SunIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { MoonIcon, SunIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { ColorTheme, themes } from '@theme';
 import { BsPaletteFill } from 'react-icons/bs';
+import { IoMdLogOut } from 'react-icons/io';
 import { useThemeProvider } from '@hooks';
 
 import { NAVBAR_EXPANDED_WIDTH, NAVBAR_COLLAPSED_WIDTH } from '../../config/const';
+import { useAuth } from '../../auth/AuthContext';
 
 interface NavBarProps {
   isNavOpen: boolean;
@@ -33,100 +35,96 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
   const { isOpen: isPalOpen, onOpen: palOnOpen, onClose: palOnClose } = useDisclosure();
   const { theme, setTheme } = useThemeProvider();
   const { toggleColorMode } = useColorMode();
+  const { logout, currentUser, isAuthenticated } = useAuth();
   const navBg = useColorModeValue('primary.200', 'primary.900');
   const borderColor = useColorModeValue('gray.300', 'gray.700');
   const ColorModeIcon = useColorModeValue(<MoonIcon />, <SunIcon />);
 
   const currentWidth = isNavOpen ? NAVBAR_EXPANDED_WIDTH : NAVBAR_COLLAPSED_WIDTH;
 
+  const avatarName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
+
   return (
     <Box
       as="nav"
       bg={navBg}
-      // Dynamic width based on isNavOpen state
       w={currentWidth}
       h="100vh"
       position="fixed"
       left="0"
       top="0"
-      zIndex="sticky" // Ensure it stays above content scroll
+      zIndex="sticky"
       borderRightWidth="1px"
       borderColor={borderColor}
-      // Add smooth transition for the width change
       transition="width 0.2s ease-in-out"
     >
-      {/* Toggle Button */}
       <Tooltip label={isNavOpen ? 'Collapse Menu' : 'Expand Menu'} placement="right" hasArrow>
         <IconButton
           aria-label={isNavOpen ? 'Collapse Menu' : 'Expand Menu'}
-          // Change icon based on state
           icon={isNavOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-          onClick={onToggle} // Toggle the nav state
+          onClick={onToggle}
           variant="ghost"
           size="sm"
           isRound
           position="absolute"
-          top="50%" // Center vertically
-          // Position near the right edge, slightly outside when collapsed
-          right="-16px" // Adjust this value to position correctly
+          top="50%"
+          right="-16px"
           transform="translateY(-50%)"
-          zIndex="banner" // Ensure it's above the nav background but below modals
-          bg={navBg} // Match nav background to blend edge
-          boxShadow="md" // Add shadow to make it pop
+          zIndex="banner"
+          bg={navBg}
+          boxShadow="md"
           borderWidth="1px"
           borderColor={borderColor}
           _hover={{ bg: useColorModeValue('primary.300', 'primary.700') }}
         />
       </Tooltip>
 
-      {/* Main Nav Content Area */}
       <Flex
         h="full"
         alignItems="center"
-        justifyContent="flex-start" // Align items top
+        justifyContent="space-between"
         direction="column"
-        py={5} // Inner padding
-        px={2} // Keep horizontal padding consistent for icon alignment
-        // Fade content out/in when collapsed/expanded
+        py={5}
+        px={2}
         opacity={isNavOpen ? 1 : 0}
         visibility={isNavOpen ? 'visible' : 'hidden'}
-        pointerEvents={isNavOpen ? 'auto' : 'none'} // Prevent interaction when hidden
-        transition="opacity 0.2s ease-in-out, visibility 0.2s ease-in-out"
+        pointerEvents={isNavOpen ? 'auto' : 'none'}
+        transition="opacity 0.2s 0.1s, visibility 0.2s 0.1s"
       >
-        {/* Only show content fully when open */}
-        {isNavOpen && ( // You can alternatively use the opacity/visibility approach above
-          <>
-            <VStack spacing={5}>
-              <Tooltip label="Change Theme" placement="right" hasArrow>
-                <IconButton
-                  aria-label="Change Theme"
-                  icon={<BsPaletteFill />}
-                  variant="ghost"
-                  onClick={palOnOpen}
-                  size="lg"
-                />
-              </Tooltip>
+        <VStack spacing={5} alignSelf="stretch">
+          <Tooltip label="Change Theme" placement="right" hasArrow>
+            <IconButton
+              aria-label="Change Theme"
+              icon={<BsPaletteFill />}
+              variant="ghost"
+              onClick={palOnOpen}
+              size="lg"
+            />
+          </Tooltip>
+          <Tooltip label="Toggle Color Mode" placement="right" hasArrow>
+            <IconButton
+              aria-label="Toggle Color Mode"
+              icon={ColorModeIcon}
+              variant="ghost"
+              onClick={toggleColorMode}
+              size="lg"
+            />
+          </Tooltip>
+        </VStack>
 
-              <Tooltip label="Toggle Color Mode" placement="right" hasArrow>
-                <IconButton
-                  aria-label="Toggle Color Mode"
-                  icon={ColorModeIcon}
-                  variant="ghost"
-                  onClick={toggleColorMode}
-                  size="lg"
-                />
-              </Tooltip>
-            </VStack>
-
-            <Spacer />
-            <Tooltip label="Nothing here" placement="right" hasArrow>
-              <IconButton aria-label="Settings" icon={<SettingsIcon />} variant="ghost" size="lg" />
+        <VStack spacing={4} alignSelf="stretch">
+          {isAuthenticated && currentUser && (
+            <Tooltip label={currentUser.displayName || currentUser.email} placement="right" hasArrow>
+              <Avatar size="sm" name={avatarName} src={currentUser.picture ?? undefined} mb={2} />
             </Tooltip>
-          </>
-        )}
+          )}
+
+          <Tooltip label="Logout" placement="right" hasArrow>
+            <IconButton aria-label="Logout" icon={<IoMdLogOut />} variant="ghost" size="lg" onClick={logout} />
+          </Tooltip>
+        </VStack>
       </Flex>
 
-      {/* Theme Palette Drawer (remains the same) */}
       <Drawer placement={'left'} onClose={palOnClose} isOpen={isPalOpen}>
         <DrawerOverlay />
         <DrawerContent>
