@@ -136,7 +136,11 @@ describe('AuthService', () => {
 
       const result = await service.validateLocalUser(email, password);
       expect(result).toBeNull();
-      expect(Logger.prototype.error).toHaveBeenCalledWith(expect.stringContaining('User relation not loaded'));
+      expect(Logger.prototype.error).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.stringContaining('User relation not loaded'),
+        'AuthService',
+      );
     });
 
     it('should return null and log error on bcrypt error', async () => {
@@ -147,8 +151,9 @@ describe('AuthService', () => {
       const result = await service.validateLocalUser(email, password);
       expect(result).toBeNull();
       expect(Logger.prototype.error).toHaveBeenCalledWith(
-        expect.stringContaining('Error during local user validation'),
-        bcryptError.stack,
+        expect.objectContaining({ err: bcryptError }),
+        expect.stringContaining(`Error during local user validation for ${email}`),
+        'AuthService',
       );
     });
 
@@ -159,8 +164,9 @@ describe('AuthService', () => {
       const result = await service.validateLocalUser(email, password);
       expect(result).toBeNull();
       expect(Logger.prototype.error).toHaveBeenCalledWith(
-        expect.stringContaining('Error during local user validation'),
-        dbError.stack,
+        expect.objectContaining({ err: dbError }),
+        expect.stringContaining(`Error during local user validation for ${email}`),
+        'AuthService',
       );
     });
   });
@@ -347,8 +353,9 @@ describe('AuthService', () => {
 
       expect(result.id).toEqual(existingUser.id);
       expect(Logger.prototype.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Possible race condition'),
-        expect.any(String),
+        expect.objectContaining({ error: constraintError, email: oAuthProfile.email }),
+        expect.stringContaining('Possible race condition or constraint violation'),
+        'AuthService',
       );
       // Ensure findOne was called twice for AuthProvider (initial + recovery)
       expect(authProviderRepoMock.findOne).toHaveBeenCalledTimes(2);
@@ -380,8 +387,9 @@ describe('AuthService', () => {
       ).rejects.toThrow(ConflictException);
 
       expect(Logger.prototype.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Possible race condition'),
-        expect.any(String),
+        expect.objectContaining({ error: constraintError, email: oAuthProfile.email }),
+        expect.stringContaining('Possible race condition or constraint violation'),
+        'AuthService',
       );
       expect(authProviderRepoMock.findOne).toHaveBeenCalledTimes(2); // initial + recovery attempt
       expect(userRepoMock.findOne).toHaveBeenCalledTimes(2); // initial + recovery attempt
@@ -401,8 +409,11 @@ describe('AuthService', () => {
         ),
       ).rejects.toThrow(InternalServerErrorException);
       expect(Logger.prototype.error).toHaveBeenCalledWith(
-        expect.stringContaining('Error in findOrCreateUserFromOAuth'),
-        dbError.stack,
+        expect.objectContaining({ err: dbError }), // First arg is object with error
+        expect.stringContaining(
+          `Error in findOrCreateUserFromOAuth for ${oAuthProfile.provider} user ${oAuthProfile.email}`,
+        ),
+        'AuthService',
       );
     });
   });
@@ -474,8 +485,11 @@ describe('AuthService', () => {
         passwordHash: hashedPassword,
       });
       expect(authProviderRepoMock.save).toHaveBeenCalled();
+      expect(Logger.prototype.log).toHaveBeenCalledWith('RootTestModule dependencies initialized');
       expect(Logger.prototype.log).toHaveBeenCalledWith(
+        expect.any(Object),
         expect.stringContaining(`Registered new local user: ${registerDto.email}`),
+        'AuthService',
       );
     });
 
@@ -553,7 +567,9 @@ describe('AuthService', () => {
         new ConflictException(`Email ${registerDto.email} is already registered. Please try logging in.`),
       );
       expect(Logger.prototype.warn).toHaveBeenCalledWith(
+        expect.any(Object),
         expect.stringContaining('Registration failed due to race condition'),
+        'AuthService',
       );
       expect(authProviderRepoMock.save).not.toHaveBeenCalled(); // Provider save should not be reached
     });
@@ -567,8 +583,11 @@ describe('AuthService', () => {
 
       await expect(service.registerLocalUser(registerDto)).rejects.toThrow(InternalServerErrorException);
       expect(Logger.prototype.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          err: dbError,
+        }),
         expect.stringContaining('Error creating user during registration'),
-        dbError.stack,
+        'AuthService',
       );
     });
 
@@ -585,8 +604,11 @@ describe('AuthService', () => {
         new InternalServerErrorException('Failed to finalize user registration. Please try again later.'),
       );
       expect(Logger.prototype.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          err: providerSaveError,
+        }),
         expect.stringContaining(`Failed to create local auth provider for user ${createdUser.id}`),
-        providerSaveError.stack,
+        'AuthService',
       );
     });
   });
@@ -659,8 +681,11 @@ describe('AuthService', () => {
       const result = await service.validateUserById(userId);
       expect(result).toBeNull();
       expect(Logger.prototype.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          err: dbError,
+        }),
         expect.stringContaining(`Error validating user by ID ${userId}`),
-        dbError.stack,
+        'AuthService',
       );
     });
   });
