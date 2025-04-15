@@ -104,7 +104,7 @@ export class AuthController {
     // User is validated and attached by GoogleOAuthGuard/GoogleStrategy
     const loginResponse = await this.authService.login(req.user);
     const token = loginResponse.accessToken;
-    const redirectUrl = req.headers.location || 'http://localhost:5173';
+    const redirectUrl = `${req.secure ? 'https://' : 'http://'}${req.headers.host}`;
 
     try {
       res.cookie('access_token', token, this.cookieOptions);

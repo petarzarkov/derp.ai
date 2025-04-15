@@ -84,7 +84,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
       session: {
         secret: validatedConfig.SESSION_SECRET,
         cookie: {
-          maxAge: 1000 * 60 * 60 * 24 * 7,
+          maxAge: 1000 * 60 * 60 * 24 * 2,
           httpOnly: true,
           secure: validatedConfig.APP_ENV === 'prod',
           sameSite: 'lax',
