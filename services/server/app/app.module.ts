@@ -5,23 +5,22 @@ import { ValidatedConfig, validateConfig } from './const';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { resolve, join } from 'node:path';
 import { AuthModule } from './modules/auth/auth.module';
-import { HttpLoggerModule } from './modules/http-logger/http-logger.module';
 import { ServiceModule } from './api/service/service.module';
 import { RequestIdMiddleware } from './middlewares/request-id.middleware';
 import { EventsModule } from './modules/events/events.module';
 import { QnAModule } from './modules/qna/qna.module';
 import { EventsGateway } from './modules/events/events.gateway';
 import { ModuleRef } from '@nestjs/core';
+import { UsersModule } from './api/users/users.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: resolve('../../', '.env'),
+      envFilePath: [resolve(__dirname, '../../../', '.env'), resolve(__dirname, '../../../', '.env.dev')],
       validate: validateConfig,
       isGlobal: true,
     }),
     QnAModule,
-    HttpLoggerModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService<ValidatedConfig, true>) => {
@@ -46,6 +45,7 @@ import { ModuleRef } from '@nestjs/core';
     }),
     ServiceModule,
     AuthModule,
+    UsersModule,
     EventsModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '../../web/dist'),

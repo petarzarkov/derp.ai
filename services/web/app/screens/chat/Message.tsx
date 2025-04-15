@@ -18,12 +18,11 @@ import ReactMarkdown, { Components } from 'react-markdown';
 import { FaCopy, FaCheck } from 'react-icons/fa';
 
 const Message = ({ text, nickname, time }: MessageProps) => {
-  const isUser = nickname === 'user';
+  const isUser = nickname !== 'error' && nickname !== 'system' && nickname !== 'DerpAI';
   const isError = nickname === 'error';
-  const isSystem = nickname === 'system';
 
   const colorStyles = {
-    user: {
+    [isUser ? nickname : 'user']: {
       bg: useColorModeValue('primary.700', 'primary.100'),
       text: useColorModeValue('primary.100', 'primary.700'),
     },
@@ -89,19 +88,19 @@ const Message = ({ text, nickname, time }: MessageProps) => {
                 aria-label={hasCopied ? 'Copied!' : 'Copy code'}
                 icon={hasCopied ? <FaCheck /> : <FaCopy />}
                 size="sm"
-                position="absolute" // Position relative to the <Box as="pre">
+                position="absolute"
                 top="0.5rem"
                 right="0.5rem"
                 colorScheme={hasCopied ? 'green' : 'gray'}
                 variant="ghost"
                 onClick={onCopy}
-                zIndex="1" // Ensure it's clickable
+                zIndex="1"
               />
             </Tooltip>
             <Code
-              bg="transparent" // Inner code should be transparent
-              borderRadius="md" // Might not be needed if pre has it
-              display="block" // Ensure code takes block display within pre if needed
+              bg="transparent"
+              borderRadius="md"
+              display="block"
               className={className?.startsWith('language-') ? undefined : className}
             >
               {codeString}
@@ -110,7 +109,6 @@ const Message = ({ text, nickname, time }: MessageProps) => {
         );
       }
 
-      // Handle inline code
       return (
         <Code
           bg={useColorModeValue('gray.200', 'gray.600')}
@@ -165,14 +163,14 @@ const Message = ({ text, nickname, time }: MessageProps) => {
       color={textColor}
       borderRadius="lg"
       w="fit-content"
-      maxW="80%" // Message bubble max width
+      maxW="80%"
       alignSelf={align}
       boxShadow="sm"
       flexDirection="column"
     >
       <HStack justify="space-between" w="full" mb={1}>
         <Text fontSize="xs" fontWeight="bold" opacity={0.9}>
-          {!isSystem && !isUser ? nickname : ''}
+          {nickname}
         </Text>
         {!!time && (
           <Text fontSize="xs" opacity={0.7}>

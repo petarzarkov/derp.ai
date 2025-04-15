@@ -119,7 +119,7 @@ export function ChatBox() {
           <Message key={`msg-${idx}-${msg.time}-${msg.nickname}`} {...msg} />
         ))}
 
-        {isBotThinking && <ThinkingMessage />}
+        {isBotThinking && <ThinkingMessage botName={botNickname} />}
 
         <div ref={messagesEndRef} />
       </Stack>

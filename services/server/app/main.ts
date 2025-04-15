@@ -1,27 +1,14 @@
-import { resolve } from 'node:path';
-// optionally import dotenv, as in prod it would not be installed, TODO: migrate to es6 modules, huge refactor
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { config } = require('dotenv');
-
-  config({
-    path: [resolve(__dirname, '../../../', '.env'), resolve(__dirname, '../../../', '.env.dev')],
-  });
-} catch (error) {
-  if (process.env.NODE_ENV !== 'production') {
-    console.error('Error importing dotenv', { error: error as Error });
-  }
-}
-
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import { v4 } from 'uuid';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
+import { ConsoleLogger, INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { REQUEST_ID_HEADER_KEY, ValidatedConfig } from './const';
+import { allowedOrigins, ValidatedConfig } from './const';
 import { UnhandledRoutes } from './filters/unhandled-routes.filter';
+import passport from 'passport';
+import expressSession from 'express-session';
+import { HttpLoggingInterceptor } from './interceptors/http-logging.interceptor.js';
+import cookieParser from 'cookie-parser';
 
 // use cjs import as es6 import will copy the package json in the compilation folder which would confuse pnpm for monorepo mgmt
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -32,23 +19,41 @@ async function bootstrap(module: typeof AppModule) {
     context: name,
     json: true,
   });
-  const app = await NestFactory.create<NestFastifyApplication>(
-    module,
-    new FastifyAdapter({
-      requestIdHeader: REQUEST_ID_HEADER_KEY,
-      genReqId: () => v4(),
-      // handle longer query params
-      maxParamLength: 1000,
-    }),
-    {
-      logger,
+
+  const app = await NestFactory.create<INestApplication<Express.Application>>(module, {
+    logger,
+    cors: {
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          logger.error(`HTTP CORS Error: Origin ${origin} not allowed.`);
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      allowedHeaders: 'Content-Type, Accept, Authorization',
+      credentials: true,
     },
-  );
+  });
 
   const configService = app.get(ConfigService<ValidatedConfig, true>);
   const appConfig = configService.get('app', { infer: true });
   const appEnv = configService.get('env', { infer: true });
 
+  const session = configService.get('auth.session', { infer: true });
+  app.use(cookieParser());
+  app.use(
+    expressSession({
+      secret: session.secret,
+      resave: false,
+      saveUninitialized: false,
+      cookie: session.cookie,
+    }),
+  );
+  app.use(passport.initialize());
+
+  app.useGlobalInterceptors(new HttpLoggingInterceptor());
   app.useGlobalPipes(new ValidationPipe({ transform: true, transformOptions: { enableImplicitConversion: true } }));
   app.useGlobalFilters(new UnhandledRoutes());
 
@@ -86,20 +91,18 @@ async function bootstrap(module: typeof AppModule) {
       responseInterceptor: function setBearerOnLogin(response: {
         ok: boolean;
         url: string | string[];
-        body: { access_token: string };
+        body: { accessToken: string };
       }) {
-        if (response.ok && response?.url?.includes('auth/login')) {
+        if (response.ok && response?.url?.includes('api/auth/login')) {
           (
             window as unknown as Window & { ui: { preauthorizeApiKey: (name: string, apiKey: string) => void } }
-          ).ui.preauthorizeApiKey('bearerAuth', response.body.access_token);
+          ).ui.preauthorizeApiKey('bearerAuth', response.body.accessToken);
         }
 
         return response;
       },
     },
   });
-
-  app.enableCors();
 
   await app.listen(appConfig.port, '0.0.0.0');
 
