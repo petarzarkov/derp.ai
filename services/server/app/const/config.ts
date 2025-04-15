@@ -96,7 +96,11 @@ export const validateConfig = (config: Record<string, unknown>) => {
       google: {
         clientId: validatedConfig.GOOGLE_OAUTH_CLIENT_ID,
         clientSecret: validatedConfig.GOOGLE_OAUTH_CLIENT_SECRET,
-        callbackUrl: '/api/auth/google/callback',
+        callbackUrl: `${
+          validatedConfig.APP_ENV === 'prod'
+            ? 'https://derp.ai.petarzarkov.com'
+            : `http://localhost:${validatedConfig.SERVICE_PORT}`
+        }/api/auth/google/callback`,
       },
     },
     isDev: !validatedConfig.APP_ENV || validatedConfig.APP_ENV === 'dev',
