@@ -6,11 +6,10 @@ import {
   OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
-  WebSocketGateway,
   WebSocketServer,
   WsException,
 } from '@nestjs/websockets';
-import { DefaultEventsMap, Server, ServerOptions, Socket } from 'socket.io';
+import { DefaultEventsMap, Server, Socket } from 'socket.io';
 import { ChatMessage } from './chat.entity';
 import { WebsocketsExceptionFilter } from './events.filter';
 import { QnAService } from '../qna/qna.service';
@@ -19,31 +18,13 @@ import { JWTPayload } from '../auth/auth.entity';
 import { JwtService } from '@nestjs/jwt';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { parse as parseCookie } from 'cookie';
-import { allowedOrigins } from '../../const';
 
 type ExtendedSocket = Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: SanitizedUser }>;
 
-@WebSocketGateway<Partial<ServerOptions>>({
-  cors: {
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by WebSocketGateway CORS'));
-      }
-    },
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization',
-    credentials: true,
-  },
-  connectTimeout: 50000,
-  pingInterval: 25000,
-  pingTimeout: 5000,
-})
 @UseFilters(new WebsocketsExceptionFilter())
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
-  #botName = 'DerpAI';
-  #logger = new Logger(this.constructor.name);
+  readonly #botName = 'DerpAI';
+  readonly #logger = new Logger(this.constructor.name);
 
   @WebSocketServer()
   server: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: SanitizedUser }>;
@@ -119,7 +100,6 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
   @SubscribeMessage('chat')
   @UsePipes(new ValidationPipe())
   async handleMessage(@MessageBody() event: ChatMessage, @ConnectedSocket() socket: ExtendedSocket) {
-    // Make async
     const user = socket.data.user;
 
     this.#logger.log(`Received message from ${user.email} (${socket.id}): ${event.message}`);

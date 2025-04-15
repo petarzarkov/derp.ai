@@ -1,9 +1,19 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
+import { IsBoolean, IsIn, IsNumber, IsOptional, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 
+const envs = ['dev', 'prod'] as const;
+export type AppEnv = (typeof envs)[number];
+
 export class EnvVars {
+  @IsIn(envs)
+  APP_ENV: AppEnv;
+
   @IsString()
-  APP_ENV: string;
+  @IsOptional()
+  ALLOWED_ORIGINS?: string;
+
+  @IsString()
+  HOST: string;
 
   @IsNumber()
   @Min(0)
@@ -60,15 +70,33 @@ export class EnvVars {
 export const validateConfig = (config: Record<string, unknown>) => {
   const validatedConfig = plainToInstance(EnvVars, config, { enableImplicitConversion: true });
 
-  const errors = validateSync(validatedConfig, { skipMissingProperties: false });
+  const errors = validateSync(validatedConfig, {
+    skipMissingProperties: false,
+  });
 
   if (errors.length > 0) {
     throw new Error(errors.toString());
   }
 
   const geminiModel = 'gemini-2.0-flash';
+  const localHost = `http://localhost:${validatedConfig.SERVICE_PORT}`;
+  const allowedOrigins = [localHost, `http://127.0.0.1:${validatedConfig.SERVICE_PORT}`];
+  if (validatedConfig.HOST) {
+    allowedOrigins.push(validatedConfig.HOST);
+  }
+
+  if (validatedConfig.ALLOWED_ORIGINS) {
+    allowedOrigins.push(...validatedConfig.ALLOWED_ORIGINS.split(','));
+  }
+
   return {
     env: validatedConfig.APP_ENV,
+    cors: {
+      allowedOrigins: allowedOrigins,
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      allowedHeaders: 'Content-Type, Accept, Authorization',
+      credentials: true,
+    },
     aiProviders: {
       google: {
         url: `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}`,
@@ -97,14 +125,13 @@ export const validateConfig = (config: Record<string, unknown>) => {
         clientId: validatedConfig.GOOGLE_OAUTH_CLIENT_ID,
         clientSecret: validatedConfig.GOOGLE_OAUTH_CLIENT_SECRET,
         callbackUrl: `${
-          validatedConfig.APP_ENV === 'prod'
-            ? 'https://derp.ai.petarzarkov.com'
-            : `http://localhost:${validatedConfig.SERVICE_PORT}`
+          validatedConfig.APP_ENV === 'prod' ? validatedConfig.HOST : localHost
         }/api/auth/google/callback`,
       },
     },
     isDev: !validatedConfig.APP_ENV || validatedConfig.APP_ENV === 'dev',
     app: {
+      host: validatedConfig.HOST,
       port: validatedConfig.SERVICE_PORT,
       docs: {
         apiPath: process.env.API_DOCS_PATH || 'api',

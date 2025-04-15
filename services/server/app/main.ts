@@ -3,12 +3,15 @@ import { AppModule } from './app.module.js';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConsoleLogger, INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { allowedOrigins, ValidatedConfig } from './const';
+import { ValidatedConfig } from './const';
 import { UnhandledRoutes } from './filters/unhandled-routes.filter';
 import passport from 'passport';
 import expressSession from 'express-session';
 import { HttpLoggingInterceptor } from './interceptors/http-logging.interceptor.js';
 import cookieParser from 'cookie-parser';
+import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface.js';
+import { WebSocketGateway } from '@nestjs/websockets';
+import { EventsGateway } from './modules/events/events.gateway.js';
 
 // use cjs import as es6 import will copy the package json in the compilation folder which would confuse pnpm for monorepo mgmt
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -22,24 +25,45 @@ async function bootstrap(module: typeof AppModule) {
 
   const app = await NestFactory.create<INestApplication<Express.Application>>(module, {
     logger,
-    cors: {
-      origin: (origin, callback) => {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-          callback(null, true);
-        } else {
-          logger.error(`HTTP CORS Error: Origin ${origin} not allowed.`);
-          callback(new Error('Not allowed by CORS'));
-        }
-      },
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      allowedHeaders: 'Content-Type, Accept, Authorization',
-      credentials: true,
-    },
   });
 
   const configService = app.get(ConfigService<ValidatedConfig, true>);
   const appConfig = configService.get('app', { infer: true });
   const appEnv = configService.get('env', { infer: true });
+  const corsConfig = configService.get('cors', { infer: true });
+
+  const corsOrigin =
+    (corsContext: string) =>
+    (origin: string, cb: (err: Error | null, origin?: boolean | string | RegExp | (string | RegExp)[]) => void) => {
+      if (!origin || corsConfig.allowedOrigins.indexOf(origin) !== -1) {
+        cb(null, true);
+      } else {
+        logger.error(`${corsContext} CORS Error: Origin ${origin} not allowed.`);
+        cb(new Error('Not allowed by CORS'));
+      }
+    };
+
+  const corsBaseOpts: CorsOptions = {
+    methods: corsConfig.methods,
+    allowedHeaders: corsConfig.allowedHeaders,
+    credentials: corsConfig.credentials,
+  };
+
+  app.enableCors({
+    ...corsBaseOpts,
+    origin: corsOrigin('HTTP'),
+  });
+
+  // Decorate the EventsGateway dynamically as we want to take values from config
+  void WebSocketGateway({
+    cors: {
+      ...corsBaseOpts,
+      origin: corsOrigin('WebSocketGateway'),
+    },
+    connectTimeout: 50000,
+    pingInterval: 25000,
+    pingTimeout: 5000,
+  })(EventsGateway);
 
   const session = configService.get('auth.session', { infer: true });
   app.use(cookieParser());
