@@ -3,7 +3,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { Logger, MiddlewareConsumer, Module, NestModule, OnApplicationShutdown } from '@nestjs/common';
 import { ValidatedConfig, validateConfig } from './const';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { resolve, join } from 'node:path';
+import { resolve } from 'node:path';
 import { AuthModule } from './modules/auth/auth.module';
 import { ServiceModule } from './api/service/service.module';
 import { RequestIdMiddleware } from './middlewares/request-id.middleware';
@@ -48,7 +48,8 @@ import { UsersModule } from './api/users/users.module';
     UsersModule,
     EventsModule,
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '../../web/dist'),
+      renderPath: '/',
+      rootPath: resolve(__dirname, '../../web/dist'),
       exclude: ['/api/*'],
       serveStaticOptions: {
         fallthrough: true,

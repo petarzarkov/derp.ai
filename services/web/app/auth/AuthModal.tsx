@@ -92,7 +92,7 @@ export const AuthModal: React.FC = () => {
     <Modal isOpen={true} onClose={() => null} isCentered>
       <ModalOverlay />
       <ModalContent mx="4">
-        <ModalHeader textAlign="center">{isRegisterView ? 'Create Account' : 'Welcome Back'}</ModalHeader>
+        <ModalHeader textAlign="center">{isRegisterView ? 'Create Account' : 'Welcome'}</ModalHeader>
         <ModalBody pb={6}>
           <form onSubmit={handleSubmit}>
             <VStack spacing={4}>
