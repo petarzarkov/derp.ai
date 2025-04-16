@@ -2,31 +2,19 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ValidatedConfig } from '../../../const'; // Adjust path if needed
+import { ValidatedConfig } from '../../../const';
 import { JWTPayload } from '../auth.entity';
-import { AuthService } from '../auth.service'; // Inject AuthService
-import { Request } from 'express';
+import { AuthService } from '../auth.service';
 import { ContextLogger } from 'nestjs-context-logger';
-
-const cookieExtractor = (req: Request): string | null => {
-  let token = null;
-  if (req && req.cookies) {
-    token = req.cookies['access_token'];
-  }
-  if (!token && req && req.headers.authorization) {
-    token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
-  }
-  return token;
-};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    configService: ConfigService<ValidatedConfig, true>,
-    private authService: AuthService, // Inject AuthService
+    readonly configService: ConfigService<ValidatedConfig, true>,
+    private authService: AuthService,
   ) {
     super({
-      jwtFromRequest: cookieExtractor,
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.get('auth.jwt.secret', { infer: true }),
     });
@@ -46,7 +34,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found for token');
     }
 
-    ContextLogger.updateContext({ userId: user.id, email: user.email });
+    ContextLogger.updateContext({ user });
     return user;
   }
 }

@@ -2,6 +2,7 @@ import { BadRequestException, ExecutionContext, Injectable } from '@nestjs/commo
 import { AuthGuard } from '@nestjs/passport';
 import { ClassConstructor, plainToClass } from 'class-transformer';
 import { validate } from 'class-validator';
+import { Request } from 'express';
 
 @Injectable()
 export class LocalAuthGuard<T extends object> extends AuthGuard('local') {
@@ -13,9 +14,9 @@ export class LocalAuthGuard<T extends object> extends AuthGuard('local') {
   }
 
   async canActivate(context: ExecutionContext) {
+    const request = context.switchToHttp().getRequest<Request>();
+    const result = (await super.canActivate(context)) as boolean;
     if (this.#requestBodyDto) {
-      const request = context.switchToHttp().getRequest<Request>();
-
       const body = plainToClass(this.#requestBodyDto, request.body);
       const errors = await validate(body);
       const errorMessages = errors.flatMap(({ constraints }) => constraints && Object.values(constraints));
@@ -24,6 +25,7 @@ export class LocalAuthGuard<T extends object> extends AuthGuard('local') {
       }
     }
 
-    return super.canActivate(context) as boolean | Promise<boolean>;
+    await super.logIn(request);
+    return result;
   }
 }

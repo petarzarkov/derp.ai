@@ -26,14 +26,16 @@ import { ContextLogger } from 'nestjs-context-logger';
 @Controller('/api/auth')
 export class AuthController {
   #logger = new ContextLogger(this.constructor.name);
+  readonly #cookieName: string;
   #cookieOptions: ValidatedConfig['auth']['session']['cookie'];
 
   constructor(
     private configService: ConfigService<ValidatedConfig, true>,
     private authService: AuthService,
   ) {
-    const cookie = this.configService.get('auth.session.cookie', { infer: true });
-    this.#cookieOptions = cookie;
+    const sessionOpts = this.configService.get('auth.session', { infer: true });
+    this.#cookieOptions = sessionOpts.cookie;
+    this.#cookieName = sessionOpts.cookieName;
   }
 
   get cookieOptions() {
@@ -41,6 +43,21 @@ export class AuthController {
       ...this.#cookieOptions,
       expires: new Date(this.#cookieOptions.maxAge),
     };
+  }
+
+  @UseGuards(new LocalAuthGuard(LoginRequest))
+  @Post('login')
+  @ApiOperation({ summary: 'Login user via email/password' })
+  @ApiResponse({ status: 200, description: 'Login successful', type: SanitizedUser })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBody({ type: LoginRequest })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async login(@Req() req: BaseRequest, @Res({ passthrough: true }) _res: Response): Promise<SanitizedUser> {
+    this.#logger.debug('User logged in via Local Strategy', {
+      sessionId: req.sessionID,
+      sessionKeys: req.session ? Object.keys(req.session) : 'No Session',
+    });
+    return req.user;
   }
 
   @Post('register')
@@ -51,30 +68,23 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'User with this email already exists' })
   async register(
     @Body() registerDto: RegisterRequest,
-    @Res({ passthrough: true }) res: Response,
+    @Req() req: BaseRequest,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Res({ passthrough: true }) _res: Response,
   ): Promise<SanitizedUser> {
     const user = await this.authService.registerLocalUser(registerDto);
-    const loginResponse = await this.authService.login(user);
-    const token = loginResponse.accessToken;
 
-    res.cookie('access_token', token, this.cookieOptions);
-    this.#logger.log(`User registered and cookie set for ${user.email}`);
-    return user;
-  }
-
-  @UseGuards(new LocalAuthGuard(LoginRequest))
-  @Post('login')
-  @ApiOperation({ summary: 'Login user via email/password' })
-  @ApiResponse({ status: 200, description: 'Login successful', type: SanitizedUser })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiBody({ type: LoginRequest })
-  async login(@Req() req: BaseRequest, @Res({ passthrough: true }) res: Response): Promise<SanitizedUser> {
-    const user = req.user;
-    const loginResponse = await this.authService.login(user);
-    const token = loginResponse.accessToken;
-
-    res.cookie('access_token', token, this.cookieOptions);
-    this.#logger.log(`User logged in and cookie set for ${user.email}`);
+    await new Promise<void>((resolve, reject) => {
+      req.login(user, (err) => {
+        if (err) {
+          this.#logger.error(`Error logging in user ${user.email} after registration`, err);
+          return reject(new UnauthorizedException('Could not log in user after registration'));
+        }
+        this.#logger.log(`User registered and session established for ${user.email}`);
+        resolve();
+      });
+    });
+    this.#logger.log(`User registered ${user.email}`);
     return user;
   }
 
@@ -101,17 +111,14 @@ export class AuthController {
       throw new UnauthorizedException('No user data received from Google validation.');
     }
 
-    // User is validated and attached by GoogleOAuthGuard/GoogleStrategy
-    const loginResponse = await this.authService.login(req.user);
-    const token = loginResponse.accessToken;
     const redirectUrl = `${req.secure ? 'https://' : 'http://'}${req.headers.host}`;
-
     try {
-      res.cookie('access_token', token, this.cookieOptions);
       res.redirect(HttpStatus.FOUND, redirectUrl);
-    } catch (cookieError) {
-      this.#logger.error('Failed to set cookie', cookieError as Error, { state });
-      res.status(500).send({ message: 'Login successful, but failed to set cookie.' });
+    } catch (error) {
+      this.#logger.error('Failed during redirect after Google login', error as Error, { state });
+      if (!res.headersSent) {
+        res.status(500).send({ message: 'Login successful, but failed to redirect.' });
+      }
     }
   }
 
@@ -120,42 +127,53 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Logout successful' })
   @ApiResponse({ status: 500, description: 'Logout failed' })
   async logout(@Req() req: BaseRequest, @Res({ passthrough: false }) res: Response) {
+    const sessionId = req.sessionID;
+    const userEmail = req.user?.email;
+
     try {
-      res.clearCookie('access_token', this.#cookieOptions);
-      const passportLogout = (): Promise<void> =>
-        new Promise((resolve, reject) => {
-          req.logOut((err) => {
-            if (err) {
-              this.#logger.error('Error during Passport logout:', err);
-              return reject(err);
-            }
-            this.#logger.log('Passport logout successful.');
-            resolve();
-          });
-        });
+      res.clearCookie(this.#cookieName, {
+        path: this.#cookieOptions.path,
+        httpOnly: this.#cookieOptions.httpOnly,
+        secure: this.#cookieOptions.secure,
+        sameSite: this.#cookieOptions.sameSite,
+      });
 
-      await passportLogout();
-
-      const sessionDestroy = (): Promise<void> =>
-        new Promise((resolve, reject) => {
-          if (!req.session) {
-            return resolve();
+      await new Promise<void>((resolve, reject) => {
+        req.logOut((err) => {
+          if (err) {
+            this.#logger.error(`Error during Passport logout for ${userEmail || 'unknown user'}`, err);
+            return reject(err);
           }
-          req.session.destroy((err) => {
-            if (err) {
-              this.#logger.error('Error destroying session:', err);
-              return reject(err);
-            }
-
-            resolve();
-          });
+          this.#logger.log(`Passport logout successful for ${userEmail || 'unknown user'}.`);
+          resolve();
         });
+      });
 
-      await sessionDestroy();
+      await new Promise<void>((resolve, reject) => {
+        if (!req.session) {
+          this.#logger.warn(
+            `Logout attempt for ${userEmail || 'unknown user'} without an active session (ID: ${sessionId}).`,
+          );
+          return resolve();
+        }
+        req.session.destroy((err) => {
+          if (err) {
+            this.#logger.error(`Error destroying session ${sessionId} for ${userEmail || 'unknown user'}`, err);
+            return reject(err);
+          } else {
+            this.#logger.log(`Session ${sessionId} destroyed successfully for ${userEmail || 'unknown user'}.`);
+          }
+
+          resolve();
+        });
+      });
 
       res.status(HttpStatus.OK).send({ message: 'Logged out successfully' });
     } catch (error) {
-      this.#logger.error('Logout process failed', error as Error);
+      this.#logger.error(
+        `Logout process failed for ${userEmail || 'unknown user'} (Session ID: ${sessionId})`,
+        error as Error,
+      );
       if (!res.headersSent) {
         res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ message: 'Logout failed.' });
       }

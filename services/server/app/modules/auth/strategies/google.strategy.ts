@@ -35,7 +35,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     try {
       const user = await this.authService.findOrCreateUserFromOAuth(id, 'google', email, displayName, picture);
 
-      ContextLogger.updateContext({ userId: user.id, email: user.email, provider: 'google' });
+      ContextLogger.updateContext({ user, provider: 'google' });
+
       done(null, user);
     } catch (err) {
       this.logger.error('Error during Google OAuth validation', err as Error);

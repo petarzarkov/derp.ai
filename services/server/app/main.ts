@@ -1,30 +1,32 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ValidatedConfig } from './const';
 import { UnhandledRoutes } from './filters/unhandled-routes.filter';
 import passport from 'passport';
 import expressSession from 'express-session';
-import { HttpLoggingInterceptor } from './interceptors/http-logging.interceptor.js';
+import { HttpLoggingInterceptor } from './interceptors/http-logging.interceptor';
 import cookieParser from 'cookie-parser';
-import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface.js';
+import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { WebSocketGateway } from '@nestjs/websockets';
-import { EventsGateway } from './modules/events/events.gateway.js';
+import { EventsGateway } from './modules/events/events.gateway';
 import { ContextLogger } from 'nestjs-context-logger';
+import { SessionStore } from './modules/session/session.store';
 
 // use cjs import as es6 import will copy the package json in the compilation folder which would confuse pnpm for monorepo mgmt
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { name, version, description, author, homepage } = require('../package.json');
 
 async function bootstrap(module: typeof AppModule) {
-  const logger = new ContextLogger(name);
   const app = await NestFactory.create<INestApplication<Express.Application>>(module, {
     bufferLogs: true,
-    logger,
+    forceCloseConnections: true,
+    logger: new Logger(name),
   });
 
+  const logger = new ContextLogger(name);
   const configService = app.get(ConfigService<ValidatedConfig, true>);
   const appConfig = configService.get('app', { infer: true });
   const appEnv = configService.get('env', { infer: true });
@@ -52,6 +54,22 @@ async function bootstrap(module: typeof AppModule) {
     origin: corsOrigin('HTTP'),
   });
 
+  const sessionStore = app.get(SessionStore);
+  const session = configService.get('auth.session', { infer: true });
+  app.use(cookieParser(session.secret));
+  app.use(
+    expressSession({
+      store: sessionStore,
+      secret: session.secret,
+      name: session.cookieName,
+      resave: false,
+      saveUninitialized: false,
+      cookie: session.cookie,
+    }),
+  );
+  app.use(passport.initialize());
+  app.use(passport.session());
+
   // Decorate the EventsGateway dynamically as we want to take values from config
   void WebSocketGateway({
     cors: {
@@ -61,19 +79,8 @@ async function bootstrap(module: typeof AppModule) {
     connectTimeout: 50000,
     pingInterval: 25000,
     pingTimeout: 5000,
+    cleanupEmptyChildNamespaces: true,
   })(EventsGateway);
-
-  const session = configService.get('auth.session', { infer: true });
-  app.use(cookieParser());
-  app.use(
-    expressSession({
-      secret: session.secret,
-      resave: false,
-      saveUninitialized: false,
-      cookie: session.cookie,
-    }),
-  );
-  app.use(passport.initialize());
 
   app.useGlobalInterceptors(new HttpLoggingInterceptor());
   app.useGlobalPipes(new ValidationPipe({ transform: true, transformOptions: { enableImplicitConversion: true } }));

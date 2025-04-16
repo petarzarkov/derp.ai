@@ -11,11 +11,15 @@ import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { SessionSerializer } from '../session/session.serializer';
+import { UsersModule } from '../../api/users/users.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, AuthProvider]),
-    PassportModule,
+    PassportModule.register({
+      session: true,
+    }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService<ValidatedConfig, true>) => ({
@@ -24,8 +28,9 @@ import { GoogleStrategy } from './strategies/google.strategy';
       }),
       inject: [ConfigService],
     }),
+    UsersModule,
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, SessionSerializer],
   controllers: [AuthController],
   exports: [AuthService, JwtModule],
 })

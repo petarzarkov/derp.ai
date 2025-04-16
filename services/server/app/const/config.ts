@@ -32,6 +32,10 @@ export class EnvVars {
   @MinLength(18)
   SESSION_SECRET: string;
 
+  @IsNumber()
+  @IsOptional()
+  SESSION_PRUNE_INTERVAL: number = 60 * 15 * 1000;
+
   @IsString()
   GOOGLE_GEMINI_API_KEY: string;
 
@@ -119,8 +123,18 @@ export const validateConfig = (config: Record<string, unknown>) => {
       },
       session: {
         secret: validatedConfig.SESSION_SECRET,
+        /**
+         * if `0` the interval won't run
+         * @default 60 * 15
+         */
+        pruneInterval: validatedConfig.SESSION_PRUNE_INTERVAL,
+        cookieName: 'connect.sid',
         cookie: {
-          maxAge: 1000 * 60 * 60 * 24 * 2,
+          /**
+           * 1 day in ms
+           * @default 1000 * 60 * 60 * 24 * 1
+           */
+          maxAge: 1000 * 60 * 60 * 24 * 1,
           httpOnly: true,
           secure: validatedConfig.APP_ENV === 'prod',
           sameSite: 'lax',

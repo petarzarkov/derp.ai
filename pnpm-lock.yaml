@@ -115,9 +115,6 @@ importers:
       class-validator:
         specifier: ^0.14.1
         version: 0.14.1
-      cookie:
-        specifier: ^1.0.2
-        version: 1.0.2
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7

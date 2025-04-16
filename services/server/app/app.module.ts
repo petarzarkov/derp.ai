@@ -1,6 +1,6 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { ExecutionContext, MiddlewareConsumer, Module, NestModule, OnApplicationShutdown } from '@nestjs/common';
+import { ExecutionContext, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { REQUEST_ID_HEADER_KEY, ValidatedConfig, validateConfig } from './const';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { resolve } from 'node:path';
@@ -9,13 +9,12 @@ import { ServiceModule } from './api/service/service.module';
 import { RequestIdMiddleware } from './middlewares/request-id.middleware';
 import { EventsModule } from './modules/events/events.module';
 import { QnAModule } from './modules/qna/qna.module';
-import { EventsGateway } from './modules/events/events.gateway';
-import { ModuleRef } from '@nestjs/core';
 import { UsersModule } from './api/users/users.module';
 import { ContextLogger, ContextLoggerModule } from 'nestjs-context-logger';
 import { v4 as uuidv4 } from 'uuid';
 import { BaseRequest } from './modules/auth/auth.entity';
 import pino from 'pino';
+import { SessionModule } from './modules/session/session.module';
 
 @Module({
   imports: [
@@ -77,8 +76,8 @@ import pino from 'pino';
           const req = context.switchToHttp().getRequest<BaseRequest>();
 
           return {
-            userId: req.user?.id,
-            email: req.user?.email,
+            user: req.user,
+            sessionID: req.sessionID,
             requestId: req.headers[REQUEST_ID_HEADER_KEY],
             env: configService.get('env', { infer: true }),
           };
@@ -94,7 +93,6 @@ import pino from 'pino';
         },
       }),
     }),
-    QnAModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService<ValidatedConfig, true>) => {
@@ -117,7 +115,9 @@ import pino from 'pino';
       },
       inject: [ConfigService],
     }),
+    SessionModule,
     ServiceModule,
+    QnAModule,
     AuthModule,
     UsersModule,
     EventsModule,
@@ -131,28 +131,12 @@ import pino from 'pino';
     }),
   ],
 })
-export class AppModule implements NestModule, OnApplicationShutdown {
+export class AppModule implements NestModule {
   logger = new ContextLogger(AppModule.name);
 
-  constructor(
-    public readonly configService: ConfigService<ValidatedConfig, true>,
-    private readonly moduleRef: ModuleRef,
-  ) {}
+  constructor(public readonly configService: ConfigService<ValidatedConfig, true>) {}
 
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(RequestIdMiddleware).forRoutes('*');
-  }
-
-  async onApplicationShutdown(signal?: string) {
-    this.logger.debug(`Graceful shutdown signal: ${signal}`);
-    const wsServer = this.moduleRef.get(EventsGateway, { strict: false });
-
-    await wsServer.server.close((err) => {
-      if (err) {
-        this.logger.error('Error closing WebSocket server:', err);
-      } else {
-        this.logger.log('WebSocket server closed.');
-      }
-    });
   }
 }

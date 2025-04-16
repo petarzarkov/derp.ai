@@ -16,7 +16,7 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    ContextLogger.updateContext({ userId: user.id, email: user.email, provider: 'local' });
+    ContextLogger.updateContext({ user, provider: 'local' });
     return user;
   }
 }

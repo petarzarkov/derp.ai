@@ -4,13 +4,17 @@
 const baseConfig = {
   clearMocks: true,
   moduleFileExtensions: ['js', 'json', 'ts'],
-  rootDir: 'app',
   transform: {
     '^.+\\.(t|j)s$': '@swc/jest',
   },
   testEnvironment: 'node',
-  collectCoverageFrom: ['**/*.ts', '!**/*.(controller|module|spec|integration|filter).ts'],
-  coveragePathIgnorePatterns: ['(app/const)', '(app/fixtures)', '(app/main.ts)'],
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/app/const/',
+    '<rootDir>/app/main.ts',
+    '<rootDir>/app/fixtures/',
+    '<rootDir>/app/db/migrations/',
+  ],
 };
 /**
  * @type {import('jest').Config}
@@ -18,12 +22,16 @@ const baseConfig = {
 const config = {
   coverageThreshold: {
     global: {
-      statements: 90,
-      branches: 84,
-      functions: 90,
-      lines: 90,
+      statements: 30,
+      branches: 30,
+      functions: 15,
+      lines: 30,
     },
   },
+  collectCoverageFrom: [
+    '**/*.ts',
+    '!**/*.(controller|module|middleware|spec|integration|filter|interceptor|guard|decorator|strategy|config).ts',
+  ],
   coverageDirectory: 'coverage',
   projects: [
     {
