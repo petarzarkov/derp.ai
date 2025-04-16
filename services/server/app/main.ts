@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ValidatedConfig } from './const';
 import { UnhandledRoutes } from './filters/unhandled-routes.filter';
@@ -14,13 +14,14 @@ import { WebSocketGateway } from '@nestjs/websockets';
 import { EventsGateway } from './modules/events/events.gateway';
 import { ContextLogger } from 'nestjs-context-logger';
 import { SessionStore } from './modules/session/session.store';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 // use cjs import as es6 import will copy the package json in the compilation folder which would confuse pnpm for monorepo mgmt
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { name, version, description, author, homepage } = require('../package.json');
 
 async function bootstrap(module: typeof AppModule) {
-  const app = await NestFactory.create<INestApplication<Express.Application>>(module, {
+  const app = await NestFactory.create<NestExpressApplication>(module, {
     bufferLogs: true,
     forceCloseConnections: true,
     logger: new Logger(name),
@@ -56,6 +57,7 @@ async function bootstrap(module: typeof AppModule) {
 
   const sessionStore = app.get(SessionStore);
   const session = configService.get('auth.session', { infer: true });
+  app.set('trust proxy', true);
   app.use(cookieParser(session.secret));
   app.use(
     expressSession({
@@ -64,7 +66,9 @@ async function bootstrap(module: typeof AppModule) {
       name: session.cookieName,
       resave: false,
       saveUninitialized: false,
-      cookie: session.cookie,
+      cookie: {
+        ...session.cookie,
+      },
     }),
   );
   app.use(passport.initialize());
