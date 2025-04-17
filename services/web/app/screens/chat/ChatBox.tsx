@@ -40,30 +40,13 @@ export function ChatBox() {
     }
   };
 
-  let statusColor: string;
-  let statusText: string;
-
-  switch (connectionStatus) {
-    case 'connected':
-      statusColor = 'green.400';
-      statusText = 'Connected';
-      break;
-    case 'connecting':
-      statusColor = 'yellow.400';
-      statusText = 'Connecting...';
-      break;
-    case 'reconnecting':
-      statusColor = 'orange.400';
-      statusText = 'Reconnecting...';
-      break;
-    case 'disconnected':
-      statusColor = 'red.500';
-      statusText = 'Disconnected';
-      break;
-    default:
-      statusColor = 'gray.400';
-      statusText = 'Unknown';
-  }
+  const statusCtx: Record<typeof connectionStatus, { color: string; text: string }> = {
+    connected: { color: 'green.400', text: 'Connected' },
+    connecting: { color: 'yellow.400', text: 'Connecting...' },
+    reconnecting: { color: 'orange.400', text: 'Reconnecting...' },
+    disconnected: { color: 'red.500', text: 'Disconnected' },
+  };
+  const { color: statusColor, text: statusText } = statusCtx[connectionStatus];
 
   return (
     <Flex
@@ -152,7 +135,10 @@ export function ChatBox() {
           // Disable based on connection status and thinking state
           isDisabled={connectionStatus !== 'connected' || isBotThinking}
           variant="filled"
-          _focus={{ borderColor: useColorModeValue('primary.500', 'primary.300') }}
+          _focus={{
+            bg: useColorModeValue('white', 'gray.700'),
+            borderColor: useColorModeValue('primary.500', 'primary.300'),
+          }}
           overflowY="auto"
           resize="none"
           transition="height none"
