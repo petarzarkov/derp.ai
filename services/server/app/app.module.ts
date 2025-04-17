@@ -1,6 +1,6 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { ExecutionContext, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ExecutionContext, MiddlewareConsumer, Module, NestModule, OnApplicationBootstrap } from '@nestjs/common';
 import { REQUEST_ID_HEADER_KEY, ValidatedConfig, validateConfig } from './const';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { resolve } from 'node:path';
@@ -15,6 +15,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { BaseRequest } from './modules/auth/auth.entity';
 import pino from 'pino';
 import { SessionModule } from './modules/session/session.module';
+import { SlackModule } from './modules/slack/slack.module';
+import { SlackService } from './modules/slack/slack.service';
 
 @Module({
   imports: [
@@ -23,10 +25,11 @@ import { SessionModule } from './modules/session/session.module';
       validate: validateConfig,
       isGlobal: true,
     }),
+    SlackModule.forRoot({ isGlobal: true }),
     ContextLoggerModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService<ValidatedConfig, true>) => ({
+      imports: [ConfigModule, SlackModule],
+      inject: [ConfigService, SlackService],
+      useFactory: (configService: ConfigService<ValidatedConfig, true>, slackService: SlackService) => ({
         pinoHttp: {
           base: null,
           level: configService.get('log.level', { infer: true }),
@@ -91,6 +94,13 @@ import { SessionModule } from './modules/session/session.module';
             ...rest,
           };
         },
+        hooks: {
+          all: [
+            function (message, bindings) {
+              slackService.queueLog(message, bindings);
+            },
+          ],
+        },
       }),
     }),
     TypeOrmModule.forRootAsync({
@@ -131,12 +141,38 @@ import { SessionModule } from './modules/session/session.module';
     }),
   ],
 })
-export class AppModule implements NestModule {
+export class AppModule implements NestModule, OnApplicationBootstrap {
   logger = new ContextLogger(AppModule.name);
 
-  constructor(public readonly configService: ConfigService<ValidatedConfig, true>) {}
+  constructor(
+    public readonly configService: ConfigService<ValidatedConfig, true>,
+    public readonly slackService: SlackService,
+  ) {}
 
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+
+  async onApplicationBootstrap() {
+    const config = this.configService.get('app', { infer: true });
+    await this.slackService.postContext({
+      username: 'DerpAI',
+      header: `:test_tube: DerpAI Started - ${new Date().toISOString()}`,
+      data: config,
+      color: '#4432a8',
+      buttons: {
+        items: [
+          {
+            text: 'Open my UI',
+            url: config.host,
+            style: 'primary',
+          },
+          {
+            text: 'See my app logs here',
+            url: 'https://app.koyeb.com/services/8dfcf0aa-6c18-4b20-8f4f-85ef6129d043?deploymentId=5e9fb48b-930e-4a74-8c45-e3195b8cfbaa',
+          },
+        ],
+      },
+    });
   }
 }

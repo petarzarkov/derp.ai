@@ -14,6 +14,7 @@ const baseConfig = {
     '<rootDir>/app/main.ts',
     '<rootDir>/app/fixtures/',
     '<rootDir>/app/db/migrations/',
+    '<rootDir>/app/modules/slack/',
   ],
 };
 /**

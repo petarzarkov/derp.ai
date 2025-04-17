@@ -1,5 +1,5 @@
 import { IsBoolean, IsIn, IsNumber, IsOptional, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
-import { plainToInstance } from 'class-transformer';
+import { plainToInstance, Transform } from 'class-transformer';
 
 const envs = ['dev', 'prod'] as const;
 export type AppEnv = (typeof envs)[number];
@@ -12,6 +12,10 @@ export class EnvVars {
   @IsString()
   @IsOptional()
   LOG_LEVEL: LogLevel = 'info';
+
+  @IsString()
+  @IsOptional()
+  API_DOCS_PATH = 'api';
 
   @IsString()
   @IsOptional()
@@ -67,6 +71,7 @@ export class EnvVars {
   @IsString()
   DB_PASS: string;
 
+  @Transform(({ value }) => value === 'true')
   @IsBoolean()
   @IsOptional()
   DB_SSL?: boolean;
@@ -74,6 +79,31 @@ export class EnvVars {
   @IsNumber()
   @IsOptional()
   AI_REQ_TIMEOUT?: number;
+
+  @IsString()
+  SLACK_APP_TOKEN: string;
+
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  @IsOptional()
+  SLACK_APP_SOCKET_MODE = true;
+
+  @IsString()
+  @IsOptional()
+  SLACK_USER_TOKEN?: string;
+
+  @IsString()
+  SLACK_SIGNING_SECRET: string;
+
+  @IsString()
+  SLACK_BOT_TOKEN: string;
+
+  @IsString()
+  SLACK_BOT_NAME: string;
+
+  @IsOptional()
+  @IsString()
+  SLACK_BOT_DEFAULT_CHANNEL?: string;
 }
 
 export const validateConfig = (config: Record<string, unknown>) => {
@@ -156,7 +186,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
       host: validatedConfig.HOST,
       port: validatedConfig.SERVICE_PORT,
       docs: {
-        apiPath: process.env.API_DOCS_PATH || 'api',
+        apiPath: validatedConfig.API_DOCS_PATH,
       },
       aiReqTimeout: validatedConfig.AI_REQ_TIMEOUT || 25000,
     },
@@ -167,6 +197,15 @@ export const validateConfig = (config: Record<string, unknown>) => {
       username: validatedConfig.DB_USER,
       password: validatedConfig.DB_PASS,
       ssl: validatedConfig.DB_SSL,
+    },
+    slack: {
+      appToken: validatedConfig.SLACK_APP_TOKEN,
+      botToken: validatedConfig.SLACK_BOT_TOKEN,
+      userToken: validatedConfig.SLACK_USER_TOKEN,
+      signingSecret: validatedConfig.SLACK_SIGNING_SECRET,
+      botName: validatedConfig.SLACK_BOT_NAME,
+      defaultChannel: validatedConfig.SLACK_BOT_DEFAULT_CHANNEL,
+      socketMode: validatedConfig.SLACK_APP_SOCKET_MODE,
     },
   } as const;
 };
