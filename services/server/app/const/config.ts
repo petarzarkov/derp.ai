@@ -71,7 +71,7 @@ export class EnvVars {
   @IsString()
   DB_PASS: string;
 
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => value === true)
   @IsBoolean()
   @IsOptional()
   DB_SSL?: boolean;
@@ -83,7 +83,7 @@ export class EnvVars {
   @IsString()
   SLACK_APP_TOKEN: string;
 
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => value === true)
   @IsBoolean()
   @IsOptional()
   SLACK_APP_SOCKET_MODE = true;
@@ -128,6 +128,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
     allowedOrigins.push(...validatedConfig.ALLOWED_ORIGINS.split(','));
   }
 
+  console.log(validatedConfig.DB_SSL);
   return {
     env: validatedConfig.APP_ENV,
     log: {
