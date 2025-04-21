@@ -130,6 +130,9 @@ importers:
       express-session:
         specifier: ^1.18.1
         version: 1.18.1
+      express-useragent:
+        specifier: ^1.0.15
+        version: 1.0.15
       nestjs-context-logger:
         specifier: ^1.6.0
         version: 1.6.0(@nestjs/common@11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7))(@nestjs/core@11.0.13)(nestjs-pino@4.4.0(@nestjs/common@11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7))(pino-http@10.4.0)(pino@9.6.0)(rxjs@7.5.7))(pino@9.6.0)(reflect-metadata@0.2.2)(rxjs@7.5.7)
@@ -197,6 +200,9 @@ importers:
       '@types/express-session':
         specifier: ^1.18.1
         version: 1.18.1
+      '@types/express-useragent':
+        specifier: ^1.0.5
+        version: 1.0.5
       '@types/jest':
         specifier: ^29.5.14
         version: 29.5.14
@@ -2178,6 +2184,10 @@ packages:
     resolution:
       { integrity: sha512-S6TkD/lljxDlQ2u/4A70luD8/ZxZcrU5pQwI1rVXCiaVIywoFgbA+PIUNDjPhQpPdK0dGleLtYc/y7XWBfclBg== }
 
+  '@types/express-useragent@1.0.5':
+    resolution:
+      { integrity: sha512-G1zPW6jDj7oGJvMvB8UCIAWznCOafcksYzOg8LINfYmvrXlSGJ6nsJ7O7GlmYMjrgGYvobYaI8IhRCkAKslPJA== }
+
   '@types/express@5.0.1':
     resolution:
       { integrity: sha512-UZUw8vjpWFXuDnjFTh7/5c2TWDlQqeXHi6hcN7F2XSVT5P+WmUnnbFS3KA6Jnc6IsEqI2qCVu2bK0R0J4A8ZQQ== }
@@ -3709,6 +3719,11 @@ packages:
     resolution:
       { integrity: sha512-a5mtTqEaZvBCL9A9aqkrtfz+3SMDhOVUnjafjo+s7A9Txkq+SVX2DLvSp1Zrv4uCXa3lMSK3viWnh9Gg07PBUA== }
     engines: { node: '>= 0.8.0' }
+
+  express-useragent@1.0.15:
+    resolution:
+      { integrity: sha512-eq5xMiYCYwFPoekffMjvEIk+NWdlQY9Y38OsTyl13IvA728vKT+q/CSERYWzcw93HGBJcIqMIsZC5CZGARPVdg== }
+    engines: { node: '>=4.5' }
 
   express@5.1.0:
     resolution:
@@ -8760,6 +8775,10 @@ snapshots:
     dependencies:
       '@types/express': 5.0.1
 
+  '@types/express-useragent@1.0.5':
+    dependencies:
+      '@types/express': 5.0.1
+
   '@types/express@5.0.1':
     dependencies:
       '@types/body-parser': 1.19.5
@@ -10129,6 +10148,8 @@ snapshots:
       uid-safe: 2.1.5
     transitivePeerDependencies:
       - supports-color
+
+  express-useragent@1.0.15: {}
 
   express@5.1.0:
     dependencies:

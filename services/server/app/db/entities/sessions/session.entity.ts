@@ -1,34 +1,50 @@
-import { Entity, PrimaryColumn, Column, Index, ValueTransformer } from 'typeorm';
-import { SessionData } from 'express-session';
-
-const jsonDataTransformer: ValueTransformer = {
-  to: (value: SessionData): string => {
-    try {
-      return JSON.stringify(value);
-    } catch (error) {
-      console.error('Failed to stringify session JSON:', error);
-      return '{}';
-    }
-  },
-  from: (value: string): SessionData => {
-    try {
-      return JSON.parse(value);
-    } catch (error) {
-      console.error('Failed to parse session JSON:', error);
-      return {} as SessionData;
-    }
-  },
-};
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  Index,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
+import { User } from '../users/user.entity';
 
 @Entity('sessions')
+@Index(['userId'])
 export class Session {
   @PrimaryColumn('varchar', { length: 255 })
   sid: string;
 
-  @Column({ type: 'jsonb', transformer: jsonDataTransformer })
-  sess: SessionData;
+  @Column({ type: 'uuid', nullable: true })
+  userId: string | null;
 
-  @Index()
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  ipAddress: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  userAgent: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  device: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  browser: string | null;
+
   @Column('timestamp with time zone')
+  @Index()
   expire: Date;
+
+  @UpdateDateColumn()
+  lastActivity: Date;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @ManyToOne(() => User, {
+    nullable: true, // Allow sessions without a logged-in user initially
+    onDelete: 'SET NULL', // Or 'CASCADE' if sessions should be deleted when user is deleted
+  })
+  @JoinColumn({ name: 'userId' })
+  user: User | null;
 }

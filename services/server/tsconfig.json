@@ -3,7 +3,9 @@
   "compilerOptions": {
     "outDir": "./build",
     "lib": ["ESNext", "DOM"],
+    "typeRoots": ["@types", "node_modules/@types"],
     "baseUrl": "."
   },
+  "files": ["@types/express.d.ts", "@types/express-session.d.ts"],
   "include": ["app"]
 }

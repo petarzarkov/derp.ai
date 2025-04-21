@@ -128,7 +128,6 @@ export const validateConfig = (config: Record<string, unknown>) => {
     allowedOrigins.push(...validatedConfig.ALLOWED_ORIGINS.split(','));
   }
 
-  console.log(validatedConfig.DB_SSL);
   return {
     env: validatedConfig.APP_ENV,
     log: {
@@ -156,7 +155,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
         secret: validatedConfig.SESSION_SECRET,
         /**
          * if `0` the interval won't run
-         * @default 60 * 15
+         * @default 60 * 15 * 1000
          */
         pruneInterval: validatedConfig.SESSION_PRUNE_INTERVAL,
         cookieName: 'connect.sid',

@@ -3,18 +3,17 @@ import { Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { Session } from '../../db/entities/sessions/session.entity';
-import expressSession, { SessionData } from 'express-session';
+import expressSession, { Cookie, SessionData } from 'express-session';
 import { ConfigService } from '@nestjs/config';
 import { ValidatedConfig } from '../../const';
 import { ContextLogger } from 'nestjs-context-logger';
-
-const ONE_DAY_IN_SECONDS = 86400;
 
 type SimpleErrorCallback = (err?: Error) => void;
 
 @Injectable()
 export class SessionStore extends expressSession.Store implements OnApplicationShutdown {
   private readonly logger = new ContextLogger(this.constructor.name);
+  private readonly sessionConfig: ValidatedConfig['auth']['session'];
   private readonly ttl: number;
   private readonly pruneInterval: number | false;
   private pruneTimer?: NodeJS.Timeout;
@@ -26,13 +25,13 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
   ) {
     super();
 
-    const sessionConfig = this.configService.get('auth.session', { infer: true });
-    this.ttl = sessionConfig.cookie.maxAge ? Math.floor(sessionConfig.cookie.maxAge / 1000) : ONE_DAY_IN_SECONDS;
+    this.sessionConfig = this.configService.get('auth.session', { infer: true });
+    this.ttl = Math.floor(this.sessionConfig.cookie.maxAge / 1000);
 
-    if (sessionConfig.pruneInterval === 0) {
+    if (this.sessionConfig.pruneInterval === 0) {
       this.pruneInterval = false;
     } else {
-      this.pruneInterval = sessionConfig.pruneInterval;
+      this.pruneInterval = this.sessionConfig.pruneInterval;
       this.initPruneTimer();
     }
     this.logger.info(
@@ -58,8 +57,22 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
           this.destroy(sid, (err) => callback(err, null));
         } else {
           this.logger.debug(`GET ${sid}: Found, returning session data`);
-          // Session found and valid, return the data
-          callback(null, session.sess);
+          const sessionData: SessionData = {
+            cookie: {
+              ...this.sessionConfig,
+              expires: session.expire,
+            } as unknown as Cookie,
+            ...(session.userId && { passport: { user: session.userId } }),
+            ...(session.ipAddress && {
+              deviceInfo: {
+                ipAddress: session.ipAddress,
+                userAgent: session.userAgent ?? 'Unknown',
+                device: session.device ?? 'Unknown',
+                browser: session.browser ?? 'Unknown',
+              },
+            }),
+          };
+          callback(null, sessionData);
         }
       })
       .catch((err) => {
@@ -74,15 +87,23 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
   set = (sid: string, session: SessionData, callback?: SimpleErrorCallback): void => {
     this.logger.debug(`SET ${sid}`);
     const expire = this.getExpireTime(session);
-    const sessionEntity = this.sessionRepository.create({
-      sid,
-      sess: session, // TypeORM handles transformation if configured
-      expire,
-    });
+    const userId = session?.passport?.user || null;
+    const deviceInfo = session?.deviceInfo;
 
-    // Use upsert for efficient insert or update
+    const sessionToSave: Partial<Session> = {
+      sid,
+      expire,
+      userId,
+      ipAddress: deviceInfo?.ipAddress || null,
+      userAgent: deviceInfo?.userAgent || null,
+      device: deviceInfo?.device || null,
+      browser: deviceInfo?.browser || null,
+    };
+
+    const sessionEntity = this.sessionRepository.create(sessionToSave);
+
     this.sessionRepository
-      .upsert(sessionEntity, ['sid']) // Specify conflict target column(s)
+      .upsert(sessionEntity, ['sid'])
       .then(() => {
         this.logger.debug(`SET ${sid}: Success`);
         callback?.();
@@ -115,8 +136,6 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
    * Updates the expiration time.
    */
   touch = (sid: string, session: SessionData, callback?: () => void): void => {
-    // Check if touch is implicitly disabled by having no maxAge/expires
-    // Or add an explicit config option if needed
     if (!session?.cookie?.maxAge && !session?.cookie?.expires) {
       this.logger.debug(`TOUCH ${sid}: Skipped (no maxAge/expires)`);
       callback?.();
@@ -138,7 +157,6 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
       })
       .catch((err) => {
         this.logger.error(`TOUCH ${sid}: Error - ${err.message}`, err.stack);
-        // Should we invoke callback with error? Original store doesn't seem to.
         callback?.();
       });
   };
@@ -207,7 +225,7 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
   pruneSessions = (): void => {
     this.logger.info('Pruning expired sessions...');
     this.sessionRepository
-      .delete({ expire: LessThan(new Date()) }) // Delete where expire < NOW()
+      .delete({ expire: LessThan(new Date()) })
       .then((result) => {
         if (result.affected && result.affected > 0) {
           this.logger.info(`Pruned ${result.affected} expired sessions.`);
@@ -239,7 +257,7 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
       expire = Date.now() + this.ttl * 1000;
     }
 
-    return typeof expire === 'number' ? new Date(expire) : expire;
+    return typeof expire === 'number' ? new Date(expire) : expire || new Date(Date.now() + this.ttl * 1000);
   }
 
   /**

@@ -17,6 +17,7 @@ import pino from 'pino';
 import { SessionModule } from './modules/session/session.module';
 import { SlackModule } from './modules/slack/slack.module';
 import { SlackService } from './modules/slack/slack.service';
+import { DeviceInfoMiddleware } from './middlewares/device-info.middleware';
 
 @Module({
   imports: [
@@ -55,7 +56,6 @@ import { SlackService } from './modules/slack/slack.service';
             req: (req) => {
               return {
                 headers: {
-                  'user-agent': req.headers['user-agent'],
                   referer: req.headers.referer,
                   host: req.headers.host,
                   origin: req.headers.origin,
@@ -107,7 +107,6 @@ import { SlackService } from './modules/slack/slack.service';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService<ValidatedConfig, true>) => {
         const dbConfig = configService.get('db', { infer: true });
-        const isDev = configService.get('isDev', { infer: true });
         return {
           type: 'postgres',
           host: dbConfig.host,
@@ -120,7 +119,7 @@ import { SlackService } from './modules/slack/slack.service';
           migrations: [resolve(__dirname, './db/migrations/**/*{.ts,.js}')],
           migrationsRun: true,
           autoLoadEntities: true,
-          logging: isDev,
+          logging: ['warn', 'error'],
         };
       },
       inject: [ConfigService],
@@ -151,6 +150,7 @@ export class AppModule implements NestModule, OnApplicationBootstrap {
 
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(RequestIdMiddleware).forRoutes('*');
+    consumer.apply(DeviceInfoMiddleware).forRoutes('*');
   }
 
   async onApplicationBootstrap() {
