@@ -247,8 +247,13 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
    * Calculate session expiration date.
    */
   private getExpireTime(sess: SessionData): Date {
-    let expire: number | Date | undefined;
+    if (!sess.passport?.user) {
+      const minsToExpire = 10;
+      // Expire non auth user sessions
+      return new Date(Date.now() + minsToExpire * 60 * 1000);
+    }
 
+    let expire: number | Date | undefined;
     if (sess?.cookie?.expires) {
       expire = sess.cookie.expires;
     } else if (sess?.cookie?.maxAge) {

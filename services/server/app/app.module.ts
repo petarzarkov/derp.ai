@@ -18,13 +18,30 @@ import { SessionModule } from './modules/session/session.module';
 import { SlackModule } from './modules/slack/slack.module';
 import { SlackService } from './modules/slack/slack.service';
 import { DeviceInfoMiddleware } from './middlewares/device-info.middleware';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
   imports: [
     ConfigModule.forRoot({
       envFilePath: [resolve(__dirname, '../../../', '.env'), resolve(__dirname, '../../../', '.env.dev')],
       validate: validateConfig,
       isGlobal: true,
+    }),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          name: 'short',
+          ttl: 1000,
+          limit: 3,
+        },
+      ],
     }),
     SlackModule.forRoot({ isGlobal: true }),
     ContextLoggerModule.forRootAsync({

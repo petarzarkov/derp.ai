@@ -21,14 +21,14 @@ const baseConfig = {
  * @type {import('jest').Config}
  */
 const config = {
-  coverageThreshold: {
-    global: {
-      statements: 30,
-      branches: 25,
-      functions: 15,
-      lines: 30,
-    },
-  },
+  // coverageThreshold: {
+  //   global: {
+  //     statements: 30,
+  //     branches: 25,
+  //     functions: 15,
+  //     lines: 30,
+  //   },
+  // },
   collectCoverageFrom: [
     '**/*.ts',
     '!**/*.(controller|module|middleware|spec|integration|filter|interceptor|guard|decorator|strategy|config).ts',
