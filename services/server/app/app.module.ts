@@ -18,7 +18,7 @@ import { SessionModule } from './modules/session/session.module';
 import { SlackModule } from './modules/slack/slack.module';
 import { SlackService } from './modules/slack/slack.service';
 import { DeviceInfoMiddleware } from './middlewares/device-info.middleware';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule, seconds } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 
 @Module({
@@ -38,8 +38,18 @@ import { APP_GUARD } from '@nestjs/core';
       throttlers: [
         {
           name: 'short',
-          ttl: 1000,
+          ttl: seconds(1),
           limit: 3,
+        },
+        {
+          name: 'medium',
+          ttl: seconds(10),
+          limit: 20,
+        },
+        {
+          name: 'long',
+          ttl: seconds(60),
+          limit: 100,
         },
       ],
     }),

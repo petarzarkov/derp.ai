@@ -1,10 +1,10 @@
-// src/modules/session/typeorm-session.store.ts
 import { Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { Session } from '../../db/entities/sessions/session.entity';
 import expressSession, { Cookie, SessionData } from 'express-session';
 import { ConfigService } from '@nestjs/config';
+import { minutes } from '@nestjs/throttler';
 import { ValidatedConfig } from '../../const';
 import { ContextLogger } from 'nestjs-context-logger';
 
@@ -250,7 +250,7 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
     if (!sess.passport?.user) {
       const minsToExpire = 10;
       // Expire non auth user sessions
-      return new Date(Date.now() + minsToExpire * 60 * 1000);
+      return new Date(minutes(minsToExpire));
     }
 
     let expire: number | Date | undefined;
