@@ -16,6 +16,15 @@ import {
   Tooltip,
   Button,
   Avatar,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverBody,
+  PopoverFooter,
+  PopoverArrow,
+  PopoverCloseButton,
+  Text,
 } from '@chakra-ui/react';
 import { MoonIcon, SunIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { ColorTheme, themes } from '@theme';
@@ -39,10 +48,13 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
   const navBg = useColorModeValue('primary.200', 'primary.900');
   const borderColor = useColorModeValue('gray.300', 'gray.700');
   const ColorModeIcon = useColorModeValue(<MoonIcon />, <SunIcon />);
+  const popoverBg = useColorModeValue('white', 'gray.800');
 
   const currentWidth = isNavOpen ? NAVBAR_EXPANDED_WIDTH : NAVBAR_COLLAPSED_WIDTH;
 
-  const avatarName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
+  // Use a more descriptive name or keep avatarName if preferred elsewhere
+  const userDisplayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
+  const userEmail = currentUser?.email || 'No Email';
 
   return (
     <Box
@@ -82,14 +94,15 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
       <Flex
         h="full"
         alignItems="center"
-        justifyContent="space-between"
+        justifyContent="space-between" // Pushes top icons up and bottom icons down
         direction="column"
-        py={5}
-        px={2}
+        py={5} // Padding top and bottom
+        px={2} // Padding left and right
+        // Control visibility based on nav state for smooth transition
         opacity={isNavOpen ? 1 : 0}
         visibility={isNavOpen ? 'visible' : 'hidden'}
-        pointerEvents={isNavOpen ? 'auto' : 'none'}
-        transition="opacity 0.2s 0.1s, visibility 0.2s 0.1s"
+        pointerEvents={isNavOpen ? 'auto' : 'none'} // Disable interaction when collapsed
+        transition="opacity 0.2s 0.1s, visibility 0.2s 0.1s" // Delay transition slightly
       >
         <VStack spacing={5} alignSelf="stretch">
           <Tooltip label="Change Theme" placement="right" hasArrow>
@@ -114,14 +127,52 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
 
         <VStack spacing={4} alignSelf="stretch">
           {isAuthenticated && currentUser && (
-            <Tooltip label={currentUser.displayName || currentUser.email} placement="right" hasArrow>
-              <Avatar size="sm" name={avatarName} src={currentUser.picture ?? undefined} mb={2} />
-            </Tooltip>
+            <Popover placement="right-start" trigger="click" isLazy>
+              <PopoverTrigger>
+                <Avatar
+                  size="sm"
+                  name={userDisplayName}
+                  src={currentUser.picture ?? undefined}
+                  mb={2}
+                  cursor="pointer" // Indicate it's clickable
+                  _hover={{ opacity: 0.8 }} // Add hover effect
+                />
+              </PopoverTrigger>
+              <PopoverContent zIndex="popover" bg={popoverBg} width="auto" _focus={{ boxShadow: 'lg' }}>
+                {' '}
+                {/* Ensure popover is above other elements */}
+                <PopoverArrow bg={popoverBg} />
+                <PopoverCloseButton />
+                <PopoverHeader fontWeight="semibold" borderBottomWidth="1px">
+                  {userDisplayName}
+                </PopoverHeader>
+                <PopoverBody>
+                  <VStack align="start" spacing={2}>
+                    <Text fontSize="sm" color="gray.500">
+                      Email: {userEmail}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500">
+                      Joined: {new Date(currentUser?.createdAt).toLocaleString()}
+                    </Text>
+                  </VStack>
+                </PopoverBody>
+                <PopoverFooter borderTopWidth="1px">
+                  <Button
+                    leftIcon={<IoMdLogOut />}
+                    colorScheme="red"
+                    variant="ghost"
+                    size="sm"
+                    onClick={logout}
+                    width="full"
+                    justifyContent="start"
+                  >
+                    Logout
+                  </Button>
+                  {/* Add other actions like 'Profile', 'Settings' here later */}
+                </PopoverFooter>
+              </PopoverContent>
+            </Popover>
           )}
-
-          <Tooltip label="Logout" placement="right" hasArrow>
-            <IconButton aria-label="Logout" icon={<IoMdLogOut />} variant="ghost" size="lg" onClick={logout} />
-          </Tooltip>
         </VStack>
       </Flex>
 

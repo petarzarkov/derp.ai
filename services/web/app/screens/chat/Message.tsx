@@ -85,28 +85,28 @@ const Message = ({ text, nickname, time }: MessageProps) => {
   const isUser = nickname !== 'error' && nickname !== 'system' && nickname !== 'DerpAI';
   const isError = nickname === 'error';
 
+  // ---- FIX 1: Call Hooks at Top Level for colorStyles ----
+  const userBg = useColorModeValue('primary.700', 'primary.300');
+  const userText = useColorModeValue('primary.100', 'primary.700');
+  const errorBg = useColorModeValue('red.600', 'red.300');
+  const errorText = useColorModeValue('white', 'red.900');
+  const systemBg = useColorModeValue('gray.500', 'gray.300');
+  const systemText = useColorModeValue('white', 'gray.900');
+  const defaultBg = useColorModeValue('primary.300', 'primary.600');
+  const defaultText = useColorModeValue('primary.600', 'primary.100');
   const colorStyles = useMemo(
     () => ({
-      [isUser ? nickname : 'user']: {
-        bg: useColorModeValue('primary.700', 'primary.300'),
-        text: useColorModeValue('primary.100', 'primary.700'),
-      },
-      error: {
-        bg: useColorModeValue('red.600', 'red.300'),
-        text: useColorModeValue('white', 'red.900'),
-      },
-      system: {
-        bg: useColorModeValue('gray.500', 'gray.300'),
-        text: useColorModeValue('white', 'gray.900'),
-      },
-      default: {
-        bg: useColorModeValue('primary.300', 'primary.600'),
-        text: useColorModeValue('primary.600', 'primary.100'),
-      },
+      user: { bg: userBg, text: userText },
+      error: { bg: errorBg, text: errorText },
+      system: { bg: systemBg, text: systemText },
+      default: { bg: defaultBg, text: defaultText },
     }),
-    [isUser, nickname, useColorModeValue],
+    [userBg, userText, errorBg, errorText, systemBg, systemText, defaultBg, defaultText],
   );
-  const currentStyle = colorStyles[nickname as keyof typeof colorStyles] || colorStyles[isUser ? 'user' : 'default'];
+
+  const styleKey = isUser ? 'user' : (nickname as keyof typeof colorStyles);
+  const currentStyle = colorStyles[styleKey] || colorStyles.default;
+
   const bgColor = currentStyle.bg;
   const textColor = currentStyle.text;
   const align = isUser ? 'flex-end' : 'flex-start';
