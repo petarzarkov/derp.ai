@@ -1,4 +1,4 @@
-import { Box, Heading, Text, VStack, UnorderedList, ListItem } from '@chakra-ui/react';
+import { Box, Heading, Text, VStack, UnorderedList, ListItem, Code, Link, Spacer } from '@chakra-ui/react';
 import { FC } from 'react';
 
 export const PrivacyPolicy: FC = () => {
@@ -85,9 +85,9 @@ export const PrivacyPolicy: FC = () => {
         </Text>
         <Text>
           To delete your account, please click the "Delete Account" button found in your profile section within the
-          application's navigation bar. Clicking this button will initiate a request to our server endpoint (`DELETE
-          /api/users/me`) to permanently remove your account information, including email, display name, chat history
-          from our active databases.
+          application's navigation bar. Clicking this button will initiate a request to our server endpoint{' '}
+          <Code>DELETE /api/users/me</Code> to permanently remove your account information, including email, display
+          name, chat history from our active databases.
         </Text>
 
         <Heading as="h2" size="lg">
@@ -96,7 +96,11 @@ export const PrivacyPolicy: FC = () => {
         <Text>
           Depending on your location, you may have certain rights regarding your personal information, such as the right
           to access, correct, or delete your data. Please contact us to exercise these rights. Email us:
-          pzarko1@gmail.com
+          <Spacer>
+            <Link href={'mailto:pzarko1@gmail.com'} target={'_blank'}>
+              pzarko1@gmail.com
+            </Link>
+          </Spacer>
         </Text>
 
         <Heading as="h2" size="lg">
@@ -112,7 +116,12 @@ export const PrivacyPolicy: FC = () => {
           8. Contact Us
         </Heading>
         <Text>
-          If you have questions or comments about this Privacy Policy, please contact us at: pzarko1@gmail.com
+          If you have questions or comments about this Privacy Policy, please contact us at:
+          <Spacer>
+            <Link href={'mailto:pzarko1@gmail.com'} target={'_blank'}>
+              pzarko1@gmail.com
+            </Link>
+          </Spacer>
         </Text>
       </VStack>
     </Box>
