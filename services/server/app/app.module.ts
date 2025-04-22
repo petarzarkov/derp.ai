@@ -122,7 +122,9 @@ import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
         contextAdapter(context) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { correlationId, requestMethod: method, requestUrl: path, ...rest } = context;
+          const env = configService.get('env', { infer: true });
           return {
+            env,
             method,
             path,
             ...rest,
