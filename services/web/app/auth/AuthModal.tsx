@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useAuth } from './AuthContext';
 import {
   Modal,
   ModalOverlay,
@@ -24,6 +23,7 @@ import {
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { FcGoogle } from 'react-icons/fc';
 import { FaGithub } from 'react-icons/fa';
+import { useAuth } from '../hooks/useAuth';
 
 const passwordMinLength = 8;
 const passwordError = `Password must be at least ${passwordMinLength} characters long.`;

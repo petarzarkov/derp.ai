@@ -4,10 +4,11 @@ import { BrowserRouter } from 'react-router-dom';
 
 import App from './App';
 import { ThemeProvider } from '@theme';
-import { SocketProvider } from './socket/SocketContext';
-import { AuthProvider, useAuth } from './auth/AuthContext';
 import { AuthModal } from './auth/AuthModal';
 import { Skeleton } from '@chakra-ui/react';
+import { AuthProvider } from './auth/AuthProvider';
+import { useAuth } from './hooks/useAuth';
+import { SocketProvider } from './socket/SocketProvider';
 
 const container = document.getElementById('app');
 const root = createRoot(container!);

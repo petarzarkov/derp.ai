@@ -79,7 +79,7 @@ export function ChatBox() {
       >
         <Heading size="lg" color="white">
           <HStack>
-            <Image alt="DerpAI Logo" src="/png/derp.ai.logo.sm.png" borderRadius={10} h={10} w={10} />
+            <Image alt="DerpAI Logo" src="/png/derp_ai_icon_128x128.png" borderRadius={10} h={10} w={10} />
             <Text>DerpAI</Text>
           </HStack>
         </Heading>
