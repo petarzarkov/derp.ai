@@ -74,7 +74,17 @@ async function bootstrap(module: typeof AppModule) {
   );
   app.use(passport.initialize());
   app.use(passport.session());
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          defaultSrc: ["'self'"],
+          imgSrc: [`'self'`, 'data:', 'https:', 'http:'],
+        },
+      },
+    }),
+  );
 
   // Decorate the EventsGateway dynamically as we want to take values from config
   void WebSocketGateway({
