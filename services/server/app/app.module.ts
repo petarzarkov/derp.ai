@@ -18,8 +18,9 @@ import { SessionModule } from './modules/session/session.module';
 import { SlackModule } from './modules/slack/slack.module';
 import { SlackService } from './modules/slack/slack.service';
 import { DeviceInfoMiddleware } from './middlewares/device-info.middleware';
-import { ThrottlerGuard, ThrottlerModule, seconds } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { Request } from 'express';
 
 @Module({
   providers: [
@@ -34,25 +35,26 @@ import { APP_GUARD } from '@nestjs/core';
       validate: validateConfig,
       isGlobal: true,
     }),
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          name: 'short',
-          ttl: seconds(1),
-          limit: 3,
-        },
-        {
-          name: 'medium',
-          ttl: seconds(10),
-          limit: 20,
-        },
-        {
-          name: 'long',
-          ttl: seconds(60),
-          limit: 100,
-        },
-      ],
-    }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000,
+        limit: 5,
+        skipIf: (context: ExecutionContext) => !!context.switchToHttp().getRequest<Request>().user,
+      },
+      {
+        name: 'medium',
+        ttl: 10000,
+        limit: 50,
+        skipIf: (context: ExecutionContext) => !!context.switchToHttp().getRequest<Request>().user,
+      },
+      {
+        name: 'long',
+        ttl: 60000,
+        limit: 300,
+        skipIf: (context: ExecutionContext) => !!context.switchToHttp().getRequest<Request>().user,
+      },
+    ]),
     SlackModule.forRoot({ isGlobal: true }),
     ContextLoggerModule.forRootAsync({
       imports: [ConfigModule, SlackModule],
@@ -182,8 +184,10 @@ export class AppModule implements NestModule, OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     const config = this.configService.get('app', { infer: true });
+    const env = this.configService.get('env', { infer: true });
+
     await this.slackService.postContext({
-      username: 'DerpAI',
+      username: `DerpAI - ${env}`,
       header: `:test_tube: DerpAI Started - ${new Date().toISOString()}`,
       data: config,
       color: '#4432a8',

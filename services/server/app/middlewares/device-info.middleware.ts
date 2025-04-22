@@ -4,7 +4,6 @@ import useragent from 'express-useragent';
 import { ContextLogger } from 'nestjs-context-logger';
 
 export interface DeviceInfo {
-  userAgent: string;
   device: string;
   browser: string;
   ipAddress: string | undefined;
@@ -30,7 +29,6 @@ export class DeviceInfoMiddleware implements NestMiddleware {
         const ipAddress = Array.isArray(ipHeader) ? ipHeader[0] : ipHeader?.split(',')[0].trim();
 
         const deviceInfo: DeviceInfo = {
-          userAgent,
           device: `${agentDetails.platform}, ${agentDetails.os}`,
           browser: `${agentDetails.browser}, ${agentDetails.version}`,
           ipAddress,

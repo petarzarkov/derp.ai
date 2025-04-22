@@ -15,6 +15,7 @@ import { EventsGateway } from './modules/events/events.gateway';
 import { ContextLogger } from 'nestjs-context-logger';
 import { SessionStore } from './modules/session/session.store';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import helmet from 'helmet';
 
 // use cjs import as es6 import will copy the package json in the compilation folder which would confuse pnpm for monorepo mgmt
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -73,6 +74,7 @@ async function bootstrap(module: typeof AppModule) {
   );
   app.use(passport.initialize());
   app.use(passport.session());
+  app.use(helmet());
 
   // Decorate the EventsGateway dynamically as we want to take values from config
   void WebSocketGateway({

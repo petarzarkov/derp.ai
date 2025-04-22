@@ -22,9 +22,6 @@ export class Session {
   @Column({ type: 'varchar', length: 255, nullable: true })
   ipAddress: string | null;
 
-  @Column({ type: 'text', nullable: true })
-  userAgent: string | null;
-
   @Column({ type: 'varchar', length: 255, nullable: true })
   device: string | null;
 
@@ -42,7 +39,7 @@ export class Session {
   createdAt: Date;
 
   @ManyToOne(() => User, {
-    nullable: true, // Allow sessions without a logged-in user initially
+    nullable: true,
     onDelete: 'SET NULL', // Or 'CASCADE' if sessions should be deleted when user is deleted
   })
   @JoinColumn({ name: 'userId' })

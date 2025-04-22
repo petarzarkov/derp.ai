@@ -43,20 +43,20 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
    * Fetch session by the given sid.
    */
   get = (sid: string, callback: (err?: Error | null, session?: SessionData | null) => void): void => {
-    this.logger.debug(`GET ${sid}`);
+    this.logger.debug(`GET session ${sid}`);
     this.sessionRepository
       .findOne({ where: { sid } })
       .then((session) => {
         if (!session) {
-          this.logger.debug(`GET ${sid}: Not found`);
+          this.logger.debug(`GET session ${sid}: Not found`);
           return callback(null, null);
         }
         if (session.expire < new Date()) {
-          this.logger.debug(`GET ${sid}: Expired, destroying`);
+          this.logger.debug(`GET session ${sid}: Expired, destroying`);
           // Session expired, destroy it and return null
           this.destroy(sid, (err) => callback(err, null));
         } else {
-          this.logger.debug(`GET ${sid}: Found, returning session data`);
+          this.logger.debug(`GET session ${sid}: Found, returning session data`);
           const sessionData: SessionData = {
             cookie: {
               ...this.sessionConfig,
@@ -66,7 +66,6 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
             ...(session.ipAddress && {
               deviceInfo: {
                 ipAddress: session.ipAddress,
-                userAgent: session.userAgent ?? 'Unknown',
                 device: session.device ?? 'Unknown',
                 browser: session.browser ?? 'Unknown',
               },
@@ -76,7 +75,7 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
         }
       })
       .catch((err) => {
-        this.logger.error(`GET ${sid}: Error - ${err.message}`, err.stack);
+        this.logger.error(`GET session ${sid}: Error - ${err.message}`, err.stack);
         callback(err);
       });
   };
@@ -95,7 +94,6 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
       expire,
       userId,
       ipAddress: deviceInfo?.ipAddress || null,
-      userAgent: deviceInfo?.userAgent || null,
       device: deviceInfo?.device || null,
       browser: deviceInfo?.browser || null,
     };

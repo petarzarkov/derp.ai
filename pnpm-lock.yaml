@@ -136,6 +136,9 @@ importers:
       express-useragent:
         specifier: ^1.0.15
         version: 1.0.15
+      helmet:
+        specifier: ^8.1.0
+        version: 8.1.0
       nestjs-context-logger:
         specifier: ^1.6.0
         version: 1.6.0(@nestjs/common@11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7))(@nestjs/core@11.0.13)(nestjs-pino@4.4.0(@nestjs/common@11.0.13(class-transformer@0.5.1)(class-validator@0.14.1)(reflect-metadata@0.2.2)(rxjs@7.5.7))(pino-http@10.4.0)(pino@9.6.0)(rxjs@7.5.7))(pino@9.6.0)(reflect-metadata@0.2.2)(rxjs@7.5.7)
@@ -4144,6 +4147,11 @@ packages:
   hast-util-whitespace@3.0.0:
     resolution:
       { integrity: sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw== }
+
+  helmet@8.1.0:
+    resolution:
+      { integrity: sha512-jOiHyAZsmnr8LqoPGmCjYAaiuWwjAPLgY8ZX2XrmHawt99/u1y6RgrZMTeoPfpUbV96HOalYgz1qzkRbw54Pmg== }
+    engines: { node: '>=18.0.0' }
 
   hoist-non-react-statics@3.3.2:
     resolution:
@@ -10578,6 +10586,8 @@ snapshots:
   hast-util-whitespace@3.0.0:
     dependencies:
       '@types/hast': 3.0.4
+
+  helmet@8.1.0: {}
 
   hoist-non-react-statics@3.3.2:
     dependencies:
