@@ -70,8 +70,7 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
 
   const handleDeleteConfirmed = async () => {
     try {
-      await deleteAccount(); // Call the function from context
-      // Success state is handled by logout within deleteAccount
+      await deleteAccount();
       toast({
         title: 'Account Deleted',
         description: 'Your account has been successfully deleted.',
@@ -79,9 +78,8 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
         duration: 5000,
         isClosable: true,
       });
-      onAlertClose(); // Close dialog only on success indication from deleteAccount maybe not needed as logout will likely unmount this anyway
+      onAlertClose();
     } catch (error) {
-      // Error state is handled within deleteAccount, just show toast here
       toast({
         title: 'Deletion Error',
         description: error instanceof Error ? error.message : 'Could not delete account. Please try again.',
@@ -89,7 +87,7 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
         duration: 7000,
         isClosable: true,
       });
-      onAlertClose(); // Close dialog on error
+      onAlertClose();
     }
   };
 
@@ -208,7 +206,7 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
                   <PopoverFooter borderTopWidth="1px">
                     <Button
                       leftIcon={<IoMdLogOut />}
-                      colorScheme="red"
+                      colorScheme="yellow"
                       variant="ghost"
                       size="sm"
                       onClick={logout}

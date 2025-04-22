@@ -12,7 +12,6 @@ import { QnAModule } from './modules/qna/qna.module';
 import { UsersModule } from './api/users/users.module';
 import { ContextLogger, ContextLoggerModule } from 'nestjs-context-logger';
 import { v4 as uuidv4 } from 'uuid';
-import { BaseRequest } from './modules/auth/auth.entity';
 import pino from 'pino';
 import { SessionModule } from './modules/session/session.module';
 import { SlackModule } from './modules/slack/slack.module';
@@ -110,7 +109,7 @@ import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
           },
         },
         enrichContext: async (context: ExecutionContext) => {
-          const req = context.switchToHttp().getRequest<BaseRequest>();
+          const req = context.switchToHttp().getRequest<Request>();
 
           return {
             user: req.user,

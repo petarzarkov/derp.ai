@@ -1,8 +1,30 @@
-import { Box, Heading, Text, VStack, UnorderedList, ListItem, Code, Link, Spacer } from '@chakra-ui/react';
+import {
+  Box,
+  Heading,
+  Text,
+  VStack,
+  UnorderedList,
+  ListItem,
+  Code,
+  Link as ChakraLink,
+  Spacer,
+  Divider,
+} from '@chakra-ui/react';
 import { FC } from 'react';
 
 export const PrivacyPolicy: FC = () => {
   const lastUpdated = 'April 22, 2025';
+
+  const sectionIds = {
+    infoCollect: 'info-collect',
+    infoUse: 'info-use',
+    infoDisclosure: 'info-disclosure',
+    dataSecurity: 'data-security',
+    dataDeletion: 'data-deletion',
+    yourRights: 'your-rights',
+    policyChanges: 'policy-changes',
+    contactUs: 'contact-us',
+  };
 
   return (
     <Box maxWidth="800px" margin="auto" p={6}>
@@ -12,13 +34,46 @@ export const PrivacyPolicy: FC = () => {
         </Heading>
         <Text>Last Updated: {lastUpdated}</Text>
 
+        <Box pt={4} pb={2}>
+          <Heading as="h3" size="md" mb={3}>
+            Contents
+          </Heading>
+          <UnorderedList spacing={1} styleType="none" ml={0}>
+            <ListItem>
+              <ChakraLink href={`#${sectionIds.infoCollect}`}>1. Information We Collect</ChakraLink>
+            </ListItem>
+            <ListItem>
+              <ChakraLink href={`#${sectionIds.infoUse}`}>2. How We Use Your Information</ChakraLink>
+            </ListItem>
+            <ListItem>
+              <ChakraLink href={`#${sectionIds.infoDisclosure}`}>3. Disclosure of Your Information</ChakraLink>
+            </ListItem>
+            <ListItem>
+              <ChakraLink href={`#${sectionIds.dataSecurity}`}>4. Data Security</ChakraLink>
+            </ListItem>
+            <ListItem>
+              <ChakraLink href={`#${sectionIds.dataDeletion}`}>5. Data Retention & Deletion</ChakraLink>
+            </ListItem>
+            <ListItem>
+              <ChakraLink href={`#${sectionIds.yourRights}`}>6. Your Rights</ChakraLink>
+            </ListItem>
+            <ListItem>
+              <ChakraLink href={`#${sectionIds.policyChanges}`}>7. Changes to This Privacy Policy</ChakraLink>
+            </ListItem>
+            <ListItem>
+              <ChakraLink href={`#${sectionIds.contactUs}`}>8. Contact Us</ChakraLink>
+            </ListItem>
+          </UnorderedList>
+          <Divider my={6} />
+        </Box>
+
         <Text>
           Welcome to DerpAI! This Privacy Policy explains how we collect, use, disclose, and safeguard your information
           when you use our application. Please read this privacy policy carefully. If you do not agree with the terms of
           this privacy policy, please do not access the application.
         </Text>
 
-        <Heading as="h2" size="lg">
+        <Heading id={sectionIds.infoCollect} as="h2" size="lg">
           1. Information We Collect
         </Heading>
         <Text>
@@ -44,7 +99,7 @@ export const PrivacyPolicy: FC = () => {
           </ListItem>
         </UnorderedList>
 
-        <Heading as="h2" size="lg">
+        <Heading id={sectionIds.infoUse} as="h2" size="lg">
           2. How We Use Your Information
         </Heading>
         <Text>
@@ -58,7 +113,7 @@ export const PrivacyPolicy: FC = () => {
           <ListItem>Monitor and analyze usage and trends.</ListItem>
         </UnorderedList>
 
-        <Heading as="h2" size="lg">
+        <Heading id={sectionIds.infoDisclosure} as="h2" size="lg">
           3. Disclosure of Your Information
         </Heading>
         <Text>
@@ -66,7 +121,7 @@ export const PrivacyPolicy: FC = () => {
           with your consent.
         </Text>
 
-        <Heading as="h2" size="lg">
+        <Heading id={sectionIds.dataSecurity} as="h2" size="lg">
           4. Data Security
         </Heading>
         <Text>
@@ -76,7 +131,7 @@ export const PrivacyPolicy: FC = () => {
           can be guaranteed against any interception or other type of misuse.
         </Text>
 
-        <Heading as="h2" size="lg">
+        <Heading id={sectionIds.dataDeletion} as="h2" size="lg">
           5. Data Retention & Deletion
         </Heading>
         <Text>
@@ -90,20 +145,20 @@ export const PrivacyPolicy: FC = () => {
           name, chat history from our active databases.
         </Text>
 
-        <Heading as="h2" size="lg">
+        <Heading id={sectionIds.yourRights} as="h2" size="lg">
           6. Your Rights
         </Heading>
         <Text>
           Depending on your location, you may have certain rights regarding your personal information, such as the right
           to access, correct, or delete your data. Please contact us to exercise these rights. Email us:
           <Spacer>
-            <Link href={'mailto:pzarko1@gmail.com'} target={'_blank'}>
+            <ChakraLink href={'mailto:pzarko1@gmail.com'} target={'_blank'}>
               pzarko1@gmail.com
-            </Link>
+            </ChakraLink>
           </Spacer>
         </Text>
 
-        <Heading as="h2" size="lg">
+        <Heading id={sectionIds.policyChanges} as="h2" size="lg">
           7. Changes to This Privacy Policy
         </Heading>
         <Text>
@@ -112,15 +167,15 @@ export const PrivacyPolicy: FC = () => {
           Policy periodically for any changes.
         </Text>
 
-        <Heading as="h2" size="lg">
+        <Heading id={sectionIds.contactUs} as="h2" size="lg">
           8. Contact Us
         </Heading>
         <Text>
           If you have questions or comments about this Privacy Policy, please contact us at:
           <Spacer>
-            <Link href={'mailto:pzarko1@gmail.com'} target={'_blank'}>
+            <ChakraLink href={'mailto:pzarko1@gmail.com'} target={'_blank'}>
               pzarko1@gmail.com
-            </Link>
+            </ChakraLink>
           </Spacer>
         </Text>
       </VStack>

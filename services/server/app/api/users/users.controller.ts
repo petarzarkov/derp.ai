@@ -1,9 +1,19 @@
-import { Controller, Delete, Get, HttpCode, HttpStatus, Inject, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  NotFoundException,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { BaseRequest } from '../../modules/auth/auth.entity';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { SessionAuthGuard } from '../../modules/session/guards/session-auth.guard';
 import { UsersService } from './users.service';
+import { Request } from 'express';
 
 @ApiTags('api', 'users')
 @Controller({
@@ -19,23 +29,21 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'User profile retrieved successfully.', type: SanitizedUser })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async getMe(@Req() req: BaseRequest) {
+  async getMe(@Req() req: Request) {
     return req.user;
   }
 
   @UseGuards(SessionAuthGuard)
   @Delete('/me')
-  @HttpCode(HttpStatus.NO_CONTENT) // 204 No Content is typical for successful DELETE
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete current logged-in user account' })
   @ApiResponse({ status: 204, description: 'User account deleted successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'User not found' }) // If deletion fails
-  async deleteMe(@Req() req: BaseRequest): Promise<void> {
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async deleteMe(@Req() req: Request): Promise<void> {
+    if (!req.user) {
+      throw new NotFoundException('User not found');
+    }
     await this.usersService.deleteUser(req.user.id);
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('Failed to destroy session after user deletion:', err);
-      }
-    });
   }
 }

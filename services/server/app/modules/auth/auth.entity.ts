@@ -1,7 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
-import { Request } from 'express';
 
 export class RegisterRequest {
   @IsEmail()
@@ -40,8 +38,3 @@ export class AuthResponse {
   @ApiProperty()
   accessToken: string;
 }
-
-/**
- * Auth strategies attach the user to the request ctx
- */
-export type BaseRequest = Request & { user: SanitizedUser };

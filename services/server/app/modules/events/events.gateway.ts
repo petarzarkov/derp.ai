@@ -22,7 +22,6 @@ import expressSession from 'express-session';
 import { SessionStore } from '../session/session.store';
 import cookieParser from 'cookie-parser';
 import passport from 'passport';
-import { BaseRequest } from '../auth/auth.entity';
 import { NextFunction, Request, Response } from 'express';
 
 type ExtendedSocket = Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, { user: SanitizedUser }>;
@@ -69,7 +68,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
     server.use(this.wrapMiddlewareForSocketIo(passport.initialize()));
     server.use(this.wrapMiddlewareForSocketIo(passport.session()));
     server.use((socket: ExtendedSocket, next) => {
-      const request = socket.request as BaseRequest;
+      const request = socket.request as Request;
       if (request.user && request.isAuthenticated && request.isAuthenticated()) {
         socket.data.user = request.user;
         this.#logger.debug(`WS Authenticated via session: ${socket.data.user.email} (Socket ID: ${socket.id})`);
