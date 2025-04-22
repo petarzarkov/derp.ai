@@ -23,6 +23,7 @@ import {
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { FcGoogle } from 'react-icons/fc';
+import { FaGithub } from 'react-icons/fa';
 
 const passwordMinLength = 8;
 const passwordError = `Password must be at least ${passwordMinLength} characters long.`;
@@ -38,7 +39,7 @@ export const AuthModal: React.FC = () => {
   const isPasswordLengthValid = password.length >= passwordMinLength;
   const showPasswordError = isPasswordTouched && !isPasswordLengthValid;
 
-  const { login, register, initiateGoogleLogin, error, isLoading } = useAuth();
+  const { login, register, initiateOAuthLogin, error, isLoading } = useAuth();
   const toast = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,7 +77,12 @@ export const AuthModal: React.FC = () => {
 
   const handleGoogleLogin = () => {
     if (isLoading) return;
-    initiateGoogleLogin();
+    initiateOAuthLogin('google');
+  };
+
+  const handleGithubLogin = () => {
+    if (isLoading) return;
+    initiateOAuthLogin('github');
   };
 
   const toggleView = (e: React.MouseEvent) => {
@@ -168,6 +174,16 @@ export const AuthModal: React.FC = () => {
                 isLoading={isLoading}
               >
                 Sign in with Google
+              </Button>
+
+              <Button
+                width="full"
+                variant="outline"
+                leftIcon={<FaGithub />}
+                onClick={handleGithubLogin}
+                isLoading={isLoading}
+              >
+                Sign in with Github
               </Button>
 
               <Text textAlign="center" mt={2}>

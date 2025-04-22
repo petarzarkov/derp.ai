@@ -21,6 +21,8 @@ import { ConfigService } from '@nestjs/config';
 import { ValidatedConfig } from '../../const';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { ContextLogger } from 'nestjs-context-logger';
+import { FacebookOAuthGuard } from './guards/facebook-auth.guard';
+import { GithubOAuthGuard } from './guards/github-auth.guard';
 
 @ApiTags('api', 'auth')
 @Controller('/api/auth')
@@ -116,6 +118,74 @@ export class AuthController {
       res.redirect(HttpStatus.FOUND, redirectUrl);
     } catch (error) {
       this.#logger.error('Failed during redirect after Google login', error as Error, { state });
+      if (!res.headersSent) {
+        res.status(500).send({ message: 'Login successful, but failed to redirect.' });
+      }
+    }
+  }
+
+  @UseGuards(FacebookOAuthGuard)
+  @Get('facebook')
+  @ApiOperation({ summary: 'Initiate Facebook OAuth2 login flow' })
+  @ApiResponse({ status: 302, description: 'Redirects to Facebook for authentication' })
+  async loginFacebook() {
+    // Passport strategy handles the redirect.
+    return HttpStatus.FOUND;
+  }
+
+  @UseGuards(FacebookOAuthGuard)
+  @Get('facebook/callback')
+  @ApiOperation({ summary: 'Facebook OAuth2 callback URL' })
+  @ApiResponse({ status: 302, description: 'Redirects to frontend with token after successful login' })
+  @ApiExcludeEndpoint()
+  async facebookAuthCallback(
+    @Req() req: BaseRequest,
+    @Res({ passthrough: true }) res: Response,
+    @Query('state') state?: string,
+  ) {
+    if (!req.user) {
+      throw new UnauthorizedException('No user data received from Facebook validation.');
+    }
+
+    const redirectUrl = `${req.secure ? 'https://' : 'http://'}${req.headers.host}`;
+    try {
+      res.redirect(HttpStatus.FOUND, redirectUrl);
+    } catch (error) {
+      this.#logger.error('Failed during redirect after Facebook login', error as Error, { state });
+      if (!res.headersSent) {
+        res.status(500).send({ message: 'Login successful, but failed to redirect.' });
+      }
+    }
+  }
+
+  @UseGuards(GithubOAuthGuard)
+  @Get('github')
+  @ApiOperation({ summary: 'Initiate GitHub OAuth2 login flow' })
+  @ApiResponse({ status: 302, description: 'Redirects to GitHub for authentication' })
+  async loginGitHub() {
+    // Passport strategy handles the redirect.
+    return HttpStatus.FOUND;
+  }
+
+  @UseGuards(GithubOAuthGuard)
+  @Get('github/callback')
+  @ApiOperation({ summary: 'GitHub OAuth2 callback URL' })
+  @ApiResponse({ status: 302, description: 'Redirects to frontend with token after successful login' })
+  @ApiExcludeEndpoint()
+  async gitHubAuthCallback(
+    @Req() req: BaseRequest,
+    @Res({ passthrough: true }) res: Response,
+    @Query('state') state?: string,
+  ) {
+    if (!req.user) {
+      throw new UnauthorizedException('No user data received from GitHub validation.');
+    }
+
+    const redirectUrl = `${req.secure ? 'https://' : 'http://'}${req.headers.host}`;
+    try {
+      res.redirect(HttpStatus.FOUND, redirectUrl);
+    } catch (error) {
+      this.#logger.error('Failed during redirect after GitHub login', error as Error, { state });
       if (!res.headersSent) {
         res.status(500).send({ message: 'Login successful, but failed to redirect.' });
       }

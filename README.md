@@ -1,5 +1,6 @@
 # Fullstack JavaScript Monorepo Derp AI (NestJS, Vite, React Native)
 
+[<img alt="derp.ai.logo" src="./services/web/public/png/derp.ai.logo.sm.png" />](./services/web/public/png/derp.ai.logo.sm.png)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview

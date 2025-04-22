@@ -19,7 +19,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
   register: (displayName: string, email: string, password: string) => Promise<boolean>;
-  initiateGoogleLogin: () => void;
+  initiateOAuthLogin: (provider: 'google' | 'github') => void;
   logout: () => Promise<void>;
 }
 
@@ -176,9 +176,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, serverUrl 
     [serverUrl],
   );
 
-  const initiateGoogleLogin = useCallback(() => {
-    window.location.href = `${serverUrl}/api/auth/google`;
-  }, [serverUrl]);
+  const initiateOAuthLogin = useCallback(
+    (provider: 'google' | 'github') => {
+      window.location.href = `${serverUrl}/api/auth/${provider}`;
+    },
+    [serverUrl],
+  );
 
   const logout = useCallback(async () => {
     setAuthState((prev) => ({ ...prev, isLoading: true }));
@@ -206,7 +209,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, serverUrl 
     ...authState,
     login,
     register,
-    initiateGoogleLogin,
+    initiateOAuthLogin,
     logout,
   };
 

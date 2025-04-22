@@ -1,6 +1,16 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Button, Flex, Heading, HStack, Stack, Text, useColorModeValue, Textarea, Spinner } from '@chakra-ui/react';
-import { PiRobotLight } from 'react-icons/pi';
+import {
+  Button,
+  Flex,
+  Heading,
+  HStack,
+  Stack,
+  Text,
+  useColorModeValue,
+  Textarea,
+  Spinner,
+  Image,
+} from '@chakra-ui/react';
 import { useSocket } from '@hooks';
 import Message from './Message';
 import ThinkingMessage from './ThinkingMessage';
@@ -69,7 +79,7 @@ export function ChatBox() {
       >
         <Heading size="lg" color="white">
           <HStack>
-            <PiRobotLight />
+            <Image alt="DerpAI Logo" src="/png/derp.ai.logo.sm.png" borderRadius={10} h={10} w={10} />
             <Text>DerpAI</Text>
           </HStack>
         </Heading>

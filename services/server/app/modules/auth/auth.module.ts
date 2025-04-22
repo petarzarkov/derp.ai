@@ -13,6 +13,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { SessionSerializer } from '../session/session.serializer';
 import { UsersModule } from '../../api/users/users.module';
+import { GithubStrategy } from './strategies/github.strategy';
+import { FacebookStrategy } from './strategies/facebook.strategy';
 
 @Module({
   imports: [
@@ -30,7 +32,15 @@ import { UsersModule } from '../../api/users/users.module';
     }),
     UsersModule,
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, SessionSerializer],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    GoogleStrategy,
+    GithubStrategy,
+    FacebookStrategy,
+    SessionSerializer,
+  ],
   controllers: [AuthController],
   exports: [AuthService, JwtModule],
 })

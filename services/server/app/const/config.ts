@@ -50,6 +50,18 @@ export class EnvVars {
   GOOGLE_OAUTH_CLIENT_SECRET: string;
 
   @IsString()
+  FACEBOOK_OAUTH_CLIENT_ID: string;
+
+  @IsString()
+  FACEBOOK_OAUTH_CLIENT_SECRET: string;
+
+  @IsString()
+  GITHUB_OAUTH_CLIENT_ID: string;
+
+  @IsString()
+  GITHUB_OAUTH_CLIENT_SECRET: string;
+
+  @IsString()
   @IsOptional()
   HUGGINGFACE_API_KEY?: string;
 
@@ -179,6 +191,20 @@ export const validateConfig = (config: Record<string, unknown>) => {
         callbackUrl: `${
           validatedConfig.APP_ENV === 'prod' ? validatedConfig.HOST : localHost
         }/api/auth/google/callback`,
+      },
+      facebook: {
+        clientId: validatedConfig.FACEBOOK_OAUTH_CLIENT_ID,
+        clientSecret: validatedConfig.FACEBOOK_OAUTH_CLIENT_SECRET,
+        callbackUrl: `${
+          validatedConfig.APP_ENV === 'prod' ? validatedConfig.HOST : localHost
+        }/api/auth/facebook/callback`,
+      },
+      github: {
+        clientId: validatedConfig.GITHUB_OAUTH_CLIENT_ID,
+        clientSecret: validatedConfig.GITHUB_OAUTH_CLIENT_SECRET,
+        callbackUrl: `${
+          validatedConfig.APP_ENV === 'prod' ? validatedConfig.HOST : localHost
+        }/api/auth/github/callback`,
       },
     },
     isDev: !validatedConfig.APP_ENV || validatedConfig.APP_ENV === 'dev',
