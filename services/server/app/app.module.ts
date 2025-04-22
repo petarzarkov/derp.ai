@@ -19,14 +19,19 @@ import { SlackModule } from './modules/slack/slack.module';
 import { SlackService } from './modules/slack/slack.service';
 import { DeviceInfoMiddleware } from './middlewares/device-info.middleware';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { Request } from 'express';
+import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CacheInterceptor,
     },
   ],
   imports: [
@@ -166,6 +171,9 @@ import { Request } from 'express';
       serveStaticOptions: {
         fallthrough: true,
       },
+    }),
+    CacheModule.register({
+      ttl: 5000,
     }),
   ],
 })
