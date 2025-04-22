@@ -165,14 +165,25 @@ import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
     AuthModule,
     UsersModule,
     EventsModule,
-    ServeStaticModule.forRoot({
-      renderPath: '/',
-      rootPath: resolve(__dirname, '../../web/dist'),
-      exclude: ['/api/*'],
-      serveStaticOptions: {
-        fallthrough: true,
+    ServeStaticModule.forRoot(
+      {
+        renderPath: '/',
+        rootPath: resolve(__dirname, '../../web/dist'),
+        exclude: ['/api/*'],
+        serveStaticOptions: {
+          fallthrough: true,
+        },
       },
-    }),
+      {
+        renderPath: '/',
+        serveRoot: '/privacy-policy',
+        rootPath: resolve(__dirname, '../../web/dist'),
+        exclude: ['/api/*'],
+        serveStaticOptions: {
+          fallthrough: true,
+        },
+      },
+    ),
     CacheModule.register({
       ttl: 5000,
     }),
