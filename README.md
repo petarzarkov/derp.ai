@@ -17,14 +17,14 @@ This platform provides a secure, scalable, and feature-rich foundation for AI-dr
 - **Real-time Communication:** Seamless user experience powered by WebSockets ([Socket.io](https://socket.io/)).
 - **Modern Frontend:** Fast, responsive web interface built with [Vite](https://vitejs.dev/), [React](https://react.dev/), and the [Chakra UI](https://chakra-ui.com/) component library.
 - **Robust Backend:** Scalable API built with [NestJS](https://nestjs.com/) (TypeScript).
-- **Secure Authentication:** Multiple OAuth2 login integrations (e.g., Google, LinkedIn - _adjust as applicable_) managed by Passport.js, using secure cookies/sessions.
+- **Secure Authentication:** Multiple OAuth2 login integrations (e.g., Google, LinkedIn) managed by Passport.js, using secure cookies/sessions.
 - **Database Integration:** PostgreSQL persistence layer managed with [TypeORM](https://typeorm.io/).
 - **Security Focused:** Includes essential security middleware like Helmet and CORS configuration.
 - **Observability:** Structured logging using Pino Logger with context tracking.
 - **API Documentation:** Integrated Swagger UI for clear API documentation and testing.
 - **Performance & Reliability:** Implements caching, rate limiting (throttling), and domain name setup best practices.
 - **Development Experience:** Efficient monorepo managed with `pnpm` workspaces, Docker support, and configurations for unit/integration testing.
-- **Integrations:** Includes Slack integration capabilities (_mention specifics if possible_).
+- **Integrations:** Includes Slack integration.
 - **(Planned) Mobile Support:** Includes a placeholder for future React Native mobile application development.
 
 ## Core Components
