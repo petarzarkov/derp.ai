@@ -4,22 +4,10 @@ import { User } from './entities/users/user.entity';
 import { AuthProvider } from './entities/auth/auth-provider.entity';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { Repository, QueryFailedError } from 'typeorm';
-// import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-
-// @Injectable()
-// export class TestDBService {
-//   constructor(
-//     @InjectRepository(User)
-//     public userRepo: Repository<User>,
-//     @InjectRepository(AuthProvider) // Inject AuthProvider repo
-//     public authProviderRepo: Repository<AuthProvider>,
-//   ) {}
-// }
 
 describe('DB Integration Test Suite', () => {
   let module: TestingModule;
-  // let testService: TestDBService;
   let postgres: StartedPostgreSqlContainer;
   let userRepository: Repository<User>;
   let authProviderRepository: Repository<AuthProvider>;
@@ -46,10 +34,8 @@ describe('DB Integration Test Suite', () => {
         }),
         TypeOrmModule.forFeature([User, AuthProvider]),
       ],
-      // providers: [TestDBService],
     }).compile();
 
-    // testService = module.get(TestDBService);
     userRepository = module.get<Repository<User>>(getRepositoryToken(User));
     authProviderRepository = module.get<Repository<AuthProvider>>(getRepositoryToken(AuthProvider));
   }, 60_000); // Increase timeout for container startup

@@ -189,9 +189,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, serverUrl 
         credentials: 'include',
       });
 
-      if (response.ok || response.status === 204) {
-        await logout();
-      } else {
+      if (!response.ok || response.status !== 204) {
         let errorMsg = `Account deletion failed: ${response.status}`;
         try {
           const errorData = await response.json();

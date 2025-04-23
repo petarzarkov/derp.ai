@@ -32,7 +32,7 @@ export class LinkedInStrategy extends PassportStrategy(LinkedInLocalStrategy, 'l
     }
 
     try {
-      const user = await this.authService.findOrCreateUserFromOAuth(id, 'linkedin', email, name, picture || null);
+      const user = await this.authService.createOrUpdateUserOAuth(id, 'linkedin', email, name, picture || null);
 
       ContextLogger.updateContext({ user, provider: 'linkedin' });
       done(null, user);

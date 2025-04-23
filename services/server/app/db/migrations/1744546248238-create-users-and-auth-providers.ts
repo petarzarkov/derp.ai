@@ -9,7 +9,7 @@ export class CreateUsersAndAuthProviders1744546248238 implements MigrationInterf
       `CREATE TABLE "auth_providers" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "userId" uuid NOT NULL, "provider" character varying(50) NOT NULL, "providerId" text, "passwordHash" text, "createdAt" TIMESTAMP NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_cb277e892a115855fc95c373422" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE UNIQUE INDEX "IDX_aa36cc4a904104f5107c4f2ac2" ON "auth_providers" ("userId", "provider") `,
+      `CREATE UNIQUE INDEX "IDX_aa36cc4a904104f5107c4f2ac2" ON "auth_providers" ("userId", "provider")`,
     );
     await queryRunner.query(
       `CREATE UNIQUE INDEX "IDX_a3e973ff73cdfde6157f0dcb0f" ON "auth_providers" ("provider", "providerId") WHERE "providerId" IS NOT NULL`,

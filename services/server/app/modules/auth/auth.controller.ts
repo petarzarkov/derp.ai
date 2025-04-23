@@ -10,6 +10,7 @@ import {
   Query,
   HttpCode,
   Body,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiExcludeEndpoint } from '@nestjs/swagger';
@@ -17,8 +18,6 @@ import { LoginRequest, RegisterRequest } from './auth.entity';
 import { Request, Response } from 'express';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { GoogleOAuthGuard } from './guards/google-auth.guard';
-import { ConfigService } from '@nestjs/config';
-import { ValidatedConfig } from '../../const';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { ContextLogger } from 'nestjs-context-logger';
 import { LinkedInOAuthGuard } from './guards/linkedin-auth.guard';
@@ -28,24 +27,8 @@ import { GithubOAuthGuard } from './guards/github-auth.guard';
 @Controller('/api/auth')
 export class AuthController {
   #logger = new ContextLogger(this.constructor.name);
-  readonly #cookieName: string;
-  #cookieOptions: ValidatedConfig['auth']['session']['cookie'];
 
-  constructor(
-    private configService: ConfigService<ValidatedConfig, true>,
-    private authService: AuthService,
-  ) {
-    const sessionOpts = this.configService.get('auth.session', { infer: true });
-    this.#cookieOptions = sessionOpts.cookie;
-    this.#cookieName = sessionOpts.cookieName;
-  }
-
-  get cookieOptions() {
-    return {
-      ...this.#cookieOptions,
-      expires: new Date(this.#cookieOptions.maxAge),
-    };
-  }
+  constructor(private authService: AuthService) {}
 
   @UseGuards(new LocalAuthGuard(LoginRequest))
   @Post('login')
@@ -176,59 +159,20 @@ export class AuthController {
   }
 
   @Post('logout')
-  @HttpCode(HttpStatus.OK)
   @ApiResponse({ status: 200, description: 'Logout successful' })
   @ApiResponse({ status: 500, description: 'Logout failed' })
-  async logout(@Req() req: Request, @Res({ passthrough: false }) res: Response) {
-    const sessionId = req.sessionID;
-    const userEmail = req.user?.email;
-
+  async logout(@Req() req: Request, @Res() res: Response) {
     try {
-      res.clearCookie(this.#cookieName, {
-        path: this.#cookieOptions.path,
-        httpOnly: this.#cookieOptions.httpOnly,
-        secure: this.#cookieOptions.secure,
-        sameSite: this.#cookieOptions.sameSite,
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        req.logOut((err) => {
-          if (err) {
-            this.#logger.error(`Error during Passport logout for ${userEmail || 'unknown user'}`, err);
-            return reject(err);
-          }
-          this.#logger.log(`Passport logout successful for ${userEmail || 'unknown user'}.`);
-          resolve();
-        });
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        if (!req.session) {
-          this.#logger.warn(
-            `Logout attempt for ${userEmail || 'unknown user'} without an active session (ID: ${sessionId}).`,
-          );
-          return resolve();
-        }
-        req.session.destroy((err) => {
-          if (err) {
-            this.#logger.error(`Error destroying session ${sessionId} for ${userEmail || 'unknown user'}`, err);
-            return reject(err);
-          } else {
-            this.#logger.log(`Session ${sessionId} destroyed successfully for ${userEmail || 'unknown user'}.`);
-          }
-
-          resolve();
-        });
-      });
+      await this.authService.performLogout(req, res);
 
       res.status(HttpStatus.OK).send({ message: 'Logged out successfully' });
     } catch (error) {
-      this.#logger.error(
-        `Logout process failed for ${userEmail || 'unknown user'} (Session ID: ${sessionId})`,
-        error as Error,
-      );
+      this.#logger.error(`Logout controller failed for ${req.user?.email || 'unknown user'}`, error as Error);
+
       if (!res.headersSent) {
-        res.status(HttpStatus.INTERNAL_SERVER_ERROR).send({ message: 'Logout failed.' });
+        const status =
+          error instanceof InternalServerErrorException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+        res.status(status).send({ message: error instanceof Error ? error.message : 'Logout failed.' });
       }
     }
   }

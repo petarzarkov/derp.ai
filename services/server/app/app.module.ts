@@ -130,9 +130,24 @@ import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
           };
         },
         hooks: {
-          all: [
+          log: [
             function (message, bindings) {
-              slackService.queueLog(message, bindings);
+              slackService.queueLog('good', message, bindings);
+            },
+          ],
+          warn: [
+            function (message, bindings) {
+              slackService.queueLog('warning', message, bindings);
+            },
+          ],
+          error: [
+            function (message, bindings) {
+              slackService.queueLog('danger', message, bindings);
+            },
+          ],
+          fatal: [
+            function (message, bindings) {
+              slackService.queueLog('fatal', message, bindings);
             },
           ],
         },
@@ -203,19 +218,23 @@ export class AppModule implements NestModule, OnApplicationBootstrap {
   }
 
   async onApplicationBootstrap() {
-    const config = this.configService.get('app', { infer: true });
+    const appConfig = this.configService.get('app', { infer: true });
+    const corsConfig = this.configService.get('cors', { infer: true });
     const env = this.configService.get('env', { infer: true });
 
     await this.slackService.postContext({
       username: `DerpAI - ${env}`,
-      header: `:test_tube: DerpAI Started - ${new Date().toISOString()}`,
-      data: config,
+      header: `:zap: DerpAI ${env} Started - ${new Date().toISOString()}`,
+      data: {
+        appConfig,
+        corsConfig,
+      },
       color: '#4432a8',
       buttons: {
         items: [
           {
             text: 'Open my UI',
-            url: config.host,
+            url: appConfig.host,
             style: 'primary',
           },
           {

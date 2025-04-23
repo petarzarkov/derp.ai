@@ -184,7 +184,7 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
     this.sessionRepository
       .clear()
       .then(() => {
-        this.logger.info(`CLEAR: Success`);
+        this.logger.debug(`CLEAR: Success`);
         callback?.();
       })
       .catch((err) => {
@@ -206,7 +206,7 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
     if (this.pruneTimer) {
       clearTimeout(this.pruneTimer);
       this.pruneTimer = undefined;
-      this.logger.info('Pruning timer cleared.');
+      this.logger.debug('Pruning timer cleared.');
     }
   }
 

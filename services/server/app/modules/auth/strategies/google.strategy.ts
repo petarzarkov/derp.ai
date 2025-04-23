@@ -33,7 +33,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const picture = photos && photos.length > 0 ? photos[0].value : null;
 
     try {
-      const user = await this.authService.findOrCreateUserFromOAuth(id, 'google', email, displayName, picture);
+      const user = await this.authService.createOrUpdateUserOAuth(id, 'google', email, displayName, picture);
 
       ContextLogger.updateContext({ user, provider: 'google' });
 

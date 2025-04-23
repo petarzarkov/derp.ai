@@ -80,11 +80,17 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
     });
 
     server.use((socket: ExtendedSocket, next) => {
+      const request = socket.request as Request;
       runWithCtx(async () => next(), {
         socket: {
           id: socket.id,
-          user: socket.data.user,
         },
+        user: socket.data.user,
+        session: {
+          id: request.sessionID,
+          cookieExpires: request.session.cookie.expires,
+        },
+        flow: 'WebSocket',
       });
     });
   }

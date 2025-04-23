@@ -33,7 +33,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     }
 
     try {
-      const user = await this.authService.findOrCreateUserFromOAuth(
+      const user = await this.authService.createOrUpdateUserOAuth(
         id,
         'github',
         email,

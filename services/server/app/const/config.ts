@@ -188,23 +188,26 @@ export const validateConfig = (config: Record<string, unknown>) => {
       google: {
         clientId: validatedConfig.GOOGLE_OAUTH_CLIENT_ID,
         clientSecret: validatedConfig.GOOGLE_OAUTH_CLIENT_SECRET,
-        callbackUrl: `${
-          validatedConfig.APP_ENV === 'prod' ? validatedConfig.HOST : localHost
-        }/api/auth/google/callback`,
+        callbackUrl:
+          validatedConfig.APP_ENV === 'prod'
+            ? `${validatedConfig.HOST}/api/auth/google/callback`
+            : '/api/auth/google/callback',
       },
       linkedin: {
         clientId: validatedConfig.LINKEDIN_OAUTH_CLIENT_ID,
         clientSecret: validatedConfig.LINKEDIN_OAUTH_CLIENT_SECRET,
-        callbackUrl: `${
-          validatedConfig.APP_ENV === 'prod' ? validatedConfig.HOST : localHost
-        }/api/auth/linkedin/callback`,
+        callbackUrl:
+          validatedConfig.APP_ENV === 'prod'
+            ? `${validatedConfig.HOST}/api/auth/linkedin/callback`
+            : '/api/auth/linkedin/callback',
       },
       github: {
         clientId: validatedConfig.GITHUB_OAUTH_CLIENT_ID,
         clientSecret: validatedConfig.GITHUB_OAUTH_CLIENT_SECRET,
-        callbackUrl: `${
-          validatedConfig.APP_ENV === 'prod' ? validatedConfig.HOST : localHost
-        }/api/auth/github/callback`,
+        callbackUrl:
+          validatedConfig.APP_ENV === 'prod'
+            ? `${validatedConfig.HOST}/api/auth/github/callback`
+            : '/api/auth/github/callback',
       },
     },
     isDev: !validatedConfig.APP_ENV || validatedConfig.APP_ENV === 'dev',

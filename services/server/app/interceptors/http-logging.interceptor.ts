@@ -21,7 +21,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
       requestId,
       component: instance.name,
       operation: handler.name,
-      flow: 'HTTP',
+      flow: 'REST',
     });
 
     this.#logger.info('Received Request');

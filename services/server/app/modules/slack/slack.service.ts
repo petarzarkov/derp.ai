@@ -16,7 +16,11 @@ function* chunks<T>(arr: T[], n: number): Generator<T[], void> {
 
 @Injectable()
 export class SlackService<CustomContext extends AppContext = AppContext> {
-  logQueue: { message: string; bindings: Bindings }[] = [];
+  logQueue: {
+    color: 'good' | 'warning' | 'danger' | 'fatal';
+    message: string;
+    bindings: Bindings;
+  }[] = [];
   #app: App<CustomContext>;
   #logger: SlackLogger;
   #defaultChannel?: string;
@@ -236,8 +240,9 @@ export class SlackService<CustomContext extends AppContext = AppContext> {
     return obj;
   }
 
-  queueLog(message: string, bindings: Bindings) {
+  queueLog(color: 'good' | 'warning' | 'danger' | 'fatal', message: string, bindings: Bindings) {
     this.logQueue.push({
+      color,
       message,
       bindings,
     });
@@ -256,17 +261,18 @@ export class SlackService<CustomContext extends AppContext = AppContext> {
     const chunked = [...chunks(logsToSend, 10)];
 
     for (const chunk of chunked) {
+      const text = `DerpAI logs chunk ${new Date().toISOString()}`;
       await this.post({
         channel: 'derp-ai-logs',
-        text: `DerpAI logs ${new Date().toISOString()}`,
+        text,
         unfurl_media: false,
         unfurl_links: false,
-        blocks: chunk.map(({ message, bindings }) => ({
+        blocks: chunk.map(({ color, message, bindings }) => ({
           type: 'context',
           elements: [
             {
-              type: 'mrkdwn',
-              text: message,
+              type: 'plain_text',
+              text: `${this.getEmojiFromColor(color)} ${message}`,
             },
             {
               type: 'mrkdwn',
@@ -278,5 +284,20 @@ export class SlackService<CustomContext extends AppContext = AppContext> {
     }
 
     this.logQueue = [];
+  }
+
+  getEmojiFromColor(color: 'good' | 'warning' | 'danger' | 'fatal') {
+    switch (color) {
+      case 'good':
+        return ':zap:';
+      case 'warning':
+        return ':warning:';
+      case 'danger':
+        return ':x:';
+      case 'fatal':
+        return ':boom:';
+      default:
+        return ':zap:';
+    }
   }
 }

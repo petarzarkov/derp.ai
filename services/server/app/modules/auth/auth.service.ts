@@ -7,18 +7,85 @@ import { AuthProvider } from '../../db/entities/auth/auth-provider.entity';
 import * as bcrypt from 'bcrypt';
 import { JWTPayload, AuthResponse, RegisterRequest } from './auth.entity';
 import { ContextLogger } from 'nestjs-context-logger';
+import { Request, Response } from 'express';
+import { ValidatedConfig } from '../../const/config';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   #logger = new ContextLogger(this.constructor.name);
+  readonly #cookieName: string;
+  #cookieOptions: ValidatedConfig['auth']['session']['cookie'];
 
   constructor(
+    private configService: ConfigService<ValidatedConfig, true>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(AuthProvider)
     private readonly authProviderRepository: Repository<AuthProvider>,
     private readonly jwtService: JwtService,
-  ) {}
+  ) {
+    const sessionOpts = this.configService.get('auth.session', { infer: true });
+    this.#cookieOptions = sessionOpts.cookie;
+    this.#cookieName = sessionOpts.cookieName;
+  }
+
+  /**
+   * 1. Clears session cookie, sends response header, careful when using with `@Res({ passthrough: true })`, you cannot set more headers
+   * 2. Logs out the passport session
+   * 3. Destroys the session
+   * 4. The Request.user reference is deleted
+   */
+  async performLogout(req: Request, res: Response): Promise<void> {
+    const sessionId = req.sessionID;
+    const userEmail = req.user?.email;
+
+    this.#logger.log(`Attempting logout for ${userEmail || 'unknown user'} (Session ID: ${sessionId})`);
+
+    // 1. Clear the session cookie
+    res.clearCookie(this.#cookieName, {
+      path: this.#cookieOptions.path,
+      httpOnly: this.#cookieOptions.httpOnly,
+      secure: this.#cookieOptions.secure,
+      sameSite: this.#cookieOptions.sameSite,
+    });
+    this.#logger.debug(`Cleared cookie ${this.#cookieName} for ${userEmail || 'unknown user'}.`);
+
+    // 2. Log out from Passport session
+    await new Promise<void>((resolve, reject) => {
+      req.logOut((err) => {
+        if (err) {
+          this.#logger.error(`Error during Passport logout for ${userEmail || 'unknown user'}`, err);
+          // Reject with a standard NestJS exception if desired
+          return reject(new InternalServerErrorException('Passport logout failed.'));
+        }
+        this.#logger.debug(`Passport logout successful for ${userEmail || 'unknown user'}.`);
+        resolve();
+      });
+    });
+
+    // 3. Destroy the session data in the store
+    await new Promise<void>((resolve, reject) => {
+      if (!req.session) {
+        this.#logger.warn(
+          `Logout attempt for ${userEmail || 'unknown user'} without an active session (ID: ${sessionId}).`,
+        );
+        return resolve(); // Nothing to destroy, proceed
+      }
+      req.session.destroy((err) => {
+        if (err) {
+          this.#logger.error(`Error destroying session ${sessionId} for ${userEmail || 'unknown user'}`, err);
+          return reject(new InternalServerErrorException('Session destruction failed.'));
+        }
+        this.#logger.debug(`Session ${sessionId} destroyed successfully for ${userEmail || 'unknown user'}.`);
+        resolve();
+      });
+    });
+
+    this.#logger.log(
+      `Logout process completed successfully for ${userEmail || 'unknown user'} (Session ID: ${sessionId})`,
+    );
+  }
 
   async validateLocalUser(email: string, password: string) {
     try {
@@ -65,7 +132,7 @@ export class AuthService {
     }
   }
 
-  async findOrCreateUserFromOAuth(
+  async createOrUpdateUserOAuth(
     providerId: string,
     provider: string,
     email: string,
@@ -73,95 +140,38 @@ export class AuthService {
     picture: string | null,
   ): Promise<SanitizedUser> {
     try {
-      const existingProvider = await this.authProviderRepository.findOne({
-        where: { provider, providerId },
-        relations: { user: true },
-      });
-
-      if (existingProvider) {
-        if (!existingProvider.user) {
-          this.#logger.error(`User relation not loaded for existing AuthProvider ${existingProvider.id} during OAuth.`);
-          throw new InternalServerErrorException('Failed to load user details during OAuth.');
-        }
-        const user = existingProvider.user;
-        let needsUpdate = false;
-        const updatedUser: Partial<User> = {};
-
-        if (user.displayName !== displayName) {
-          updatedUser.displayName = displayName;
-          needsUpdate = true;
-        }
-        if (picture && user.picture !== picture) {
-          updatedUser.picture = picture;
-          needsUpdate = true;
-        }
-
-        if (needsUpdate) {
-          this.#logger.log(`Updating profile for user ${user.id} from ${provider} OAuth.`);
-          const userToSave = Object.assign(new User(), user, updatedUser);
-          const savedUser = await this.userRepository.save(userToSave);
-          return this.sanitizeUser(savedUser);
-        }
-
-        return this.sanitizeUser(user);
-      }
-
-      let userToLink = await this.userRepository.findOne({ where: { email } });
-      if (!userToLink) {
-        this.#logger.log(`Creating new user and ${provider} link for email: ${email}`);
-        const newUserEntity = this.userRepository.create({
+      const {
+        generatedMaps: [linkedUser],
+      } = await this.userRepository
+        .createQueryBuilder()
+        .insert()
+        .into(User)
+        .values({
           email,
           displayName: displayName,
           picture: picture,
-        });
-        userToLink = await this.userRepository.save(newUserEntity);
-      }
+        })
+        .orUpdate(['displayName', 'picture'], ['email'])
+        .execute();
 
-      const newProviderLink = this.authProviderRepository.create({
-        userId: userToLink.id,
-        provider,
-        providerId,
-        passwordHash: null,
-      });
-      await this.authProviderRepository.save(newProviderLink);
+      await this.authProviderRepository
+        .createQueryBuilder()
+        .insert()
+        .into(AuthProvider)
+        .values({
+          userId: linkedUser.id,
+          provider,
+          providerId,
+          passwordHash: null,
+        })
+        .orIgnore()
+        .execute();
 
-      return this.sanitizeUser(userToLink);
+      return this.sanitizeUser(linkedUser as User);
     } catch (error) {
-      if (error instanceof Error && 'code' in error && error?.code === '23505') {
-        this.#logger.warn(
-          `OAuth Validation: Possible race condition or constraint violation for ${email} / ${provider}:${providerId}. Attempting recovery.`,
-          { error, provider, providerId, email },
-        );
-
-        const finalUser = await this.findUserByProviderOrEmail(provider, providerId, email);
-        if (finalUser) {
-          return this.sanitizeUser(finalUser);
-        }
-
-        throw new ConflictException(`Failed to link or create account due to existing constraints for ${email}.`);
-      }
-
-      this.#logger.error(`Error in findOrCreateUserFromOAuth for ${provider} user ${email}`, error as Error);
+      this.#logger.error(`Error in createOrUpdateUserOAuth for ${provider} user ${email}`, error as Error);
       throw new InternalServerErrorException('Authentication failed during OAuth processing.');
     }
-  }
-
-  private async findUserByProviderOrEmail(provider: string, providerId: string, email: string): Promise<User | null> {
-    const providerLink = await this.authProviderRepository.findOne({
-      where: { provider, providerId },
-      relations: { user: true },
-    });
-    if (providerLink?.user) {
-      this.#logger.log(`Recovered user ${providerLink.user.id} via provider link ${provider}:${providerId}`);
-      return providerLink.user;
-    }
-
-    this.#logger.log(`Provider link not found for recovery, trying email ${email}`);
-    const userByEmail = await this.userRepository.findOne({ where: { email } });
-    if (userByEmail) {
-      this.#logger.log(`Recovered user ${userByEmail.id} via email ${email}`);
-    }
-    return userByEmail;
   }
 
   async registerLocalUser(registerDto: RegisterRequest): Promise<SanitizedUser> {
