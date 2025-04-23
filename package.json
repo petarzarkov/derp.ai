@@ -1,11 +1,28 @@
 {
-  "name": "derp-ai-monorepo",
-  "description": "NestJS Monorepo Derp AI Monorepo",
+  "name": "derp-ai",
+  "description": "Intelligent, real-time AI chat application leveraging multiple LLMs with secure authentication and a modern full-stack architecture (NestJS, React, Vite, PostgreSQL).",
   "keywords": [
+    "AI",
+    "Chatbot",
     "NestJS",
+    "React",
+    "Vite",
+    "TypeScript",
+    "PostgreSQL",
+    "TypeORM",
+    "WebSocket",
+    "Socket.io",
+    "OAuth2",
+    "Passport",
+    "Chakra UI",
     "Monorepo",
-    "Derp",
-    "AI"
+    "Fullstack",
+    "LLM",
+    "Gemini",
+    "Hugging Face",
+    "Pino",
+    "Swagger",
+    "Docker"
   ],
   "author": {
     "name": "Petar Zarkov",

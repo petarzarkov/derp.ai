@@ -5,21 +5,27 @@
 
 ## Overview
 
-This repository contains the code for **Derp AI**, a full-stack application built within a JavaScript/TypeScript monorepo. The core purpose of the backend is to synthesize answers by querying multiple AI APIs (such as Google Gemini and models from Hugging Face), providing results via API and WebSockets.
+**Derp AI** is an intelligent, interactive web-based chat application designed to provide synthesized answers by leveraging multiple AI models (including Google Gemini and Hugging Face). Built on a modern full-stack TypeScript monorepo architecture (NestJS, React/Vite), Derp AI delivers real-time responses via WebSockets and offers robust user authentication through various OAuth2 providers.
+
+This platform provides a secure, scalable, and feature-rich foundation for AI-driven chat services, suitable for business integration and diverse applications.
 
 **Check out the live demo:** [https://derp.ai.petarzarkov.com/](https://derp.ai.petarzarkov.com/)
 
 ## Key Features
 
-- **Backend:** Robust API built with [NestJS](https://nestjs.com/), using [TypeORM](https://typeorm.io/) for PostgreSQL database interactions.
-- **Frontend:** Fast and modern web interface using [Vite](https://vitejs.dev/), [React](https://react.dev/), and [Chakra UI](https://chakra-ui.com/).
-- **Real-time:** WebSocket integration using [Socket.io](https://socket.io/) for instant communication.
-- **AI Integration:** Connects to multiple AI services (e.g., Google Gemini, Hugging Face) to process and synthesize information.
-- **Monorepo:** Managed with `pnpm` workspaces for efficient dependency handling and code sharing.
-- **Database:** Configured for [PostgreSQL](https://www.postgresql.org/).
-- **Authentication:** Basic setup included.
-- **Testing:** Unit and Integration test configurations available for the backend.
-- **Containerization:** Docker support for running the backend service.
+- **Intelligent Chat:** AI-powered backend synthesizes answers by querying multiple large language models (e.g., Google Gemini, Hugging Face).
+- **Real-time Communication:** Seamless user experience powered by WebSockets ([Socket.io](https://socket.io/)).
+- **Modern Frontend:** Fast, responsive web interface built with [Vite](https://vitejs.dev/), [React](https://react.dev/), and the [Chakra UI](https://chakra-ui.com/) component library.
+- **Robust Backend:** Scalable API built with [NestJS](https://nestjs.com/) (TypeScript).
+- **Secure Authentication:** Multiple OAuth2 login integrations (e.g., Google, LinkedIn - _adjust as applicable_) managed by Passport.js, using secure cookies/sessions.
+- **Database Integration:** PostgreSQL persistence layer managed with [TypeORM](https://typeorm.io/).
+- **Security Focused:** Includes essential security middleware like Helmet and CORS configuration.
+- **Observability:** Structured logging using Pino Logger with context tracking.
+- **API Documentation:** Integrated Swagger UI for clear API documentation and testing.
+- **Performance & Reliability:** Implements caching, rate limiting (throttling), and domain name setup best practices.
+- **Development Experience:** Efficient monorepo managed with `pnpm` workspaces, Docker support, and configurations for unit/integration testing.
+- **Integrations:** Includes Slack integration capabilities (_mention specifics if possible_).
+- **(Planned) Mobile Support:** Includes a placeholder for future React Native mobile application development.
 
 ## Core Components
 

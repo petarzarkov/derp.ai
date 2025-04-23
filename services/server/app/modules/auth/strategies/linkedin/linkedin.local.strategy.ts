@@ -21,12 +21,7 @@ export interface LinkedInStrategyOptions {
   state?: boolean | string;
   authorizationURL?: string;
   tokenURL?: string;
-}
-
-const profileUrl = 'https://api.linkedin.com/v2/userinfo';
-
-function parseProfile(body: string | Buffer): LinkedInOidcProfile {
-  return JSON.parse(body.toString()) as LinkedInOidcProfile;
+  profileURL?: string;
 }
 
 export class LinkedInLocalStrategy extends OAuth2Strategy {
@@ -47,7 +42,7 @@ export class LinkedInLocalStrategy extends OAuth2Strategy {
 
     this.options = opts;
     this.name = 'linkedin';
-    this.profileUrl = profileUrl;
+    this.profileUrl = opts.profileURL || 'https://api.linkedin.com/v2/userinfo';
 
     this._oauth2.setAccessTokenName('oauth2_access_token');
   }
@@ -65,7 +60,7 @@ export class LinkedInLocalStrategy extends OAuth2Strategy {
 
       let profile: LinkedInOidcProfile;
       try {
-        profile = parseProfile(body);
+        profile = JSON.parse(body.toString()) as LinkedInOidcProfile;
       } catch (ex: unknown) {
         return done(
           new InternalOAuthError('Failed to parse profile response', ex instanceof Error ? ex : new Error(String(ex))),
