@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class ChatMessage {
   @IsNotEmpty()
@@ -9,15 +9,12 @@ export class ChatMessage {
   message: string;
 }
 
-export class ChatMessageResponse {
-  @IsNotEmpty()
-  @IsString()
+export class ChatMessageReply {
   nickname: string;
-  @IsNotEmpty()
-  @IsString()
   message: string;
-
-  @IsNotEmpty()
-  @IsNumber()
   time: number;
+}
+
+export class StatusMessageReply extends ChatMessageReply {
+  status?: 'error' | 'info' | 'warning' | 'success' | 'loading';
 }

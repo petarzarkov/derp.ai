@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, ReactNode, useRef } from 'react'; // Added useRef
+import React, { useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { io } from 'socket.io-client';
 import type {
   SocketClient,
@@ -6,9 +6,11 @@ import type {
   ServerChatMessage,
   SocketExceptionData,
   ClientChatMessage,
+  ServerStatusMessage,
 } from './Chat.types';
 import { ConnectionStatus, SocketContext, SocketContextState } from './SocketContext';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '@chakra-ui/react';
 
 export interface SocketProviderProps {
   children: ReactNode;
@@ -16,11 +18,14 @@ export interface SocketProviderProps {
 }
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children, serverUrl }) => {
+  const toast = useToast();
   const [socket, setSocket] = useState<SocketClient | null>(null);
   const [botNickname, setBotNickname] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [isBotThinking, setIsBotThinking] = useState(false);
+  const [currentStatusMessage, setCurrentStatusMessage] = useState<string | null>(null);
+
   const [messages, setMessages] = useState<MessageProps[]>([]);
   const { isAuthenticated, currentUser } = useAuth();
 
@@ -42,6 +47,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
         setConnectionStatus('disconnected');
         setMessages([]);
         setBotNickname(null);
+        setCurrentStatusMessage(null);
       }
       return;
     }
@@ -127,6 +133,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
 
     const handleException = (errorData: SocketExceptionData) => {
       setIsBotThinking(false);
+      setCurrentStatusMessage('An error occurred...');
       console.error('Socket exception:', errorData);
     };
 
@@ -135,6 +142,26 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       setConnectionStatus('reconnecting');
       setIsConnected(false);
       setIsBotThinking(false);
+    };
+
+    const handleStatusUpdate = (statusData: ServerStatusMessage) => {
+      if (statusData && typeof statusData.message === 'string') {
+        if (statusData.nickname === botNicknameRef.current) {
+          toast({
+            title: statusData.message,
+            status: statusData.status || 'info',
+            duration: 5000,
+            isClosable: true,
+            position: 'top-right',
+            orientation: 'vertical',
+            variant: 'subtle',
+            // variant: 'subtle' // Optional: 'solid', 'subtle', 'left-accent', 'top-accent'
+          });
+          setCurrentStatusMessage(statusData.message);
+        }
+      } else {
+        console.warn('Received invalid status update format:', statusData);
+      }
     };
 
     // Attach listeners
@@ -147,6 +174,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     newSocket.on('init', handleInit);
     newSocket.on('chat', handleChatMessage);
     newSocket.on('exception', handleException);
+    newSocket.on('statusUpdate', handleStatusUpdate);
 
     // Cleanup function
     return () => {
@@ -158,11 +186,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       newSocket.off('init', handleInit);
       newSocket.off('chat', handleChatMessage);
       newSocket.off('exception', handleException);
+      newSocket.off('statusUpdate', handleStatusUpdate);
       newSocket.disconnect();
       setSocket(null);
       setIsConnected(false);
       setIsBotThinking(false);
       setConnectionStatus('disconnected');
+      setCurrentStatusMessage(null);
     };
   }, [serverUrl, isAuthenticated, currentUser]);
 
@@ -181,9 +211,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
 
       setMessages((prev) => [...prev, { text: messageToSend.message, nickname: userNickname, time: Date.now() }]);
       setIsBotThinking(true);
-      socket.emit('chat', messageToSend, (/* Optional ACK handling */) => {
-        // ACK handling remains the same
-      });
+      setCurrentStatusMessage('Thinking');
+      socket.emit('chat', messageToSend);
     },
     [socket, isConnected, userNickname, isBotThinking, isAuthenticated],
   );
@@ -193,6 +222,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     isConnected,
     connectionStatus,
     isBotThinking,
+    currentStatusMessage,
     botNickname,
     sendMessage,
   };

@@ -8,6 +8,7 @@ export interface SocketContextState {
   isConnected: boolean;
   isBotThinking: boolean;
   connectionStatus: ConnectionStatus;
+  currentStatusMessage: string | null;
   sendMessage: (messageText: string) => void;
   botNickname: string | null;
 }

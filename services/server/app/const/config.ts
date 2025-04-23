@@ -129,7 +129,6 @@ export const validateConfig = (config: Record<string, unknown>) => {
     throw new Error(errors.toString());
   }
 
-  const geminiModel = 'gemini-2.0-flash';
   const localHost = `http://localhost:${validatedConfig.SERVICE_PORT}`;
   const allowedOrigins = [localHost, `http://127.0.0.1:${validatedConfig.SERVICE_PORT}`];
   if (validatedConfig.HOST) {
@@ -152,9 +151,9 @@ export const validateConfig = (config: Record<string, unknown>) => {
       credentials: true,
     },
     aiProviders: {
-      google: {
-        url: `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}`,
-        model: geminiModel,
+      googleGemini2Flash: {
+        url: `https://generativelanguage.googleapis.com/v1beta/models`,
+        model: 'gemini-2.0-flash',
         apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
       },
     },

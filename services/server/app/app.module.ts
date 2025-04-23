@@ -8,7 +8,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ServiceModule } from './api/service/service.module';
 import { RequestIdMiddleware } from './middlewares/request-id.middleware';
 import { EventsModule } from './modules/events/events.module';
-import { QnAModule } from './modules/qna/qna.module';
 import { UsersModule } from './api/users/users.module';
 import { ContextLogger, ContextLoggerModule } from 'nestjs-context-logger';
 import { v4 as uuidv4 } from 'uuid';
@@ -176,7 +175,6 @@ import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
     }),
     SessionModule,
     ServiceModule,
-    QnAModule,
     AuthModule,
     UsersModule,
     EventsModule,

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { EventsGateway } from './events.gateway';
-import { QnAModule } from '../qna/qna.module';
 import { SessionModule } from '../session/session.module';
+import { AIModule } from '../ai/ai.module';
 
 @Module({
   providers: [EventsGateway],
-  imports: [QnAModule, SessionModule],
+  imports: [AIModule, SessionModule],
 })
 export class EventsModule {}

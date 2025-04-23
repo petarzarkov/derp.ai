@@ -13,10 +13,11 @@ import {
 } from '@chakra-ui/react';
 import { useSocket } from '@hooks';
 import Message from './Message';
-import ThinkingMessage from './ThinkingMessage';
+import StatusMessage from './StatusMessage';
 
 export function ChatBox() {
-  const { messages, isConnected, connectionStatus, isBotThinking, botNickname, sendMessage } = useSocket();
+  const { messages, isConnected, connectionStatus, isBotThinking, botNickname, currentStatusMessage, sendMessage } =
+    useSocket();
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -112,7 +113,9 @@ export function ChatBox() {
           <Message key={`msg-${idx}-${msg.time}-${msg.nickname}`} {...msg} />
         ))}
 
-        {isBotThinking && <ThinkingMessage botName={botNickname} />}
+        {isBotThinking && currentStatusMessage && (
+          <StatusMessage botName={botNickname} statusText={currentStatusMessage} />
+        )}
 
         <div ref={messagesEndRef} />
       </Stack>
@@ -136,7 +139,7 @@ export function ChatBox() {
               ? 'Connecting...'
               : connectionStatus === 'connected'
                 ? isBotThinking
-                  ? `${botNickname || 'AI'} is thinking...`
+                  ? currentStatusMessage || 'Thinking'
                   : 'Ask me anything...'
                 : connectionStatus === 'disconnected'
                   ? 'Disconnected. Trying to reconnect...'

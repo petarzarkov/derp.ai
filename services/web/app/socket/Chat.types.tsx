@@ -8,6 +8,9 @@ export interface ClientChatMessage {
 export interface ServerChatMessage extends ClientChatMessage {
   time: number;
 }
+export interface ServerStatusMessage extends ServerChatMessage {
+  status: 'error' | 'info' | 'warning' | 'success' | 'loading';
+}
 
 export interface MessageProps {
   text: string;

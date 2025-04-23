@@ -3,10 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { validateConfig, ValidatedConfig } from '../../const';
 import { AIProvider } from './ai.entity';
 import { ContextLogger } from 'nestjs-context-logger';
+import { EmitToClientCallback } from '../events/events.gateway';
 
 @Injectable()
 export class AIService {
+  readonly #botName = 'DerpAI';
   #logger = new ContextLogger(AIService.name);
+  #context = `Your name is ${this.#botName}. You are a helpful assistant that can answer questions and help with tasks.`;
   #config: ReturnType<typeof validateConfig>['aiProviders'];
   #providers: AIProvider[];
 
@@ -19,45 +22,49 @@ export class AIService {
     this.#providers = Object.keys(providers) as AIProvider[];
   }
 
-  private async queryProvider(provider: AIProvider, prompt: string): Promise<string | null> {
+  private async queryProvider(
+    provider: AIProvider,
+    prompt: string,
+    emitToClient: EmitToClientCallback,
+  ): Promise<string | null> {
     const config = this.#config[provider];
+    const model = this.#config[provider].model;
     if (!config) {
       this.#logger.warn(`Configuration for provider "${provider}" not found.`);
       return null;
     }
 
-    let requestBody: string;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
+    let requestBody: string | null = null;
     let targetUrl = `${config.url}`;
 
-    switch (provider) {
-      case 'google':
-        requestBody = JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        });
-        targetUrl = `${config.url}:generateContent?key=${config.apiKey}`;
-        break;
-
-      // case 'google/flan-t5-base':
-      // case 'facebook/bart-large-cnn':
-      //   requestBody = JSON.stringify({
-      //     inputs: prompt,
-      //     parameters: { max_new_tokens: 250 },
-      //   });
-      //   headers['Authorization'] = `Bearer ${config.apiKey}`;
-      //   break;
-
-      default:
-        this.#logger.error(`Unsupported provider type: ${provider}`);
-        return null;
+    if (provider.startsWith('google')) {
+      requestBody = JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: this.#context }],
+        },
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: prompt }],
+          },
+        ],
+      });
+      targetUrl = `${config.url}/${model}:generateContent?key=${config.apiKey}`;
     }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.configService.get('app.aiReqTimeout', { infer: true }));
     try {
-      this.#logger.log(`Querying ${provider} with prompt: ${prompt.substring(0, 50)}...`);
+      this.#logger.log(`Querying ${model} with prompt: ${prompt.substring(0, 50)}...`);
+      void emitToClient('statusUpdate', {
+        message: `Querying ${model} with prompt`,
+        nickname: this.#botName,
+        status: 'loading',
+        time: Date.now(),
+      });
       const response = await fetch(targetUrl, {
         method: 'POST',
         body: requestBody,
@@ -65,59 +72,77 @@ export class AIService {
         signal: controller.signal,
       });
 
+      void emitToClient('statusUpdate', {
+        message: `Processing answer from ${model}`,
+        status: 'info',
+        nickname: this.#botName,
+        time: Date.now(),
+      });
       if (!response.ok) {
         const errorBody = await response.text();
-        this.#logger.error(`Error response from ${provider} (${response.status}): ${errorBody}`);
+        this.#logger.error(`Error response from ${model} (${response.status}): ${errorBody}`);
         return null;
       }
 
       const data = await response.json();
 
       let text: string | null = null;
-      switch (provider) {
-        case 'google':
-          text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
-          break;
-        // case 'google/flan-t5-base':
-        // case 'facebook/bart-large-cnn':
-        //   if (Array.isArray(data) && data[0]?.generated_text) {
-        //     text = data[0].generated_text;
-        //     if (text?.startsWith(prompt)) {
-        //       text = text.substring(prompt.length).trim();
-        //     }
-        //   } else if (typeof data?.generated_text === 'string') {
-        //     text = data.generated_text;
-        //   }
-        //   break;
+      if (provider.startsWith('google')) {
+        text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
       }
 
       if (!text) {
-        this.#logger.warn(`Could not extract text from ${provider} response: ${JSON.stringify(data)}`);
+        this.#logger.warn(`Could not extract text from ${model} response: ${JSON.stringify(data)}`);
       }
       return text;
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
-        this.#logger.error(`Request to ${provider} timed out: ${error.message}`);
+        this.#logger.warn(`Request to ${model} timed out: ${error.message}`);
+        void emitToClient('statusUpdate', {
+          message: `${model} took too long to answer`,
+          status: 'warning',
+          nickname: this.#botName,
+          time: Date.now(),
+        });
       } else if (error instanceof Error) {
-        this.#logger.error(`Network or parsing error with ${provider}: ${error.message}, ${error.stack}`);
+        this.#logger.error(`Network or parsing error with ${model}: ${error.message}, ${error.stack}`);
+        void emitToClient('statusUpdate', {
+          message: `Network error with  ${model}`,
+          status: 'error',
+          nickname: this.#botName,
+          time: Date.now(),
+        });
       } else {
-        this.#logger.error(`Network or parsing error with ${provider}: ${String(error)}`);
+        this.#logger.error(`Network or parsing error with ${model}: ${String(error)}`);
+        void emitToClient('statusUpdate', {
+          message: `Network error with ${model}`,
+          status: 'error',
+          nickname: this.#botName,
+          time: Date.now(),
+        });
       }
       return null;
     } finally {
       clearTimeout(timeoutId);
+      void emitToClient('statusUpdate', {
+        message: `Processed answer from ${model}`,
+        status: 'info',
+        nickname: this.#botName,
+        time: Date.now(),
+      });
     }
   }
 
   private getMasterProvider(): AIProvider | null {
-    if (this.#config.google) return 'google';
-    // if (this.#config['google/flan-t5-base']) return 'google/flan-t5-base';
     return this.#providers[0] ?? null;
   }
 
-  async generateMultiProviderResponse(originalPrompt: string): Promise<string | null> {
+  async generateMultiProviderResponse(
+    originalPrompt: string,
+    emitToClient: EmitToClientCallback,
+  ): Promise<string | null> {
     const settledResults = await Promise.allSettled(
-      this.#providers.map((provider) => this.queryProvider(provider, originalPrompt)),
+      this.#providers.map((provider) => this.queryProvider(provider, originalPrompt, emitToClient)),
     );
 
     const successfulResponses: string[] = [];
@@ -162,8 +187,7 @@ export class AIService {
       Final Answer:
     `;
 
-    const finalAnswer = await this.queryProvider(masterProvider, synthesisPrompt);
-
+    const finalAnswer = await this.queryProvider(masterProvider, synthesisPrompt, emitToClient);
     if (!finalAnswer) {
       this.#logger.warn(
         `Master provider "${masterProvider}" failed to synthesize. Falling back to the first successful response.`,
@@ -173,9 +197,5 @@ export class AIService {
 
     this.#logger.log(`Synthesized response generated by ${masterProvider}.`);
     return finalAnswer;
-  }
-
-  async generateResponse(prompt: string): Promise<string | null> {
-    return this.generateMultiProviderResponse(prompt);
   }
 }
