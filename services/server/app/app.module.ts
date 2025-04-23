@@ -218,6 +218,7 @@ export class AppModule implements NestModule, OnApplicationBootstrap {
   async onApplicationBootstrap() {
     const appConfig = this.configService.get('app', { infer: true });
     const corsConfig = this.configService.get('cors', { infer: true });
+    const gitInfo = this.configService.get('gitInfo', { infer: true });
     const env = this.configService.get('env', { infer: true });
 
     await this.slackService.postContext({
@@ -226,6 +227,7 @@ export class AppModule implements NestModule, OnApplicationBootstrap {
       data: {
         appConfig,
         corsConfig,
+        gitInfo,
       },
       color: '#4432a8',
       buttons: {

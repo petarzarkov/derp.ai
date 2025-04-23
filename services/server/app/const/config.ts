@@ -116,6 +116,12 @@ export class EnvVars {
   @IsOptional()
   @IsString()
   SLACK_BOT_DEFAULT_CHANNEL?: string;
+
+  GIT_COMMIT_SHA?: string;
+  GIT_COMMIT_MESSAGE?: string;
+  GIT_COMMIT_AUTHOR?: string;
+  GIT_BRANCH?: string;
+  GIT_REPOSITORY?: string;
 }
 
 export const validateConfig = (config: Record<string, unknown>) => {
@@ -234,6 +240,13 @@ export const validateConfig = (config: Record<string, unknown>) => {
       botName: validatedConfig.SLACK_BOT_NAME,
       defaultChannel: validatedConfig.SLACK_BOT_DEFAULT_CHANNEL,
       socketMode: validatedConfig.SLACK_APP_SOCKET_MODE,
+    },
+    gitInfo: {
+      commitSha: validatedConfig.GIT_COMMIT_SHA,
+      commitMessage: validatedConfig.GIT_COMMIT_MESSAGE,
+      commitAuthor: validatedConfig.GIT_COMMIT_AUTHOR,
+      branch: validatedConfig.GIT_BRANCH,
+      repository: validatedConfig.GIT_REPOSITORY,
     },
   } as const;
 };

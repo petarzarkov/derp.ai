@@ -155,7 +155,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
             position: 'top-right',
             orientation: 'vertical',
             variant: 'subtle',
-            // variant: 'subtle' // Optional: 'solid', 'subtle', 'left-accent', 'top-accent'
           });
           setCurrentStatusMessage(statusData.message);
         }

@@ -17,6 +17,12 @@ RUN pnpm run build
 FROM base AS release
 WORKDIR /app
 
+ENV GIT_COMMIT_SHA=${KOYEB_GIT_SHA:-unknown}
+ENV GIT_COMMIT_MESSAGE=${KOYEB_GIT_COMMIT_MESSAGE:-unknown}
+ENV GIT_COMMIT_AUTHOR=${KOYEB_GIT_COMMIT_AUTHOR:-unknown}
+ENV GIT_BRANCH=${KOYEB_GIT_BRANCH:-unknown}
+ENV GIT_REPOSITORY=${KOYEB_GIT_REPOSITORY:-unknown}
+
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm --filter derp-ai-server deploy --prod /app/deploy/server
 COPY --from=build /app/services/server/build /app/deploy/server/build

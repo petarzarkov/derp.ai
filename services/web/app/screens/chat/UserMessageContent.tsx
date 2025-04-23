@@ -2,7 +2,7 @@ import { Box, Button, useColorModeValue } from '@chakra-ui/react';
 import { useState, useRef, useEffect } from 'react';
 import { MdExpandLess, MdExpandMore } from 'react-icons/md';
 
-const MAX_COLLAPSED_HEIGHT_PX = 20;
+const MAX_COLLAPSED_HEIGHT_PX = 50;
 
 export const UserMessageContent = ({ text }: { text: string }) => {
   const [isExpanded, setIsExpanded] = useState(false);
