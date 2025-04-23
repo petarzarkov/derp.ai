@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { ValidatedConfig } from '../../../const/config';
 import { AuthService } from '../auth.service';
 import { ContextLogger } from 'nestjs-context-logger';
-import { VerifyCallback } from 'passport-google-oauth20';
+import { VerifyCallback } from 'passport-oauth2';
 
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {

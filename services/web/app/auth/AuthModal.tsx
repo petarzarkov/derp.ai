@@ -22,8 +22,9 @@ import {
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { FcGoogle } from 'react-icons/fc';
-import { FaGithub } from 'react-icons/fa';
+import { FaGithub, FaLinkedin } from 'react-icons/fa';
 import { useAuth } from '../hooks/useAuth';
+import { AuthProviderType } from './AuthContext';
 
 const passwordMinLength = 8;
 const passwordError = `Password must be at least ${passwordMinLength} characters long.`;
@@ -75,14 +76,9 @@ export const AuthModal: React.FC = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
+  const handleOAuthLogin = (provider: AuthProviderType) => {
     if (isLoading) return;
-    initiateOAuthLogin('google');
-  };
-
-  const handleGithubLogin = () => {
-    if (isLoading) return;
-    initiateOAuthLogin('github');
+    initiateOAuthLogin(provider);
   };
 
   const toggleView = (e: React.MouseEvent) => {
@@ -170,7 +166,7 @@ export const AuthModal: React.FC = () => {
                 width="full"
                 variant="outline"
                 leftIcon={<FcGoogle />}
-                onClick={handleGoogleLogin}
+                onClick={() => handleOAuthLogin('google')}
                 isLoading={isLoading}
               >
                 Sign in with Google
@@ -180,10 +176,20 @@ export const AuthModal: React.FC = () => {
                 width="full"
                 variant="outline"
                 leftIcon={<FaGithub />}
-                onClick={handleGithubLogin}
+                onClick={() => handleOAuthLogin('github')}
                 isLoading={isLoading}
               >
                 Sign in with Github
+              </Button>
+
+              <Button
+                width="full"
+                variant="outline"
+                leftIcon={<FaLinkedin />}
+                onClick={() => handleOAuthLogin('linkedin')}
+                isLoading={isLoading}
+              >
+                Sign in with LinkedIn
               </Button>
 
               <Text textAlign="center" mt={2}>

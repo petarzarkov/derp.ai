@@ -3,7 +3,7 @@
   "description": "Derp AI Server",
   "author": {
     "name": "Petar Zarkov",
-    "email": "pzarko1@gmail.com"
+    "email": "derpai.app@gmail.com"
   },
   "license": "MIT",
   "version": "0.0.1",
@@ -48,7 +48,7 @@
     "bcrypt": "^5.1.1",
     "helmet": "^8.1.0",
     "passport-github2": "^0.1.12",
-    "passport-facebook": "^3.0.0",
+    "passport-oauth2": "^1.8.0",
     "cache-manager": "^6.4.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -85,7 +85,7 @@
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/passport-github2": "^1.2.9",
-    "@types/passport-facebook": "^3.0.3",
+    "@types/passport-oauth2": "^1.4.17",
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
     "jest": "^29.7.0"

@@ -152,8 +152,8 @@ export const PrivacyPolicy: FC = () => {
           Depending on your location, you may have certain rights regarding your personal information, such as the right
           to access, correct, or delete your data. Please contact us to exercise these rights. Email us:
           <Spacer>
-            <ChakraLink href={'mailto:pzarko1@gmail.com'} target={'_blank'}>
-              pzarko1@gmail.com
+            <ChakraLink href={'mailto:derpai.app@gmail.com'} target={'_blank'}>
+              derpai.app@gmail.com
             </ChakraLink>
           </Spacer>
         </Text>
@@ -173,8 +173,8 @@ export const PrivacyPolicy: FC = () => {
         <Text>
           If you have questions or comments about this Privacy Policy, please contact us at:
           <Spacer>
-            <ChakraLink href={'mailto:pzarko1@gmail.com'} target={'_blank'}>
-              pzarko1@gmail.com
+            <ChakraLink href={'mailto:derpai.app@gmail.com'} target={'_blank'}>
+              derpai.app@gmail.com
             </ChakraLink>
           </Spacer>
         </Text>

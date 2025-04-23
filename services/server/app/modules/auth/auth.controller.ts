@@ -21,7 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import { ValidatedConfig } from '../../const';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { ContextLogger } from 'nestjs-context-logger';
-import { FacebookOAuthGuard } from './guards/facebook-auth.guard';
+import { LinkedInOAuthGuard } from './guards/linkedin-auth.guard';
 import { GithubOAuthGuard } from './guards/github-auth.guard';
 
 @ApiTags('api', 'auth')
@@ -133,20 +133,20 @@ export class AuthController {
     return this.callbackOAuth(req, res, state);
   }
 
-  @UseGuards(FacebookOAuthGuard)
-  @Get('facebook')
-  @ApiOperation({ summary: 'Initiate Facebook OAuth2 login flow' })
-  @ApiResponse({ status: 302, description: 'Redirects to Facebook for authentication' })
-  async loginFacebook() {
+  @UseGuards(LinkedInOAuthGuard)
+  @Get('linkedin')
+  @ApiOperation({ summary: 'Initiate LinkedIn OAuth2 login flow' })
+  @ApiResponse({ status: 302, description: 'Redirects to LinkedIn for authentication' })
+  async loginLinkedIn() {
     return this.loginOAuth();
   }
 
-  @UseGuards(FacebookOAuthGuard)
-  @Get('facebook/callback')
-  @ApiOperation({ summary: 'Facebook OAuth2 callback URL' })
+  @UseGuards(LinkedInOAuthGuard)
+  @Get('linkedin/callback')
+  @ApiOperation({ summary: 'LinkedIn OAuth2 callback URL' })
   @ApiResponse({ status: 302, description: 'Redirects to frontend with token after successful login' })
   @ApiExcludeEndpoint()
-  async facebookAuthCallback(
+  async linkedInAuthCallback(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Query('state') state?: string,

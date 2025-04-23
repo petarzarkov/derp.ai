@@ -14,7 +14,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { SessionSerializer } from '../session/session.serializer';
 import { UsersModule } from '../../api/users/users.module';
 import { GithubStrategy } from './strategies/github.strategy';
-import { FacebookStrategy } from './strategies/facebook.strategy';
+import { LinkedInStrategy } from './strategies/linkedin.strategy';
 
 @Module({
   imports: [
@@ -38,7 +38,7 @@ import { FacebookStrategy } from './strategies/facebook.strategy';
     JwtStrategy,
     GoogleStrategy,
     GithubStrategy,
-    FacebookStrategy,
+    LinkedInStrategy,
     SessionSerializer,
   ],
   controllers: [AuthController],

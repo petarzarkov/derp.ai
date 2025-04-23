@@ -9,7 +9,7 @@ export interface UserProfile {
   updatedAt: string;
 }
 
-export type AuthProviderType = 'google' | 'github' | 'facebook';
+export type AuthProviderType = 'google' | 'github' | 'linkedin';
 
 export interface AuthState {
   currentUser: UserProfile | null;

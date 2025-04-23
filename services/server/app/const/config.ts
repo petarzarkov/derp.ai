@@ -50,10 +50,10 @@ export class EnvVars {
   GOOGLE_OAUTH_CLIENT_SECRET: string;
 
   @IsString()
-  FACEBOOK_OAUTH_CLIENT_ID: string;
+  LINKEDIN_OAUTH_CLIENT_ID: string;
 
   @IsString()
-  FACEBOOK_OAUTH_CLIENT_SECRET: string;
+  LINKEDIN_OAUTH_CLIENT_SECRET: string;
 
   @IsString()
   GITHUB_OAUTH_CLIENT_ID: string;
@@ -192,12 +192,12 @@ export const validateConfig = (config: Record<string, unknown>) => {
           validatedConfig.APP_ENV === 'prod' ? validatedConfig.HOST : localHost
         }/api/auth/google/callback`,
       },
-      facebook: {
-        clientId: validatedConfig.FACEBOOK_OAUTH_CLIENT_ID,
-        clientSecret: validatedConfig.FACEBOOK_OAUTH_CLIENT_SECRET,
+      linkedin: {
+        clientId: validatedConfig.LINKEDIN_OAUTH_CLIENT_ID,
+        clientSecret: validatedConfig.LINKEDIN_OAUTH_CLIENT_SECRET,
         callbackUrl: `${
           validatedConfig.APP_ENV === 'prod' ? validatedConfig.HOST : localHost
-        }/api/auth/facebook/callback`,
+        }/api/auth/linkedin/callback`,
       },
       github: {
         clientId: validatedConfig.GITHUB_OAUTH_CLIENT_ID,
