@@ -1,7 +1,15 @@
 FROM public.ecr.aws/docker/library/node:22 AS base
+
+ARG KOYEB_GIT_SHA=unknown
+ARG KOYEB_GIT_COMMIT_MESSAGE=unknown
+ARG KOYEB_GIT_COMMIT_AUTHOR=unknown
+ARG KOYEB_GIT_BRANCH=unknown
+ARG KOYEB_GIT_REPOSITORY=unknown
+
 ENV NODE_ENV=production
 ENV CI=true
 ENV APP_ENV=prod
+
 RUN npm install -g pnpm@10.4.0
 COPY . /app
 WORKDIR /app
@@ -17,11 +25,11 @@ RUN pnpm run build
 FROM base AS release
 WORKDIR /app
 
-ENV GIT_COMMIT_SHA=${KOYEB_GIT_SHA:-unknown}
-ENV GIT_COMMIT_MESSAGE=${KOYEB_GIT_COMMIT_MESSAGE:-unknown}
-ENV GIT_COMMIT_AUTHOR=${KOYEB_GIT_COMMIT_AUTHOR:-unknown}
-ENV GIT_BRANCH=${KOYEB_GIT_BRANCH:-unknown}
-ENV GIT_REPOSITORY=${KOYEB_GIT_REPOSITORY:-unknown}
+ENV GIT_COMMIT_SHA=${KOYEB_GIT_SHA}
+ENV GIT_COMMIT_MESSAGE=${KOYEB_GIT_COMMIT_MESSAGE}
+ENV GIT_COMMIT_AUTHOR=${KOYEB_GIT_COMMIT_AUTHOR}
+ENV GIT_BRANCH=${KOYEB_GIT_BRANCH}
+ENV GIT_REPOSITORY=${KOYEB_GIT_REPOSITORY}
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm --filter derp-ai-server deploy --prod /app/deploy/server
