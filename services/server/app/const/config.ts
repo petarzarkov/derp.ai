@@ -122,6 +122,17 @@ export class EnvVars {
 
   @IsString()
   OPENROUTER_API_KEY: string;
+
+  @IsString()
+  REDIS_HOST: string;
+
+  @IsNumber()
+  @Min(0)
+  @Max(65535)
+  REDIS_PORT: number;
+
+  @IsString()
+  REDIS_PASS: string;
 }
 
 export const validateConfig = (config: Record<string, unknown>) => {
@@ -265,6 +276,13 @@ export const validateConfig = (config: Record<string, unknown>) => {
       },
       branch: process.env.GIT_BRANCH,
       repository: process.env.GIT_REPOSITORY,
+    },
+    redis: {
+      host: validatedConfig.REDIS_HOST,
+      port: validatedConfig.REDIS_PORT,
+      password: validatedConfig.REDIS_PASS,
+      tls: validatedConfig.APP_ENV === 'prod',
+      maxChatMessageHistory: 10,
     },
   } as const;
 };

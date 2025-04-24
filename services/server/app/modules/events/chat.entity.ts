@@ -19,3 +19,8 @@ export class StatusMessageReply extends ChatMessageReply {
   id: string;
   status?: 'error' | 'info' | 'warning' | 'success' | 'loading';
 }
+
+export interface ChatHistoryItem {
+  question: ChatMessage;
+  answer: ChatMessageReply;
+}

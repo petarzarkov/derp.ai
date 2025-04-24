@@ -20,6 +20,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { Request } from 'express';
 import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
+import { RedisModule } from './modules/redis/redis.module';
 
 @Module({
   providers: [
@@ -103,7 +104,7 @@ import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
             err: pino.stdSerializers.err,
           },
           redact: {
-            paths: ['request.body.password'],
+            paths: ['request.body.password', 'payload.latestChatMessages'],
             censor: '***',
           },
         },
@@ -152,6 +153,7 @@ import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
         },
       }),
     }),
+    RedisModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService<ValidatedConfig, true>) => {
@@ -198,6 +200,7 @@ import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
         },
       },
     ),
+    // Just to prevent client from accessing the same resource quickly in succession
     CacheModule.register({
       ttl: 5000,
     }),

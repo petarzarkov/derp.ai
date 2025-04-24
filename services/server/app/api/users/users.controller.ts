@@ -11,11 +11,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { SanitizedUser } from '../../db/entities/users/user.entity';
+import { UsersMeResponse } from '../../db/entities/users/user.entity';
 import { SessionAuthGuard } from '../../modules/session/guards/session-auth.guard';
 import { UsersService } from './users.service';
 import { Request, Response } from 'express';
 import { AuthService } from '../../modules/auth/auth.service';
+import { RedisService } from 'app/modules/redis/redis.service';
 
 @ApiTags('api', 'users')
 @Controller({
@@ -25,17 +26,25 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly authService: AuthService,
+    private readonly redisService: RedisService,
   ) {}
 
   @UseGuards(SessionAuthGuard)
   @Get('/me')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get current logged-in user profile' })
-  @ApiResponse({ status: 200, description: 'User profile retrieved successfully.', type: SanitizedUser })
+  @ApiResponse({ status: 200, description: 'User profile retrieved successfully.', type: UsersMeResponse })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async getMe(@Req() req: Request) {
-    return req.user;
+  async getMe(@Req() req: Request): Promise<UsersMeResponse> {
+    if (!req.user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      ...req.user,
+      latestChatMessages: await this.redisService.getUserChatHistory(req.user.id),
+    };
   }
 
   @UseGuards(SessionAuthGuard)
@@ -53,6 +62,7 @@ export class UsersController {
     try {
       await this.authService.performLogout(req, res);
       await this.usersService.deleteUser(refUserId);
+      await this.redisService.deleteUserChatHistory(refUserId);
       res.status(HttpStatus.NO_CONTENT).send();
     } catch (error) {
       if (!res.headersSent) {

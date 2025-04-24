@@ -3,11 +3,16 @@ import { Socket } from 'socket.io-client';
 export interface ClientChatMessage {
   nickname: string;
   message: string;
-}
-
-export interface ServerChatMessage extends ClientChatMessage {
   time: number;
 }
+
+export type ServerChatMessage = ClientChatMessage;
+
+export interface ChatHistoryItem {
+  question: ClientChatMessage;
+  answer: ServerChatMessage;
+}
+
 export interface ServerStatusMessage extends ServerChatMessage {
   id: string;
   status: 'error' | 'info' | 'warning' | 'success' | 'loading';

@@ -1,3 +1,4 @@
+import { ChatHistoryItem } from '../socket/Chat.types';
 import { createContext } from 'react';
 
 export interface UserProfile {
@@ -7,6 +8,7 @@ export interface UserProfile {
   picture: string | null;
   createdAt: string;
   updatedAt: string;
+  latestChatMessages: ChatHistoryItem[];
 }
 
 export type AuthProviderType = 'google' | 'github' | 'linkedin';

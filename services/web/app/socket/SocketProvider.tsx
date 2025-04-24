@@ -25,9 +25,21 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [isBotThinking, setIsBotThinking] = useState(false);
   const [currentStatusMessage, setCurrentStatusMessage] = useState<string | null>(null);
-
-  const [messages, setMessages] = useState<MessageProps[]>([]);
   const { isAuthenticated, currentUser } = useAuth();
+  const [messages, setMessages] = useState<MessageProps[]>(
+    currentUser?.latestChatMessages?.flatMap((msg) => [
+      {
+        text: msg.question.message,
+        nickname: msg.question.nickname,
+        time: msg.question.time,
+      },
+      {
+        text: msg.answer.message,
+        nickname: msg.answer.nickname,
+        time: msg.answer.time,
+      },
+    ]) || [],
+  );
 
   const userNickname = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
 
@@ -56,7 +68,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       return;
     }
     setConnectionStatus('connecting');
-    setMessages([]);
     setBotNickname(null);
 
     const newSocket = io(serverUrl, {
@@ -216,9 +227,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       const messageToSend: ClientChatMessage = {
         nickname: userNickname,
         message: trimmedMessage,
+        time: Date.now(),
       };
 
-      setMessages((prev) => [...prev, { text: messageToSend.message, nickname: userNickname, time: Date.now() }]);
+      setMessages((prev) => [
+        ...prev,
+        { text: messageToSend.message, nickname: userNickname, time: messageToSend.time },
+      ]);
       setIsBotThinking(true);
       setCurrentStatusMessage('Thinking');
       socket.emit('chat', messageToSend);

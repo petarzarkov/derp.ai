@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { AuthProvider } from '../auth/auth-provider.entity';
 import { OmitType } from '@nestjs/swagger';
+import { ChatHistoryItem } from '../../../modules/events/chat.entity';
 
 @Entity('users')
 export class User {
@@ -37,3 +38,7 @@ export class User {
 }
 
 export class SanitizedUser extends OmitType(User, ['authProviders']) {}
+
+export class UsersMeResponse extends SanitizedUser {
+  latestChatMessages: ChatHistoryItem[];
+}

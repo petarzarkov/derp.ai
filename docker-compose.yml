@@ -1,6 +1,7 @@
 services:
   db:
     hostname: pgdb-derpai
+    restart: unless-stopped
     image: 'public.ecr.aws/docker/library/postgres:17'
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -18,6 +19,26 @@ services:
       interval: 2s
       timeout: 5s
       retries: 10
+
+  redis:
+    image: public.ecr.aws/docker/library/redis:alpine
+    restart: unless-stopped
+    hostname: redis-derpai
+    command: redis-server --requirepass ${REDIS_PASS} --save 60 1
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASS}', 'ping']
+      timeout: 5s
+      interval: 2s
+      retries: 10
+    ports:
+      - '${REDIS_PORT}:6379'
+    networks:
+      - derpai
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
 
 networks:
   derpai:

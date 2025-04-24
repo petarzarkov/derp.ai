@@ -23,6 +23,7 @@ import cookieParser from 'cookie-parser';
 import passport from 'passport';
 import { NextFunction, Request, Response } from 'express';
 import { AIService } from '../ai/ai.service';
+import { RedisService } from '../redis/redis.service';
 
 interface EmitEvents {
   init: (message: ChatMessageReply) => void;
@@ -47,6 +48,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
     readonly configService: ConfigService<ValidatedConfig, true>,
     @Inject(SessionStore) private readonly sessionStore: SessionStore,
     @Inject(AIService) private readonly aiService: AIService,
+    private readonly redisService: RedisService,
   ) {
     this.#sessionConfig = this.configService.get('auth.session', { infer: true });
   }
@@ -134,12 +136,16 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
         });
       });
       const answer = aiAnswer || 'Sorry, I had trouble thinking about that.';
+
       this.#logger.log(`Sending answer (${answer.length} chars) to WSClient: ${socket.id}`);
-      this.server.to(socket.id).emit('chat', {
+      const reply: ChatMessageReply = {
         message: answer,
         nickname: this.#botName,
         time: Date.now(),
-      });
+      };
+      this.server.to(socket.id).emit('chat', reply);
+
+      void this.redisService.addMessageToHistory(user.id, event, reply);
     } catch (error) {
       this.#logger.error(`Error getting AI answer for user ${user.email}:`, error as Error);
       this.server.to(socket.id).emit('chat', {

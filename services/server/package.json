@@ -45,6 +45,7 @@
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.0.15",
     "@slack/bolt": "^4.2.1",
+    "redis": "^4.7.0",
     "bcrypt": "^5.1.1",
     "helmet": "^8.1.0",
     "passport-github2": "^0.1.12",

@@ -31,6 +31,7 @@ export class AIService {
     config: AIProviderConfig,
     prompt: string,
     emitToClient: EmitToClientCallback,
+    isMaster?: boolean,
   ): Promise<string | null> {
     const model = config.model;
     if (!config) {
@@ -82,9 +83,9 @@ export class AIService {
     const timeoutId = setTimeout(() => controller.abort(), this.configService.get('app.aiReqTimeout', { infer: true }));
     try {
       this.#logger.log(`Querying ${model} with prompt: ${prompt.substring(0, 50)}...`);
-      void emitToClient('statusUpdate', {
+      emitToClient('statusUpdate', {
         id: statusId,
-        message: `Querying ${model} with prompt`,
+        message: `Querying ${model}${isMaster ? ' (master) to synthesize an answer' : ''}`,
         nickname: this.#botName,
         status: 'info',
         time: Date.now(),
@@ -96,7 +97,7 @@ export class AIService {
         signal: controller.signal,
       });
 
-      void emitToClient('statusUpdate', {
+      emitToClient('statusUpdate', {
         id: statusId,
         message: `Processing answer from ${model}`,
         status: 'info',
@@ -127,7 +128,7 @@ export class AIService {
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
         this.#logger.warn(`Request to ${model} timed out: ${error.message}`);
-        void emitToClient('statusUpdate', {
+        emitToClient('statusUpdate', {
           id: statusId,
           message: `${model} took too long to answer`,
           status: 'warning',
@@ -136,7 +137,7 @@ export class AIService {
         });
       } else if (error instanceof Error) {
         this.#logger.error(`Network or parsing error with ${model}: ${error.message}, ${error.stack}`);
-        void emitToClient('statusUpdate', {
+        emitToClient('statusUpdate', {
           id: statusId,
           message: `Network error with  ${model}`,
           status: 'error',
@@ -145,7 +146,7 @@ export class AIService {
         });
       } else {
         this.#logger.error(`Network or parsing error with ${model}: ${String(error)}`);
-        void emitToClient('statusUpdate', {
+        emitToClient('statusUpdate', {
           id: statusId,
           message: `Network error with ${model}`,
           status: 'error',
@@ -158,7 +159,7 @@ export class AIService {
       clearTimeout(timeoutId);
       void emitToClient('statusUpdate', {
         id: statusId,
-        message: `Processed answer from ${model}`,
+        message: `Synthesizing answer from ${model}`,
         status: 'info',
         nickname: this.#botName,
         time: Date.now(),
@@ -212,7 +213,13 @@ export class AIService {
       Final Answer:
     `;
 
-    const finalAnswer = await this.queryProvider(masterProvider, this.#masterConfig, synthesisPrompt, emitToClient);
+    const finalAnswer = await this.queryProvider(
+      masterProvider,
+      this.#masterConfig,
+      synthesisPrompt,
+      emitToClient,
+      true,
+    );
     if (!finalAnswer) {
       this.#logger.warn(
         `Master provider "${masterProvider}" failed to synthesize. Falling back to the first successful response.`,
