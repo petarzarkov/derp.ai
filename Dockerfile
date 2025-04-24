@@ -10,7 +10,7 @@ ENV NODE_ENV=production
 ENV CI=true
 ENV APP_ENV=prod
 
-RUN npm install -g pnpm@10.4.0
+# RUN npm install -g pnpm@10.4.0
 COPY . /app
 WORKDIR /app
 
