@@ -117,12 +117,6 @@ export class EnvVars {
   @IsString()
   SLACK_BOT_DEFAULT_CHANNEL?: string;
 
-  GIT_COMMIT?: string;
-  GIT_COMMIT_MESSAGE?: string;
-  GIT_COMMIT_AUTHOR?: string;
-  GIT_BRANCH?: string;
-  GIT_REPOSITORY?: string;
-
   @IsString()
   GROQ_API_KEY: string;
 
@@ -265,12 +259,12 @@ export const validateConfig = (config: Record<string, unknown>) => {
     },
     gitInfo: {
       commit: {
-        sha: validatedConfig.GIT_COMMIT,
-        message: validatedConfig.GIT_COMMIT_MESSAGE,
-        author: validatedConfig.GIT_COMMIT_AUTHOR,
+        sha: process.env.GIT_COMMIT || process.env.KOYEB_GIT_SHA,
+        message: process.env.GIT_COMMIT_MESSAGE || process.env.KOYEB_GIT_COMMIT_MESSAGE,
+        author: process.env.GIT_COMMIT_AUTHOR || process.env.KOYEB_GIT_COMMIT_AUTHOR,
       },
-      branch: validatedConfig.GIT_BRANCH,
-      repository: validatedConfig.GIT_REPOSITORY,
+      branch: process.env.GIT_BRANCH,
+      repository: process.env.GIT_REPOSITORY,
     },
   } as const;
 };
