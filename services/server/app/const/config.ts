@@ -264,9 +264,11 @@ export const validateConfig = (config: Record<string, unknown>) => {
       socketMode: validatedConfig.SLACK_APP_SOCKET_MODE,
     },
     gitInfo: {
-      commitSha: validatedConfig.GIT_COMMIT,
-      commitMessage: validatedConfig.GIT_COMMIT_MESSAGE,
-      commitAuthor: validatedConfig.GIT_COMMIT_AUTHOR,
+      commit: {
+        sha: validatedConfig.GIT_COMMIT,
+        message: validatedConfig.GIT_COMMIT_MESSAGE,
+        author: validatedConfig.GIT_COMMIT_AUTHOR,
+      },
       branch: validatedConfig.GIT_BRANCH,
       repository: validatedConfig.GIT_REPOSITORY,
     },
