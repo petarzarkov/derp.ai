@@ -2,7 +2,7 @@ import { Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { Session } from '../../db/entities/sessions/session.entity';
-import expressSession, { Cookie, SessionData } from 'express-session';
+import expressSession, { SessionData } from 'express-session';
 import { ConfigService } from '@nestjs/config';
 import { minutes } from '@nestjs/throttler';
 import { ValidatedConfig } from '../../const';
@@ -42,7 +42,7 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
   /**
    * Fetch session by the given sid.
    */
-  get = (sid: string, callback: (err?: Error | null, session?: SessionData | null) => void): void => {
+  get = (sid: string, callback: (err?: Error | null, sess?: SessionData | null) => void): void => {
     this.logger.debug(`GET session ${sid}`);
     this.sessionRepository
       .findOne({ where: { sid } })
@@ -59,9 +59,9 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
           this.logger.debug(`GET session ${sid}: Found, returning session data`);
           const sessionData: SessionData = {
             cookie: {
-              ...this.sessionConfig,
               expires: session.expire,
-            } as unknown as Cookie,
+              originalMaxAge: this.sessionConfig.cookie.maxAge,
+            },
             ...(session.userId && { passport: { user: session.userId } }),
             ...(session.ipAddress && {
               deviceInfo: {
