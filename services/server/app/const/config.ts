@@ -157,9 +157,9 @@ export const validateConfig = (config: Record<string, unknown>) => {
       credentials: true,
     },
     aiProviders: {
-      googleGemini2Flash: {
+      googleGemini25ProExp0325: {
         url: `https://generativelanguage.googleapis.com/v1beta/models`,
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-pro-exp-03-25',
         apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
       },
       groqLlama3370b: {
@@ -175,8 +175,8 @@ export const validateConfig = (config: Record<string, unknown>) => {
     },
     masterAIProvider: {
       url: `https://generativelanguage.googleapis.com/v1beta/models`,
-      name: 'googleGemini25ProPreview',
-      model: 'gemini-2.5-pro-preview-03-25',
+      name: 'googleGemini2Flash',
+      model: 'gemini-2.0-flash',
       apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
     },
     auth: {
