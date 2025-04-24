@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [v22.14]
+        node-version: [v22.15]
     name: Build
     steps:
       - name: Checkout
