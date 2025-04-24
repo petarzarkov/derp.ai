@@ -117,11 +117,17 @@ export class EnvVars {
   @IsString()
   SLACK_BOT_DEFAULT_CHANNEL?: string;
 
-  GIT_COMMIT_SHA?: string;
+  GIT_COMMIT?: string;
   GIT_COMMIT_MESSAGE?: string;
   GIT_COMMIT_AUTHOR?: string;
   GIT_BRANCH?: string;
   GIT_REPOSITORY?: string;
+
+  @IsString()
+  GROQ_API_KEY: string;
+
+  @IsString()
+  OPENROUTER_API_KEY: string;
 }
 
 export const validateConfig = (config: Record<string, unknown>) => {
@@ -162,6 +168,22 @@ export const validateConfig = (config: Record<string, unknown>) => {
         model: 'gemini-2.0-flash',
         apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
       },
+      groqLlama3370b: {
+        url: `https://api.groq.com/openai/v1/chat/completions`,
+        model: 'llama-3.3-70b-versatile',
+        apiKey: validatedConfig.GROQ_API_KEY,
+      },
+      openrouterDeepseek3: {
+        url: `https://openrouter.ai/api/v1/chat/completions`,
+        model: 'deepseek/deepseek-chat-v3-0324:free',
+        apiKey: validatedConfig.OPENROUTER_API_KEY,
+      },
+    },
+    masterAIProvider: {
+      url: `https://generativelanguage.googleapis.com/v1beta/models`,
+      name: 'googleGemini25ProPreview',
+      model: 'gemini-2.5-pro-preview-03-25',
+      apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
     },
     auth: {
       jwt: {
@@ -242,7 +264,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
       socketMode: validatedConfig.SLACK_APP_SOCKET_MODE,
     },
     gitInfo: {
-      commitSha: validatedConfig.GIT_COMMIT_SHA,
+      commitSha: validatedConfig.GIT_COMMIT,
       commitMessage: validatedConfig.GIT_COMMIT_MESSAGE,
       commitAuthor: validatedConfig.GIT_COMMIT_AUTHOR,
       branch: validatedConfig.GIT_BRANCH,

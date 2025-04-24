@@ -16,5 +16,6 @@ export class ChatMessageReply {
 }
 
 export class StatusMessageReply extends ChatMessageReply {
+  id: string;
   status?: 'error' | 'info' | 'warning' | 'success' | 'loading';
 }

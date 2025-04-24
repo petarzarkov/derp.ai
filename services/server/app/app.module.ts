@@ -169,6 +169,7 @@ import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
           migrationsRun: true,
           autoLoadEntities: true,
           logging: ['warn', 'error'],
+          retryAttempts: undefined,
         };
       },
       inject: [ConfigService],
