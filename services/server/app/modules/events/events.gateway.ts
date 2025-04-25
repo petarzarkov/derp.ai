@@ -37,7 +37,7 @@ type ExtendedSocket = Socket<DefaultEventsMap, EmitEvents, DefaultEventsMap, { u
 
 @UseFilters(new WebsocketsExceptionFilter())
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, OnApplicationShutdown {
-  readonly #botName = 'DerpAI';
+  #botName;
   readonly #logger = new ContextLogger(this.constructor.name);
   readonly #sessionConfig: ValidatedConfig['auth']['session'];
 
@@ -51,6 +51,8 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
     private readonly redisService: RedisService,
   ) {
     this.#sessionConfig = this.configService.get('auth.session', { infer: true });
+    const appConfig = this.configService.get('app', { infer: true });
+    this.#botName = appConfig.name;
   }
 
   wrapMiddlewareForSocketIo =

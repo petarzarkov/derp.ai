@@ -1,12 +1,13 @@
 import { ReactNode, useState, useCallback, useEffect } from 'react';
 import { AuthState, UserProfile, AuthContextValue, AuthContext, AuthProviderType } from './AuthContext';
+import { useConfig } from '../hooks/useConfig';
 
 export interface AuthProviderProps {
   children: ReactNode;
-  serverUrl: string;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children, serverUrl }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const { serverUrl } = useConfig();
   const [authState, setAuthState] = useState<AuthState>({
     currentUser: null,
     isAuthenticated: false,

@@ -5,22 +5,21 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { ThemeProvider } from '@theme';
 import { AuthProvider } from './auth/AuthProvider';
+import { ConfigProvider } from './config/ConfigProvider';
 
 const container = document.getElementById('app');
 const root = createRoot(container!);
-const serverUrl =
-  window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1')
-    ? 'http://localhost:3033'
-    : window.location.origin;
 
 root.render(
   <React.StrictMode>
     <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider serverUrl={serverUrl}>
-          <App serverUrl={serverUrl} />
-        </AuthProvider>
-      </ThemeProvider>
+      <ConfigProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </ThemeProvider>
+      </ConfigProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );

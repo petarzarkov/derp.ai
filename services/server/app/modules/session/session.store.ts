@@ -221,14 +221,14 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
    * Prune expired sessions from the database.
    */
   pruneSessions = (): void => {
-    this.logger.info('Pruning expired sessions...');
+    this.logger.debug('Pruning expired sessions...');
     this.sessionRepository
       .delete({ expire: LessThan(new Date()) })
       .then((result) => {
         if (result.affected && result.affected > 0) {
-          this.logger.info(`Pruned ${result.affected} expired sessions.`);
+          this.logger.debug(`Pruned ${result.affected} expired sessions.`);
         } else {
-          this.logger.info('No expired sessions found to prune.');
+          this.logger.debug('No expired sessions found to prune.');
         }
       })
       .catch((err) => {
@@ -248,7 +248,7 @@ export class SessionStore extends expressSession.Store implements OnApplicationS
     if (!sess.passport?.user) {
       const minsToExpire = 10;
       // Expire non auth user sessions
-      return new Date(minutes(minsToExpire));
+      return new Date(Date.now() + minutes(minsToExpire));
     }
 
     let expire: number | Date | undefined;

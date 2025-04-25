@@ -199,6 +199,15 @@ import { RedisModule } from './modules/redis/redis.module';
           fallthrough: true,
         },
       },
+      {
+        renderPath: '/',
+        serveRoot: '/terms-of-service',
+        rootPath: resolve(__dirname, '../../web/dist'),
+        exclude: ['/api/*'],
+        serveStaticOptions: {
+          fallthrough: true,
+        },
+      },
     ),
     // Just to prevent client from accessing the same resource quickly in succession
     CacheModule.register({
@@ -226,8 +235,8 @@ export class AppModule implements NestModule, OnApplicationBootstrap {
     const env = this.configService.get('env', { infer: true });
 
     await this.slackService.postContext({
-      username: `DerpAI - ${env}`,
-      header: `:zap: DerpAI ${env} Started - ${new Date().toISOString()}`,
+      username: `${appConfig.name} - ${env}`,
+      header: `:zap: ${appConfig.name} ${env} Started - ${new Date().toISOString()}`,
       data: {
         appConfig,
         corsConfig,
@@ -238,7 +247,7 @@ export class AppModule implements NestModule, OnApplicationBootstrap {
         items: [
           {
             text: 'Open my UI',
-            url: appConfig.host,
+            url: appConfig.serverUrl,
             style: 'primary',
           },
           {

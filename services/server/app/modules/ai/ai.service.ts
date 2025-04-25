@@ -8,9 +8,9 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AIService {
-  readonly #botName = 'DerpAI';
+  #botName;
+  #context;
   #logger = new ContextLogger(AIService.name);
-  #context = `Your name is ${this.#botName}. You are a helpful assistant that can answer questions and help with tasks.`;
   #config: ReturnType<typeof validateConfig>['aiProviders'];
   #providers: AIProvider[];
   #masterConfig: ReturnType<typeof validateConfig>['masterAIProvider'];
@@ -18,6 +18,10 @@ export class AIService {
   constructor(private configService: ConfigService<ValidatedConfig, true>) {
     const providers = this.configService.get('aiProviders', { infer: true });
     const masterProvider = this.configService.get('masterAIProvider', { infer: true });
+    const appConfig = this.configService.get('app', { infer: true });
+    this.#botName = appConfig.name;
+    this.#context = `Your name is ${this.#botName}. You are a helpful assistant that can answer questions and help with tasks.`;
+
     if (!providers) {
       throw new Error('config aiProviders are not set!');
     }

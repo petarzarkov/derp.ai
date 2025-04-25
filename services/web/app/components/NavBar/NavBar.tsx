@@ -34,16 +34,19 @@ import {
   AlertDialogOverlay,
   Divider,
   useToast,
+  Link,
 } from '@chakra-ui/react';
 import { MoonIcon, SunIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { ColorTheme, themes } from '@theme';
 import { BsPaletteFill } from 'react-icons/bs';
-import { IoMdLogOut, IoMdHome } from 'react-icons/io';
+import { IoMdLogOut, IoMdChatbubbles } from 'react-icons/io';
 import { useThemeProvider } from '@hooks';
-import { Link as RouterLink } from 'react-router-dom';
 import { NAVBAR_EXPANDED_WIDTH, NAVBAR_COLLAPSED_WIDTH } from '../../config/const';
 import { useAuth } from '../../hooks/useAuth';
 import { MdPrivacyTip, MdDeleteForever } from 'react-icons/md';
+import { SiSwagger } from 'react-icons/si';
+import { useConfig } from '../../hooks/useConfig';
+import { NavLink } from './NavLink';
 
 interface NavBarProps {
   isNavOpen: boolean;
@@ -51,6 +54,7 @@ interface NavBarProps {
 }
 
 export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
+  const { swaggerDocsUrl } = useConfig();
   const { isOpen: isPalOpen, onOpen: palOnOpen, onClose: palOnClose } = useDisclosure();
   const { theme, setTheme } = useThemeProvider();
   const { toggleColorMode } = useColorMode();
@@ -140,9 +144,9 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
           transition="opacity 0.2s 0.1s, visibility 0.2s 0.1s" // Delay transition slightly
         >
           <VStack spacing={5} alignSelf="stretch">
-            <Tooltip label="Home" placement="right" hasArrow>
-              <IconButton as={RouterLink} to="/" aria-label="Home" icon={<IoMdHome />} variant="ghost" size="lg" />
-            </Tooltip>
+            <NavLink label={'Chat'} key={'chat'} to={'/'} icon={<IoMdChatbubbles />}>
+              {'Chat'}
+            </NavLink>
             <Tooltip label="Change Theme" placement="right" hasArrow>
               <IconButton
                 aria-label="Change Theme"
@@ -164,16 +168,9 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
           </VStack>
 
           <VStack spacing={4} alignSelf="stretch">
-            <Tooltip label="Privacy Policy" placement="right" hasArrow>
-              <IconButton
-                as={RouterLink}
-                to="/privacy-policy"
-                aria-label="Privacy Policy"
-                icon={<MdPrivacyTip />}
-                variant="ghost"
-                size="lg"
-              />
-            </Tooltip>
+            <NavLink label={'Legal'} key={'Legal'} to={'/privacy-policy'} icon={<MdPrivacyTip />}>
+              {'Legal'}
+            </NavLink>
             {isAuthenticated && currentUser && (
               <Popover placement="right-start" trigger="click" isLazy>
                 <PopoverTrigger>
@@ -232,6 +229,18 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
                 </PopoverContent>
               </Popover>
             )}
+
+            <Tooltip label="API Docs" placement="right" hasArrow>
+              <IconButton
+                as={Link}
+                aria-label="API Docs"
+                icon={<SiSwagger />}
+                variant="ghost"
+                href={swaggerDocsUrl}
+                isExternal
+                size="lg"
+              />
+            </Tooltip>
           </VStack>
         </Flex>
 

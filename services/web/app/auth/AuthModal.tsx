@@ -25,6 +25,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { FaGithub, FaLinkedin } from 'react-icons/fa';
 import { useAuth } from '../hooks/useAuth';
 import { AuthProviderType } from './AuthContext';
+import { useThemeProvider } from '@hooks';
 
 const passwordMinLength = 8;
 const passwordError = `Password must be at least ${passwordMinLength} characters long.`;
@@ -41,6 +42,7 @@ export const AuthModal: React.FC = () => {
   const showPasswordError = isPasswordTouched && !isPasswordLengthValid;
 
   const { login, register, initiateOAuthLogin, error, isLoading } = useAuth();
+  const { theme } = useThemeProvider();
   const toast = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -151,7 +153,7 @@ export const AuthModal: React.FC = () => {
               )}
 
               <Button
-                colorScheme="blue"
+                colorScheme={theme}
                 width="full"
                 mt={4}
                 type="submit"

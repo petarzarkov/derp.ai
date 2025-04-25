@@ -33,6 +33,7 @@ export class SlackService<CustomContext extends AppContext = AppContext> {
   constructor(private readonly configService: ConfigService<ValidatedConfig, true>) {
     this.logQueue = [];
     const slackConfig = this.configService.get('slack', { infer: true });
+    const appConfig = this.configService.get('app', { infer: true });
     const logConfig = this.configService.get('log', { infer: true });
     this.#logger = new SlackLogger(this.constructor.name, logConfig.level as LogLevel);
     const options: AppOptions = {
@@ -44,7 +45,7 @@ export class SlackService<CustomContext extends AppContext = AppContext> {
       socketMode: slackConfig.socketMode ? slackConfig.socketMode : true,
     };
     this.#defaultChannel = slackConfig.defaultChannel;
-    this.botName = slackConfig.botName;
+    this.botName = appConfig.name;
     this.#app = new App(options);
 
     async function enrichCtx({ context, next }: AllMiddlewareArgs<CustomContext>) {
@@ -261,7 +262,7 @@ export class SlackService<CustomContext extends AppContext = AppContext> {
     const chunked = [...chunks(logsToSend, 10)];
 
     for (const chunk of chunked) {
-      const text = `DerpAI logs chunk ${new Date().toISOString()}`;
+      const text = `${this.botName} logs chunk ${new Date().toISOString()}`;
       await this.post({
         channel: 'derp-ai-logs',
         text,

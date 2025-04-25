@@ -110,9 +110,6 @@ export class EnvVars {
   @IsString()
   SLACK_BOT_TOKEN: string;
 
-  @IsString()
-  SLACK_BOT_NAME: string;
-
   @IsOptional()
   @IsString()
   SLACK_BOT_DEFAULT_CHANNEL?: string;
@@ -244,11 +241,12 @@ export const validateConfig = (config: Record<string, unknown>) => {
     },
     isDev: !validatedConfig.APP_ENV || validatedConfig.APP_ENV === 'dev',
     app: {
-      host: validatedConfig.HOST,
+      env: validatedConfig.APP_ENV,
+      name: 'DerpAI',
+      supportEmail: 'derpai.app@gmail.com',
+      serverUrl: validatedConfig.APP_ENV === 'dev' ? localHost : validatedConfig.HOST,
       port: validatedConfig.SERVICE_PORT,
-      docs: {
-        apiPath: validatedConfig.API_DOCS_PATH,
-      },
+      docsApiPath: validatedConfig.API_DOCS_PATH,
       aiReqTimeout: validatedConfig.AI_REQ_TIMEOUT || 25000,
     },
     db: {
@@ -264,7 +262,6 @@ export const validateConfig = (config: Record<string, unknown>) => {
       botToken: validatedConfig.SLACK_BOT_TOKEN,
       userToken: validatedConfig.SLACK_USER_TOKEN,
       signingSecret: validatedConfig.SLACK_SIGNING_SECRET,
-      botName: validatedConfig.SLACK_BOT_NAME,
       defaultChannel: validatedConfig.SLACK_BOT_DEFAULT_CHANNEL,
       socketMode: validatedConfig.SLACK_APP_SOCKET_MODE,
     },

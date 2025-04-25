@@ -124,7 +124,7 @@ async function bootstrap(module: typeof AppModule) {
 
   const document = SwaggerModule.createDocument(app, config.build());
 
-  SwaggerModule.setup(appConfig.docs.apiPath, app, document, {
+  SwaggerModule.setup(appConfig.docsApiPath, app, document, {
     customSiteTitle: `NestJS Derp AI API ${appEnv}`,
     customCss: '.swagger-ui .topbar { display: none }',
     swaggerOptions: {
@@ -153,7 +153,7 @@ async function bootstrap(module: typeof AppModule) {
 
   const appUrl = await app.getUrl();
   logger.log(`Application started at ${appUrl}`);
-  logger.log(`API Docs at ${appUrl}/${appConfig.docs.apiPath}`);
+  logger.log(`API Docs at ${appUrl}/${appConfig.docsApiPath}`);
 }
 
 void bootstrap(AppModule);

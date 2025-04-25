@@ -4,12 +4,10 @@ import { Skeleton } from '@chakra-ui/react';
 import { useAuth } from '../hooks/useAuth';
 import { AuthModal } from './AuthModal';
 import { SocketProvider } from '../socket/SocketProvider';
+import { useConfig } from '../hooks/useConfig';
 
-interface AuthWrapperProps {
-  serverUrl: string;
-}
-
-export const AuthWrapper: React.FC<AuthWrapperProps> = ({ serverUrl }) => {
+export const AuthWrapper: React.FC = () => {
+  const { serverUrl } = useConfig();
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
