@@ -30,6 +30,10 @@ export const getNewVersion = (version: string) => {
 
 (async () => {
   const packages = await getServices();
+  const originalCommitSha = process.env.ORIGINAL_COMMIT_SHA || 'unknown_sha';
+  const originalCommitMessage =
+    process.env.ORIGINAL_COMMIT_MESSAGE?.replace(/\n/g, ' ') || 'No original commit message available.';
+
   for (const pkg of packages) {
     try {
       stepInfo(`Starting versioning for ${pkg.parsed.name}...`, { pkg });
@@ -45,7 +49,10 @@ export const getNewVersion = (version: string) => {
       if (process.env.CI) {
         execSync(`git add ${pkg.path}/package.json`);
         execSync(`git tag ${pkg.parsed.name}@${newVersion}`);
-        execSync(`git commit -am "[branch|${branch}] version of ${pkg.parsed.name} bumped to ${newVersion}"`);
+        const commitSubject = `[branch|${branch}] version of ${pkg.parsed.name} bumped to ${newVersion} [skip ci]`;
+        const commitBody = `\n\nTriggered by commit:\nSHA: ${originalCommitSha}\nMessage: ${originalCommitMessage}`;
+
+        execSync(`git commit -m "${commitSubject}" -m "${commitBody}"`);
       }
 
       stepInfo(`Finished versioning for ${pkg.parsed.name}, version bumped to ${newVersion}!`);
