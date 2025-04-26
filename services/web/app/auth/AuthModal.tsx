@@ -131,7 +131,6 @@ export const AuthModal: React.FC = () => {
                     minLength={isRegisterView ? passwordMinLength : undefined}
                   />
                   <InputRightElement width="4.5rem">
-                    {/* Toggle Button */}
                     <IconButton
                       h="1.75rem"
                       size="sm"

@@ -18,6 +18,9 @@ const genTheme = (
   additionalColors?: Record<string, Record<string | number, string>>,
 ) =>
   extendTheme({
+    config: {
+      initialColorMode: 'dark',
+    },
     fonts: {
       ...chakraTheme.fonts,
       body: 'Google Sans, Helvetica Neue, sans-serif;',

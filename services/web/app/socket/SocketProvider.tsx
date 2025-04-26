@@ -118,14 +118,17 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     };
 
     const handleInit = (receivedMsg: ServerChatMessage) => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          text: receivedMsg.message,
-          nickname: receivedMsg.nickname,
-          time: receivedMsg.time,
-        },
-      ]);
+      if (receivedMsg && typeof receivedMsg.message === 'string' && receivedMsg.nickname === appName) {
+        toast({
+          title: receivedMsg.message,
+          status: 'info',
+          duration: 2000,
+          isClosable: true,
+          position: 'top-left',
+          orientation: 'vertical',
+          variant: 'solid',
+        });
+      }
     };
 
     const handleException = (errorData: SocketExceptionData) => {
