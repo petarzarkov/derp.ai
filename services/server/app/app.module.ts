@@ -236,7 +236,7 @@ export class AppModule implements NestModule, OnApplicationBootstrap {
 
     await this.slackService.postContext({
       username: `${appConfig.name} - ${env}`,
-      header: `:zap: ${appConfig.name} ${env} Started - ${new Date().toISOString()}`,
+      header: `:zap: ${appConfig.name} ${env} started - ${new Date().toISOString()}`,
       data: {
         appConfig,
         corsConfig,

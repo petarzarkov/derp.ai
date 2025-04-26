@@ -262,7 +262,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
       botToken: validatedConfig.SLACK_BOT_TOKEN,
       userToken: validatedConfig.SLACK_USER_TOKEN,
       signingSecret: validatedConfig.SLACK_SIGNING_SECRET,
-      defaultChannel: validatedConfig.SLACK_BOT_DEFAULT_CHANNEL,
+      defaultChannel: `${validatedConfig.SLACK_BOT_DEFAULT_CHANNEL}-${validatedConfig.APP_ENV}`,
       socketMode: validatedConfig.SLACK_APP_SOCKET_MODE,
     },
     gitInfo: {

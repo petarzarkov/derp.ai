@@ -24,6 +24,7 @@ export class SlackService<CustomContext extends AppContext = AppContext> {
   #app: App<CustomContext>;
   #logger: SlackLogger;
   #defaultChannel?: string;
+  env: 'prod' | 'dev';
   botName: string;
   actions = {
     openBrowser: 'open_in_browser',
@@ -34,6 +35,7 @@ export class SlackService<CustomContext extends AppContext = AppContext> {
     this.logQueue = [];
     const slackConfig = this.configService.get('slack', { infer: true });
     const appConfig = this.configService.get('app', { infer: true });
+    this.env = appConfig.env;
     const logConfig = this.configService.get('log', { infer: true });
     this.#logger = new SlackLogger(this.constructor.name, logConfig.level as LogLevel);
     const options: AppOptions = {
@@ -264,7 +266,7 @@ export class SlackService<CustomContext extends AppContext = AppContext> {
     for (const chunk of chunked) {
       const text = `${this.botName} logs chunk ${new Date().toISOString()}`;
       await this.post({
-        channel: 'derp-ai-logs',
+        channel: `derp-ai-logs-${this.env}`,
         text,
         unfurl_media: false,
         unfurl_links: false,
