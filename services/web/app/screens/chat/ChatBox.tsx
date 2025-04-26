@@ -5,6 +5,7 @@ import { useSocket } from '@hooks';
 import { useScrollContext } from '../../scroll/ScrollContext';
 import Message from './Message';
 import StatusMessage from './StatusMessage';
+import TextareaAutosize from 'react-textarea-autosize';
 
 interface ChatBoxProps {
   isFixedInput?: boolean;
@@ -73,9 +74,9 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
         : 'Enter a prompt here';
 
   if (isFixedInput) {
-    const initialHeight = 'unset';
-    const expandedHeight = '300px';
     const textareaMinHeight = '40px';
+    const textareaMaxHeight = '200px'; // Define a max height for auto-sizing
+    const expandedHeight = '300px';
 
     return (
       <Flex
@@ -123,23 +124,21 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
 
           <Flex flex={1} position="relative" alignItems="flex-end" pt={6}>
             <Textarea
+              as={TextareaAutosize}
               ref={inputRef}
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
               onKeyDown={handleKeyDown}
               flex={1}
-              minH={textareaMinHeight}
-              h={isExpanded ? expandedHeight : initialHeight}
-              maxH={isExpanded ? expandedHeight : initialHeight}
-              overflowY="auto"
+              minRows={1} // Minimum rows for TextareaAutosize
+              maxRows={isExpanded ? undefined : 10} // Auto-size up to ~10 rows when not expanded
+              height={isExpanded ? expandedHeight : undefined} // Apply fixed height when expanded
+              maxH={isExpanded ? expandedHeight : textareaMaxHeight} // Apply max height for scrolling
+              overflowY="auto" // Ensure scrollbar appears
               resize="none"
               placeholder={inputPlaceholder}
               isDisabled={connectionStatus !== 'connected'}
               variant="unstyled"
-              px={0}
-              py={0}
-              pr="40px"
-              pb="20px"
               textAlign="left"
             />
 
@@ -152,8 +151,8 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               colorScheme="blue"
               size="sm"
               position="absolute"
-              bottom={1}
-              right={0}
+              bottom="5px"
+              right="15px"
               zIndex={1}
               borderRadius="md"
               aria-label={isBotThinking ? 'Sending message' : 'Send message'}
