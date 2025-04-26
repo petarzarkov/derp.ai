@@ -20,7 +20,6 @@ jobs:
           fetch-depth: 0
       - name: Install pnpm
         with:
-          version: 10.9.0
           run_install: false
         uses: pnpm/action-setup@v4
       - name: Set node version to ${{ matrix.node-version }}
