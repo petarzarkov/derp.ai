@@ -10,8 +10,10 @@ import {
   Divider,
 } from '@chakra-ui/react';
 import { FC } from 'react';
+import { useConfig } from '../../hooks/useConfig';
 
 export const PrivacyPolicy: FC = () => {
+  const { appName } = useConfig();
   const lastUpdated = 'April 22, 2025';
 
   const sectionIds = {
@@ -63,7 +65,7 @@ export const PrivacyPolicy: FC = () => {
       </Box>
 
       <Text>
-        Welcome to DerpAI! This Privacy Policy explains how we collect, use, disclose, and safeguard your information
+        Welcome to {appName}! This Privacy Policy explains how we collect, use, disclose, and safeguard your information
         when you use our application. Please read this privacy policy carefully. If you do not agree with the terms of
         this privacy policy, please do not access the application.
       </Text>

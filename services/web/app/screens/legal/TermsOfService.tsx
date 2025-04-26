@@ -1,10 +1,10 @@
 import { Heading, Text, VStack, UnorderedList, ListItem, Link as ChakraLink } from '@chakra-ui/react';
+import { useConfig } from '../../hooks/useConfig';
 import { FC } from 'react';
 
 export const TermsOfService: FC = () => {
   const effectiveDate = 'April 25, 2025';
-  const companyName = 'DerpAI';
-  const supportEmail = 'derpai.app@gmail.com';
+  const { appName: companyName, supportEmail } = useConfig();
 
   return (
     <VStack spacing={6} align="stretch">

@@ -5,6 +5,7 @@ import { BackTop } from './BackTop';
 import { NavBar } from './NavBar';
 import { NAVBAR_COLLAPSED_WIDTH, NAVBAR_EXPANDED_WIDTH } from '../config/const';
 import { useAuth } from '../hooks/useAuth';
+import { useConfig } from '../hooks/useConfig';
 
 export const Layout: FC = () => {
   const scrollableContentRef = useRef<HTMLDivElement>(null);
@@ -12,6 +13,7 @@ export const Layout: FC = () => {
     defaultIsOpen: true,
   });
   const { isAuthenticated } = useAuth();
+  const { appName } = useConfig();
 
   const currentNavBarWidth =
     isAuthenticated && isNavOpen ? NAVBAR_EXPANDED_WIDTH : isAuthenticated ? NAVBAR_COLLAPSED_WIDTH : '0px';
@@ -26,13 +28,24 @@ export const Layout: FC = () => {
         flexDirection="column"
         minH="100vh"
         position="relative"
-        bg={useColorModeValue('gray.50', 'gray.900')}
+        bg={useColorModeValue('primary.50', 'primary.900')}
       >
-        <HStack position="fixed" top={4} zIndex={10} right={15} align="center" transition="left 0.2s ease-in-out">
-          <Image alt="DerpAI Logo" src="/png/derp_ai_icon_128x128.png" borderRadius="md" h={8} w={8} />
-          <Text fontSize="lg" fontWeight="bold" color={useColorModeValue('gray.800', 'whiteAlpha.900')}>
-            DerpAI
+        <HStack
+          bg={useColorModeValue('primary.50', 'primary.600')}
+          opacity={'60%'}
+          color={useColorModeValue('primary.800', 'whiteAlpha.900')}
+          borderRadius={'md'}
+          position="fixed"
+          top={4}
+          zIndex={10}
+          right={15}
+          align="center"
+          transition="left 0.2s ease-in-out"
+        >
+          <Text fontSize="lg" fontWeight="bold" color={useColorModeValue('primary.800', 'whiteAlpha.900')}>
+            {appName}
           </Text>
+          <Image alt={`${appName}-logo`} src="/png/derp_ai_icon_128x128.png" borderRadius="md" h={8} w={8} />
         </HStack>
 
         <Flex

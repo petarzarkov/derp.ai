@@ -54,15 +54,15 @@ interface NavBarProps {
 }
 
 export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
-  const { swaggerDocsUrl } = useConfig();
+  const { swaggerDocsUrl, appName } = useConfig();
   const { isOpen: isPalOpen, onOpen: palOnOpen, onClose: palOnClose } = useDisclosure();
   const { theme, setTheme } = useThemeProvider();
   const { toggleColorMode } = useColorMode();
   const { logout, deleteAccount, currentUser, isAuthenticated } = useAuth();
   const navBg = useColorModeValue('primary.200', 'primary.900');
-  const borderColor = useColorModeValue('gray.300', 'gray.700');
+  const borderColor = useColorModeValue('primary.300', 'primary.700');
   const ColorModeIcon = useColorModeValue(<MoonIcon />, <SunIcon />);
-  const popoverBg = useColorModeValue('white', 'gray.800');
+  const popoverBg = useColorModeValue('white', 'primary.800');
 
   const { isOpen: isAlertOpen, onOpen: onAlertOpen, onClose: onAlertClose } = useDisclosure();
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -192,10 +192,10 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
                   </PopoverHeader>
                   <PopoverBody>
                     <VStack align="start" spacing={2}>
-                      <Text fontSize="sm" color="gray.500">
+                      <Text fontSize="sm" color="primary.500">
                         Email: {userEmail}
                       </Text>
-                      <Text fontSize="sm" color="gray.500">
+                      <Text fontSize="sm" color="primary.500">
                         Joined: {new Date(currentUser?.createdAt).toLocaleString()}
                       </Text>
                     </VStack>
@@ -251,7 +251,7 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
               Pick your theme
             </DrawerHeader>
             <DrawerCloseButton />
-            <DrawerBody>
+            <DrawerBody backgroundColor={useColorModeValue(`${theme}.200`, `${theme}.400`)}>
               <Flex wrap="wrap">
                 {Object.keys(themes).map((tt, indx) => (
                   <Button
@@ -283,7 +283,7 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
 
             <AlertDialogBody>
               Are you sure you want to delete your account? This action cannot be undone and all your data associated
-              with DerpAI will be permanently removed.
+              with {appName} will be permanently removed.
             </AlertDialogBody>
 
             <AlertDialogFooter>

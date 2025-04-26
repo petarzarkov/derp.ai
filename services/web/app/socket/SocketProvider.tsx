@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+import React, { useState, useEffect, useCallback, ReactNode } from 'react';
 import { io } from 'socket.io-client';
 import type {
   SocketClient,
@@ -11,6 +11,7 @@ import type {
 import { ConnectionStatus, SocketContext, SocketContextState } from './SocketContext';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '@chakra-ui/react';
+import { useConfig } from '../hooks/useConfig';
 
 export interface SocketProviderProps {
   children: ReactNode;
@@ -20,8 +21,8 @@ export interface SocketProviderProps {
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children, serverUrl }) => {
   const toast = useToast();
   const [socket, setSocket] = useState<SocketClient | null>(null);
-  const [botNickname, setBotNickname] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const { appName } = useConfig();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [isBotThinking, setIsBotThinking] = useState(false);
   const [currentStatusMessage, setCurrentStatusMessage] = useState<string | null>(null);
@@ -48,12 +49,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     }
   }, [currentUser]); // Depend on currentUser
 
-  // Ref to hold the current bot nickname for access within event handlers
-  const botNicknameRef = useRef(botNickname);
-  useEffect(() => {
-    botNicknameRef.current = botNickname;
-  }, [botNickname]);
-
   useEffect(() => {
     if (!isAuthenticated || !currentUser) {
       if (socket) {
@@ -63,7 +58,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
         setIsBotThinking(false);
         setConnectionStatus('disconnected');
         setMessages([]);
-        setBotNickname(null);
         setCurrentStatusMessage(null);
       }
       return;
@@ -73,7 +67,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       return;
     }
     setConnectionStatus('connecting');
-    setBotNickname(null);
 
     const newSocket = io(serverUrl, {
       requestTimeout: 10000,
@@ -104,7 +97,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       // Check if it's a valid message structure
       if (receivedMsg && typeof receivedMsg.message === 'string' && typeof receivedMsg.nickname === 'string') {
         // Use the ref to check against the latest bot nickname
-        if (receivedMsg.nickname === botNicknameRef.current) {
+        if (receivedMsg.nickname === appName) {
           setIsBotThinking(false);
         }
 
@@ -125,26 +118,14 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     };
 
     const handleInit = (receivedMsg: ServerChatMessage) => {
-      // Check ref to prevent setting nickname multiple times if init is somehow emitted again
-      if (!botNicknameRef.current) {
-        setBotNickname(receivedMsg.nickname);
-        // Add the init message directly to avoid duplication if also sent via 'chat'
-        if (receivedMsg && typeof receivedMsg.message === 'string' && typeof receivedMsg.nickname === 'string') {
-          setMessages((prev) => [
-            ...prev,
-            {
-              text: receivedMsg.message,
-              nickname: receivedMsg.nickname,
-              time:
-                typeof receivedMsg.time === 'number' || typeof receivedMsg.time === 'string'
-                  ? new Date(receivedMsg.time).getTime()
-                  : Date.now(),
-            },
-          ]);
-        } else {
-          console.warn('Received invalid init message format:', receivedMsg);
-        }
-      }
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: receivedMsg.message,
+          nickname: receivedMsg.nickname,
+          time: receivedMsg.time,
+        },
+      ]);
     };
 
     const handleException = (errorData: SocketExceptionData) => {
@@ -162,7 +143,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
 
     const handleStatusUpdate = (statusData: ServerStatusMessage) => {
       if (statusData && typeof statusData.message === 'string') {
-        if (statusData.nickname === botNicknameRef.current) {
+        if (statusData.nickname === appName) {
           if (toast.isActive(statusData.id)) {
             toast.update(statusData.id, {
               title: statusData.message,
@@ -252,7 +233,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     connectionStatus,
     isBotThinking,
     currentStatusMessage,
-    botNickname,
     sendMessage,
   };
 

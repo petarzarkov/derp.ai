@@ -9,8 +9,8 @@ export class ThemeProvider extends React.Component<{
 }> {
   isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   state: ProviderBase = {
-    theme: 'gray',
-    colors: themes.gray,
+    theme: 'darkGray',
+    colors: themes.darkGray,
     isLoading: false,
   };
 

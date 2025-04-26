@@ -19,18 +19,20 @@ import type { MessageProps } from '../../socket/Chat.types';
 import ReactMarkdown, { Components } from 'react-markdown';
 import { FaCopy, FaCheck } from 'react-icons/fa';
 import { UserMessageContent } from './UserMessageContent';
+import { useConfig } from '../../hooks/useConfig';
 
 const Message = ({ text, nickname, time }: MessageProps) => {
-  const isUser = nickname !== 'error' && nickname !== 'system' && nickname !== 'DerpAI';
+  const { appName } = useConfig();
+
+  const isUser = nickname !== 'error' && nickname !== 'system' && nickname !== appName;
   const isError = nickname === 'error';
 
-  // ---- FIX 1: Call Hooks at Top Level for colorStyles ----
   const userBg = useColorModeValue('primary.700', 'primary.300');
   const userText = useColorModeValue('primary.100', 'primary.700');
   const errorBg = useColorModeValue('red.600', 'red.300');
   const errorText = useColorModeValue('white', 'red.900');
-  const systemBg = useColorModeValue('gray.500', 'gray.300');
-  const systemText = useColorModeValue('white', 'gray.900');
+  const systemBg = useColorModeValue('primary.500', 'primary.300');
+  const systemText = useColorModeValue('white', 'primary.900');
   const defaultBg = useColorModeValue('primary.300', 'primary.600');
   const defaultText = useColorModeValue('primary.600', 'primary.100');
   const colorStyles = useMemo(
@@ -56,7 +58,6 @@ const Message = ({ text, nickname, time }: MessageProps) => {
     .toString()
     .padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 
-  // Memoize markdownComponents if they don't depend on props changing per message
   const markdownComponents = useMemo<Components>(
     () => ({
       code(component) {
@@ -72,7 +73,7 @@ const Message = ({ text, nickname, time }: MessageProps) => {
         if (isInlineCode) {
           return (
             <Code
-              bg={useColorModeValue('gray.200', 'gray.600')}
+              bg={useColorModeValue('primary.200', 'primary.600')}
               color={useColorModeValue('black', 'white')}
               px="0.4em"
               py="0.2em"
@@ -96,8 +97,8 @@ const Message = ({ text, nickname, time }: MessageProps) => {
             p={4}
             pt={8}
             my={2}
-            bg={useColorModeValue('gray.100', 'gray.800')}
-            color={useColorModeValue('gray.800', 'gray.100')}
+            bg={useColorModeValue('primary.100', 'primary.800')}
+            color={useColorModeValue('primary.800', 'primary.100')}
             borderRadius="md"
             overflowX="auto"
             fontSize="sm"
@@ -106,7 +107,7 @@ const Message = ({ text, nickname, time }: MessageProps) => {
             whiteSpace="pre-wrap" // wrap long lines
             wordBreak="break-all" // break long words if needed
             borderWidth="1px"
-            borderColor={useColorModeValue('gray.200', 'gray.700')}
+            borderColor={useColorModeValue('primary.200', 'primary.700')}
           >
             <Tooltip label={hasCopied ? 'Copied!' : 'Copy code'} placement="top" hasArrow>
               <IconButton

@@ -10,7 +10,6 @@ export interface SocketContextState {
   connectionStatus: ConnectionStatus;
   currentStatusMessage: string | null;
   sendMessage: (messageText: string) => void;
-  botNickname: string | null;
 }
 
 export const SocketContext = createContext<SocketContextState | undefined>(undefined);

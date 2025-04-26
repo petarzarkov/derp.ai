@@ -6,20 +6,21 @@ import { useScrollContext } from '../../scroll/ScrollContext';
 import Message from './Message';
 import StatusMessage from './StatusMessage';
 import TextareaAutosize from 'react-textarea-autosize';
+import { useConfig } from '../../hooks/useConfig';
 
 interface ChatBoxProps {
   isFixedInput?: boolean;
 }
 
 export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
-  const { messages, isConnected, connectionStatus, isBotThinking, botNickname, currentStatusMessage, sendMessage } =
-    useSocket();
+  const { messages, isConnected, connectionStatus, isBotThinking, currentStatusMessage, sendMessage } = useSocket();
   const { scrollableRef } = !isFixedInput ? useScrollContext() : { scrollableRef: { current: null } };
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const { appName } = useConfig();
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -65,7 +66,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
     setIsExpanded(!isExpanded);
   };
 
-  const inputBgColor = useColorModeValue('white', 'gray.700');
+  const inputBgColor = useColorModeValue('white', 'primary.700');
   const inputPlaceholder =
     connectionStatus !== 'connected'
       ? 'Connecting...'
@@ -86,7 +87,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
         right={0}
         transition="margin-left 0.2s ease-in-out"
         p={4}
-        bg={useColorModeValue('gray.50', 'gray.900')}
+        bg={useColorModeValue('primary.50', 'primary.900')}
         zIndex={5}
         justifyContent="center"
         alignItems="flex-end"
@@ -96,7 +97,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
           bg={inputBgColor}
           borderRadius="xl"
           borderWidth="1px"
-          borderColor={useColorModeValue('gray.200', 'gray.600')}
+          borderColor={useColorModeValue('primary.200', 'primary.600')}
           alignItems="flex-end"
           w={{ base: '100%', sm: '95%', md: '90%', lg: '85%' }}
           maxW="container.xl"
@@ -105,7 +106,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
         >
           <HStack spacing={1} position="absolute" top={2} left={4} zIndex={1} alignItems="center">
             <Flex boxSize="8px" borderRadius="full" bg={statusColor} transition="background-color 0.3s ease" />
-            <Text fontSize="xs" color={useColorModeValue('gray.600', 'whiteAlpha.600')}>
+            <Text fontSize="xs" color={useColorModeValue('primary.600', 'whiteAlpha.600')}>
               {statusText}
             </Text>
           </HStack>
@@ -130,11 +131,11 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               onChange={(e) => setMessageInput(e.target.value)}
               onKeyDown={handleKeyDown}
               flex={1}
-              minRows={1} // Minimum rows for TextareaAutosize
-              maxRows={isExpanded ? undefined : 10} // Auto-size up to ~10 rows when not expanded
-              height={isExpanded ? expandedHeight : undefined} // Apply fixed height when expanded
-              maxH={isExpanded ? expandedHeight : textareaMaxHeight} // Apply max height for scrolling
-              overflowY="auto" // Ensure scrollbar appears
+              minRows={1}
+              maxRows={isExpanded ? undefined : 10}
+              height={isExpanded ? expandedHeight : undefined}
+              maxH={isExpanded ? expandedHeight : textareaMaxHeight}
+              overflowY="auto"
               resize="none"
               placeholder={inputPlaceholder}
               isDisabled={connectionStatus !== 'connected'}
@@ -170,9 +171,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
           <Message key={`msg-${idx}-${msg.time}-${msg.nickname}`} {...msg} />
         ))}
 
-        {isBotThinking && currentStatusMessage && (
-          <StatusMessage botName={botNickname} statusText={currentStatusMessage} />
-        )}
+        {isBotThinking && currentStatusMessage && <StatusMessage botName={appName} statusText={currentStatusMessage} />}
 
         <div ref={messagesEndRef} />
       </Stack>

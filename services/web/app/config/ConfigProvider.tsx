@@ -65,7 +65,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
   if (configState.isLoading) {
     return (
       <Center h="100vh">
-        <Spinner thickness="4px" speed="0.65s" emptyColor="gray.200" color="blue.500" size="xl" />
+        <Spinner thickness="4px" speed="0.65s" emptyColor="primary.200" color="blue.500" size="xl" />
       </Center>
     );
   }
