@@ -1,5 +1,5 @@
 import { FC, useRef } from 'react';
-import { Flex, useDisclosure } from '@chakra-ui/react';
+import { Flex, useDisclosure, Image, Text, HStack, useColorModeValue } from '@chakra-ui/react';
 import { Outlet } from 'react-router-dom';
 import { BackTop } from './BackTop';
 import { NavBar } from './NavBar';
@@ -7,7 +7,7 @@ import { NAVBAR_COLLAPSED_WIDTH, NAVBAR_EXPANDED_WIDTH } from '../config/const';
 import { useAuth } from '../hooks/useAuth';
 
 export const Layout: FC = () => {
-  const flexRef = useRef<HTMLDivElement>(null);
+  const scrollableContentRef = useRef<HTMLDivElement>(null);
   const { isOpen: isNavOpen, onToggle: navToggle } = useDisclosure({
     defaultIsOpen: true,
   });
@@ -21,24 +21,34 @@ export const Layout: FC = () => {
       {isAuthenticated && <NavBar isNavOpen={isNavOpen} onToggle={navToggle} />}
 
       <Flex
-        ref={flexRef}
-        minH="100vh"
         ml={currentNavBarWidth}
         transition="margin-left 0.2s ease-in-out"
-        justify="center"
-        alignItems="stretch"
+        flexDirection="column"
+        minH="100vh"
+        position="relative"
+        bg={useColorModeValue('gray.50', 'gray.900')}
       >
+        <HStack position="fixed" top={4} zIndex={10} right={15} align="center" transition="left 0.2s ease-in-out">
+          <Image alt="DerpAI Logo" src="/png/derp_ai_icon_128x128.png" borderRadius="md" h={8} w={8} />
+          <Text fontSize="lg" fontWeight="bold" color={useColorModeValue('gray.800', 'whiteAlpha.900')}>
+            DerpAI
+          </Text>
+        </HStack>
+
         <Flex
-          flexDirection="column"
+          ref={scrollableContentRef}
           flexGrow={1}
-          p={4}
-          w={{ base: '100%', sm: '95%', md: '90%', lg: '85%' }}
-          maxW="container.xl"
+          overflowY="auto"
+          direction="column"
+          alignItems="center"
+          pt="80px"
+          pb={4}
+          w="100%"
+          px={4}
         >
           <Outlet />
         </Flex>
       </Flex>
-
       <BackTop />
     </>
   );

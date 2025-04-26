@@ -20,7 +20,7 @@ export class StatusMessageReply extends ChatMessageReply {
   status?: 'error' | 'info' | 'warning' | 'success' | 'loading';
 }
 
-export interface ChatHistoryItem {
+export class ChatHistoryItem {
   question: ChatMessage;
   answer: ChatMessageReply;
 }

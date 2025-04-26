@@ -26,22 +26,27 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
   const [isBotThinking, setIsBotThinking] = useState(false);
   const [currentStatusMessage, setCurrentStatusMessage] = useState<string | null>(null);
   const { isAuthenticated, currentUser } = useAuth();
-  const [messages, setMessages] = useState<MessageProps[]>(
-    currentUser?.latestChatMessages?.flatMap((msg) => [
-      {
-        text: msg.question.message,
-        nickname: msg.question.nickname,
-        time: msg.question.time,
-      },
-      {
-        text: msg.answer.message,
-        nickname: msg.answer.nickname,
-        time: msg.answer.time,
-      },
-    ]) || [],
-  );
+  const [messages, setMessages] = useState<MessageProps[]>([]);
 
   const userNickname = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
+
+  useEffect(() => {
+    if (currentUser?.latestChatMessages) {
+      const initialMessages = currentUser.latestChatMessages.flatMap((msg) => [
+        {
+          text: msg.question.message,
+          nickname: msg.question.nickname,
+          time: msg.question.time,
+        },
+        {
+          text: msg.answer.message,
+          nickname: msg.answer.nickname,
+          time: msg.answer.time,
+        },
+      ]);
+      setMessages(initialMessages);
+    }
+  }, [currentUser]); // Depend on currentUser
 
   // Ref to hold the current bot nickname for access within event handlers
   const botNicknameRef = useRef(botNickname);

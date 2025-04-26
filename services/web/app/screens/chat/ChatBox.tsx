@@ -1,54 +1,31 @@
 import React, { useRef, useState, useEffect } from 'react';
-import {
-  Button,
-  Flex,
-  Heading,
-  HStack,
-  Stack,
-  Text,
-  useColorModeValue,
-  Textarea,
-  Spinner,
-  Image,
-} from '@chakra-ui/react';
+import { Flex, Stack, Textarea, Spinner, IconButton, useColorModeValue, HStack, Text } from '@chakra-ui/react';
+import { FiSend, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import { useSocket } from '@hooks';
+import { useScrollContext } from '../../scroll/ScrollContext';
 import Message from './Message';
 import StatusMessage from './StatusMessage';
 
-export function ChatBox() {
+interface ChatBoxProps {
+  isFixedInput?: boolean;
+}
+
+export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
   const { messages, isConnected, connectionStatus, isBotThinking, botNickname, currentStatusMessage, sendMessage } =
     useSocket();
+  const { scrollableRef } = !isFixedInput ? useScrollContext() : { scrollableRef: { current: null } };
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [messageInput, setMessageInput] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const scrollToBottom = () => {
-    // Use timeout to allow DOM update before scrolling
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }, 100);
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isBotThinking]);
-
-  // Handle sending message using context function
-  const handleSendMessage = () => {
-    const trimmedMessage = messageInput.trim();
-    if (trimmedMessage && isConnected && !isBotThinking) {
-      sendMessage(trimmedMessage);
-      setMessageInput('');
-      inputRef.current?.focus();
-    }
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      handleSendMessage();
-    }
+    requestAnimationFrame(() => {
+      if (messagesEndRef.current && scrollableRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }
+    });
   };
 
   const statusCtx: Record<typeof connectionStatus, { color: string; text: string }> = {
@@ -59,56 +36,137 @@ export function ChatBox() {
   };
   const { color: statusColor, text: statusText } = statusCtx[connectionStatus];
 
-  return (
-    <Flex
-      w="100%"
-      h="100%"
-      maxHeight={'900px'}
-      flexDirection="column"
-      borderWidth="1px"
-      rounded="3xl"
-      bg={useColorModeValue('white', 'gray.700')}
-      borderColor={useColorModeValue('gray.200', 'gray.600')}
-    >
-      <HStack
+  useEffect(() => {
+    if (!isFixedInput) {
+      scrollToBottom();
+    }
+  }, [messages, isBotThinking, isFixedInput]);
+
+  const handleSendMessage = () => {
+    const trimmedMessage = messageInput.trim();
+    if (trimmedMessage && isConnected && !isBotThinking) {
+      sendMessage(trimmedMessage);
+      setMessageInput('');
+      if (isFixedInput) {
+        setTimeout(() => inputRef.current?.focus(), 0);
+      }
+    }
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  const inputBgColor = useColorModeValue('white', 'gray.700');
+  const inputPlaceholder =
+    connectionStatus !== 'connected'
+      ? 'Connecting...'
+      : isBotThinking
+        ? currentStatusMessage || 'Thinking...'
+        : 'Enter a prompt here';
+
+  if (isFixedInput) {
+    const initialHeight = 'unset';
+    const expandedHeight = '300px';
+    const textareaMinHeight = '40px';
+
+    return (
+      <Flex
+        position="fixed"
+        bottom={0}
+        left={0}
+        right={0}
+        transition="margin-left 0.2s ease-in-out"
         p={4}
-        roundedTop="3xl"
-        bg={useColorModeValue('primary.500', 'primary.600')}
-        flexShrink={0}
-        borderBottomWidth="1px"
-        borderColor={useColorModeValue('gray.200', 'gray.500')}
+        bg={useColorModeValue('gray.50', 'gray.900')}
+        zIndex={5}
+        justifyContent="center"
+        alignItems="flex-end"
       >
-        <Heading size="lg" color="white">
-          <HStack>
-            <Image alt="DerpAI Logo" src="/png/derp_ai_icon_128x128.png" borderRadius={10} h={10} w={10} />
-            <Text>DerpAI</Text>
+        <Flex
+          p={2}
+          bg={inputBgColor}
+          borderRadius="xl"
+          borderWidth="1px"
+          borderColor={useColorModeValue('gray.200', 'gray.600')}
+          alignItems="flex-end"
+          w={{ base: '100%', sm: '95%', md: '90%', lg: '85%' }}
+          maxW="container.xl"
+          position="relative"
+          minH={textareaMinHeight}
+        >
+          <HStack spacing={1} position="absolute" top={2} left={4} zIndex={1} alignItems="center">
+            <Flex boxSize="8px" borderRadius="full" bg={statusColor} transition="background-color 0.3s ease" />
+            <Text fontSize="xs" color={useColorModeValue('gray.600', 'whiteAlpha.600')}>
+              {statusText}
+            </Text>
           </HStack>
-        </Heading>
-        <Flex flex={1} justify="flex-end" align="center">
-          <Flex boxSize="10px" borderRadius="full" bg={statusColor} mr={2} transition="background-color 0.3s ease" />
-          <Text fontSize="xs" color="whiteAlpha.800">
-            {statusText}
-          </Text>
+
+          <IconButton
+            size="xs"
+            icon={isExpanded ? <FiMinimize2 /> : <FiMaximize2 />}
+            variant="ghost"
+            aria-label={isExpanded ? 'Collapse input' : 'Expand input'}
+            onClick={toggleExpand}
+            position="absolute"
+            top={1}
+            right={1}
+            zIndex={1}
+          />
+
+          <Flex flex={1} position="relative" alignItems="flex-end" pt={6}>
+            <Textarea
+              ref={inputRef}
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              flex={1}
+              minH={textareaMinHeight}
+              h={isExpanded ? expandedHeight : initialHeight}
+              maxH={isExpanded ? expandedHeight : initialHeight}
+              overflowY="auto"
+              resize="none"
+              placeholder={inputPlaceholder}
+              isDisabled={connectionStatus !== 'connected'}
+              variant="unstyled"
+              px={0}
+              py={0}
+              pr="40px"
+              pb="20px"
+              textAlign="left"
+            />
+
+            <IconButton
+              onClick={handleSendMessage}
+              isDisabled={!messageInput.trim() || connectionStatus !== 'connected' || isBotThinking}
+              isLoading={isBotThinking}
+              spinner={<Spinner size="xs" />}
+              icon={<FiSend />}
+              colorScheme="blue"
+              size="sm"
+              position="absolute"
+              bottom={1}
+              right={0}
+              zIndex={1}
+              borderRadius="md"
+              aria-label={isBotThinking ? 'Sending message' : 'Send message'}
+            />
+          </Flex>
         </Flex>
-      </HStack>
+      </Flex>
+    );
+  }
 
-      <Stack
-        px={4}
-        py={4}
-        overflowY="auto"
-        flex={1}
-        spacing={4}
-        css={{
-          '&::-webkit-scrollbar': { width: '6px' },
-          '&::-webkit-scrollbar-track': { background: 'transparent' },
-          '&::-webkit-scrollbar-thumb': {
-            background: useColorModeValue('gray.300', 'gray.500'),
-            borderRadius: '24px',
-          },
-        }}
-      >
-        <Flex flex={1} />
-
+  return (
+    <Flex flexDirection="column" flexGrow={1} justifyContent="flex-end">
+      <Stack spacing={4} flexGrow={1}>
         {messages.map((msg, idx) => (
           <Message key={`msg-${idx}-${msg.time}-${msg.nickname}`} {...msg} />
         ))}
@@ -119,58 +177,6 @@ export function ChatBox() {
 
         <div ref={messagesEndRef} />
       </Stack>
-
-      <HStack
-        roundedBottom="3xl"
-        p={4}
-        bg={useColorModeValue('primary.500', 'primary.600')}
-        borderTopWidth="1px"
-        borderColor={useColorModeValue('gray.200', 'gray.500')}
-        flexShrink={0}
-      >
-        <Textarea
-          ref={inputRef}
-          value={messageInput}
-          onChange={(e) => setMessageInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          bg={useColorModeValue('white', 'gray.700')}
-          placeholder={
-            connectionStatus === 'connecting'
-              ? 'Connecting...'
-              : connectionStatus === 'connected'
-                ? isBotThinking
-                  ? currentStatusMessage || 'Thinking'
-                  : 'Ask me anything...'
-                : connectionStatus === 'disconnected'
-                  ? 'Disconnected. Trying to reconnect...'
-                  : 'Connection failed.'
-          }
-          // Disable based on connection status and thinking state
-          isDisabled={connectionStatus !== 'connected' || isBotThinking}
-          variant="filled"
-          _focus={{
-            bg: useColorModeValue('white', 'gray.700'),
-            borderColor: useColorModeValue('primary.500', 'primary.300'),
-          }}
-          overflowY="auto"
-          resize="none"
-          transition="height none"
-        />
-        <Button
-          variant={isConnected ? 'solid' : 'outline'}
-          bg={useColorModeValue('primary.300', 'primary.400')}
-          color="white"
-          _hover={{ bg: useColorModeValue('primary.600', 'primary.300') }}
-          onClick={handleSendMessage}
-          isDisabled={!messageInput.trim() || connectionStatus !== 'connected' || isBotThinking}
-          isLoading={isBotThinking} // Show spinner on button while thinking
-          spinner={<Spinner size="sm" />}
-        >
-          {isBotThinking ? '' : 'Ask'}
-        </Button>
-      </HStack>
     </Flex>
   );
 }
-
-export default ChatBox;
