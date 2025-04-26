@@ -48,7 +48,8 @@
     "dev": "pnpm -r --parallel --stream run dev",
     "test": "pnpm -r --parallel --stream run test",
     "lint": "eslint --cache services/**",
-    "pretty": "prettier --cache --ignore-unknown --write ."
+    "pretty": "prettier --cache --ignore-unknown --write .",
+    "version": "ts-node scripts/version.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
@@ -61,6 +62,8 @@
     "@typescript-eslint/parser": "^8.24.0",
     "eslint": "^9.20.1",
     "eslint-config-prettier": "^10.0.1",
+    "picocolors": "^1.1.1",
+    "globby": "^14.1.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.3",
     "nodemon": "^3.1.9",

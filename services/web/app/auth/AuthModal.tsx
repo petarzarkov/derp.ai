@@ -19,6 +19,7 @@ import {
   InputRightElement,
   FormErrorMessage,
   IconButton,
+  Box,
 } from '@chakra-ui/react';
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 import { FcGoogle } from 'react-icons/fc';
@@ -98,7 +99,7 @@ export const AuthModal: React.FC = () => {
       <ModalContent mx="4">
         <ModalHeader textAlign="center">{isRegisterView ? 'Create Account' : 'Welcome'}</ModalHeader>
         <ModalBody pb={6}>
-          <form onSubmit={handleSubmit}>
+          <Box as={'form'} onSubmit={handleSubmit}>
             <VStack spacing={4}>
               {isRegisterView && (
                 <FormControl isRequired>
@@ -200,7 +201,7 @@ export const AuthModal: React.FC = () => {
                 </Link>
               </Text>
             </VStack>
-          </form>
+          </Box>
         </ModalBody>
       </ModalContent>
     </Modal>
