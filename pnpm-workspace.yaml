@@ -2,3 +2,4 @@ packages:
   - './services/common'
   - './services/server'
   - './services/web'
+  - './services/desktop'
