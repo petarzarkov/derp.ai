@@ -10,12 +10,12 @@ export interface ParsedPackage {
 }
 
 function step(msg: string, format: keyof Colors = 'cyan', meta?: Record<string, unknown>): void {
-  return console.log(
-    (colors[format] as Formatter)(msg),
-    meta && {
-      meta: colors.bgBlackBright(JSON.stringify(meta)),
-    },
-  );
+  const formattedMsg = (colors[format] as Formatter)(msg);
+  if (meta) {
+    console.log(`${formattedMsg} ${colors.white(JSON.stringify(meta, null, 2))}`);
+  } else {
+    console.log(formattedMsg);
+  }
 }
 
 export function stepInfo(msg: string, meta?: Record<string, unknown>): void {
