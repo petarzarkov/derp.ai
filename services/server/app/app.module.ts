@@ -121,9 +121,10 @@ import { RedisModule } from './modules/redis/redis.module';
         contextAdapter(context) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { correlationId, requestMethod: method, requestUrl: path, ...rest } = context;
-          const env = configService.get('env', { infer: true });
+          const { env, version } = configService.get('app', { infer: true });
           return {
             env,
+            version,
             method,
             path,
             ...rest,
@@ -236,7 +237,7 @@ export class AppModule implements NestModule, OnApplicationBootstrap {
 
     await this.slackService.postContext({
       username: `${appConfig.name} - ${env}`,
-      header: `:zap: ${appConfig.name} ${env} started - ${new Date().toISOString()}`,
+      header: `:zap: ${appConfig.name} ${env} ${appConfig.version} started - ${new Date().toISOString()}`,
       data: {
         appConfig,
         corsConfig,

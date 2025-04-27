@@ -1,5 +1,6 @@
 {
   "name": "derp-ai-server",
+  "appName": "DerpAI",
   "description": "Derp AI Server",
   "author": {
     "name": "Petar Zarkov",

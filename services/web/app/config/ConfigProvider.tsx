@@ -16,8 +16,8 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     });
 
     if (response.ok) {
-      const config: Record<string, string> = await response.json();
-      return config;
+      const config: { app: Record<string, string> } = await response.json();
+      return config.app;
     } else {
       console.error(`Failed to fetch app config: ${response.status}`);
       return null;
@@ -28,6 +28,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     let isMounted = true;
     setConfigState((prev) => ({ ...prev, isLoading: true }));
 
+    console.log(import.meta.env);
     fetchAppConfig(configState.serverUrl)
       .then((config) => {
         if (isMounted && config) {

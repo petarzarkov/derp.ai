@@ -47,6 +47,7 @@ import { MdPrivacyTip, MdDeleteForever } from 'react-icons/md';
 import { SiSwagger } from 'react-icons/si';
 import { useConfig } from '../../hooks/useConfig';
 import { NavLink } from './NavLink';
+import { PiPackageThin } from 'react-icons/pi';
 
 interface NavBarProps {
   isNavOpen: boolean;
@@ -171,6 +172,10 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
             <NavLink label={'Legal'} key={'Legal'} to={'/privacy-policy'} icon={<MdPrivacyTip />}>
               {'Legal'}
             </NavLink>
+
+            <Tooltip label={`App Version: ${import.meta.env.VITE_VERSION}`} placement="right" hasArrow>
+              <IconButton aria-label="App Version" icon={<PiPackageThin />} variant="ghost" size="lg" />
+            </Tooltip>
             {isAuthenticated && currentUser && (
               <Popover placement="right-start" trigger="click" isLazy>
                 <PopoverTrigger>

@@ -1,5 +1,8 @@
 import { IsBoolean, IsIn, IsNumber, IsOptional, IsString, Max, Min, MinLength, validateSync } from 'class-validator';
 import { plainToInstance, Transform } from 'class-transformer';
+// use cjs import as es6 import will copy the package json in the compilation folder which we don't want
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pkgJson = require('../../package.json');
 
 const envs = ['dev', 'prod'] as const;
 export type AppEnv = (typeof envs)[number];
@@ -130,6 +133,15 @@ export class EnvVars {
 
   @IsString()
   REDIS_PASS: string;
+
+  @IsString()
+  appName: string = pkgJson.appName;
+
+  @IsString()
+  version: string = pkgJson.version;
+
+  @IsString()
+  supportEmail: string = pkgJson.author.email;
 }
 
 export const validateConfig = (config: Record<string, unknown>) => {
@@ -242,8 +254,9 @@ export const validateConfig = (config: Record<string, unknown>) => {
     isDev: !validatedConfig.APP_ENV || validatedConfig.APP_ENV === 'dev',
     app: {
       env: validatedConfig.APP_ENV,
-      name: 'DerpAI',
-      supportEmail: 'derpai.app@gmail.com',
+      name: validatedConfig.appName,
+      version: validatedConfig.version,
+      supportEmail: validatedConfig.supportEmail,
       serverUrl: validatedConfig.APP_ENV === 'dev' ? localHost : validatedConfig.HOST,
       port: validatedConfig.SERVICE_PORT,
       docsApiPath: validatedConfig.API_DOCS_PATH,

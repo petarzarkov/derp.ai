@@ -29,7 +29,12 @@ export class ServiceController {
   @Get('/config')
   @HttpCode(HttpStatus.OK)
   config() {
-    return this.configService.get('app', { infer: true });
+    const app = this.configService.get('app', { infer: true });
+    const git = this.configService.get('gitInfo', { infer: true });
+    return {
+      app,
+      git,
+    };
   }
 
   @Get('/up')

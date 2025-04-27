@@ -6,7 +6,10 @@
  * anywhere in your tsx
  **/
 interface ImportMetaEnv {
-  readonly EXAMPLE_ENV: string;
+  /**
+   * pkg json version
+   */
+  readonly VITE_VERSION: string;
   readonly [x: string]: string;
 }
 
