@@ -10,7 +10,7 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { DefaultEventsMap, Server, Socket } from 'socket.io';
-import { ChatMessage, ChatMessageReply, StatusMessageReply } from './chat.entity';
+import { ChatAnswersReply, ChatMessage, ChatMessageReply, StatusMessageReply } from './chat.entity';
 import { WebsocketsExceptionFilter } from './events.filter';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { ContextLogger } from 'nestjs-context-logger';
@@ -27,7 +27,7 @@ import { RedisService } from '../redis/redis.service';
 
 interface EmitEvents {
   init: (message: ChatMessageReply) => void;
-  chat: (message: ChatMessageReply) => void;
+  chat: (message: ChatAnswersReply) => void;
   statusUpdate: (message: StatusMessageReply) => void;
 }
 
@@ -128,20 +128,23 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
   async handleMessage(@MessageBody() event: ChatMessage, @ConnectedSocket() socket: ExtendedSocket) {
     const user = socket.data.user;
 
-    this.#logger.log(`Received message from ${user.email} (${socket.id}): ${event.message}`);
+    this.#logger.log(`Received prompt from ${user.email} (${socket.id}): ${event.prompt}`);
 
     try {
-      const aiAnswer = await this.aiService.generateMultiProviderResponse(event.message, (ev, message) => {
-        this.server.to(socket.id).emit(ev, {
-          status: 'info',
-          ...message,
-        });
-      });
-      const answer = aiAnswer || 'Sorry, I had trouble thinking about that.';
+      const aiAnswers = await this.aiService.generateMultiProviderResponse(
+        event.prompt,
+        event.models,
+        (ev, message) => {
+          this.server.to(socket.id).emit(ev, {
+            status: 'info',
+            ...message,
+          });
+        },
+      );
 
-      this.#logger.log(`Sending answer (${answer.length} chars) to WSClient: ${socket.id}`);
-      const reply: ChatMessageReply = {
-        message: answer,
+      this.#logger.log(`Sending answers to WSClient: ${socket.id}`);
+      const reply: ChatAnswersReply = {
+        answers: aiAnswers,
         nickname: this.#botName,
         time: Date.now(),
       };
@@ -149,9 +152,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
 
       void this.redisService.addMessageToHistory(user.id, event, reply);
     } catch (error) {
-      this.#logger.error(`Error getting AI answer for user ${user.email}:`, error as Error);
+      this.#logger.error(`Error getting AI answers for user ${user.email}:`, error as Error);
       this.server.to(socket.id).emit('chat', {
-        message: 'Sorry, I had trouble thinking about that.',
+        answers: event.models.map((model) => ({
+          model,
+          provider: model,
+          text: 'Sorry, I had trouble thinking about that.',
+          time: Date.now(),
+        })),
         nickname: this.#botName,
         time: Date.now(),
       });

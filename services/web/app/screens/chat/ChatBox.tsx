@@ -1,5 +1,26 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Flex, Stack, Textarea, Spinner, IconButton, useColorModeValue, HStack, Text } from '@chakra-ui/react';
+import {
+  Flex,
+  Stack,
+  Textarea,
+  Spinner,
+  IconButton,
+  useColorModeValue,
+  HStack,
+  Text,
+  Button,
+  Menu,
+  MenuButton,
+  MenuItemOption,
+  MenuList,
+  MenuOptionGroup,
+  Box,
+  Tag,
+  TagCloseButton,
+  TagLabel,
+  Wrap,
+  WrapItem,
+} from '@chakra-ui/react';
 import { FiSend, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import { useSocket } from '@hooks';
 import { useScrollContext } from '../../scroll/ScrollContext';
@@ -7,20 +28,41 @@ import Message from './Message';
 import StatusMessage from './StatusMessage';
 import TextareaAutosize from 'react-textarea-autosize';
 import { useConfig } from '../../hooks/useConfig';
+import { ChevronDownIcon } from '@chakra-ui/icons';
 
 interface ChatBoxProps {
   isFixedInput?: boolean;
 }
 
 export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
-  const { messages, isConnected, connectionStatus, isBotThinking, currentStatusMessage, sendMessage } = useSocket();
+  const {
+    messages,
+    isConnected,
+    connectionStatus,
+    isBotThinking,
+    currentStatusMessage,
+    sendMessage,
+    setModelsToQuery,
+  } = useSocket();
   const { scrollableRef } = !isFixedInput ? useScrollContext() : { scrollableRef: { current: null } };
 
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
-  const { appName } = useConfig();
+  const { appName, models } = useConfig();
+
+  const [selectedModels, setSelectedModels] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (models && models.length > 0) {
+      setSelectedModels([models[0]]);
+    }
+  }, [models]);
+
+  useEffect(() => {
+    setModelsToQuery(selectedModels);
+  }, [selectedModels, setModelsToQuery]);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -66,6 +108,14 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
     setIsExpanded(!isExpanded);
   };
 
+  const handleModelSelect = (values: string | string[]) => {
+    setSelectedModels(Array.isArray(values) ? values : [values]);
+  };
+
+  const handleRemoveModel = (modelToRemove: string) => {
+    setSelectedModels(selectedModels.filter((model) => model !== modelToRemove));
+  };
+
   const inputBgColor = useColorModeValue('white', 'primary.700');
   const inputPlaceholder =
     connectionStatus !== 'connected'
@@ -109,6 +159,23 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
             <Text fontSize="xs" color={useColorModeValue('primary.600', 'whiteAlpha.600')}>
               {statusText}
             </Text>
+
+            {models && models.length > 0 && (
+              <Menu closeOnSelect={false}>
+                <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="xs" variant="outline">
+                  Models
+                </MenuButton>
+                <MenuList>
+                  <MenuOptionGroup type="checkbox" value={selectedModels} onChange={handleModelSelect}>
+                    {models.map((model) => (
+                      <MenuItemOption key={model} value={model}>
+                        {model}
+                      </MenuItemOption>
+                    ))}
+                  </MenuOptionGroup>
+                </MenuList>
+              </Menu>
+            )}
           </HStack>
 
           <IconButton
@@ -122,7 +189,20 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
             right={1}
             zIndex={1}
           />
-
+          {selectedModels.length > 0 && (
+            <Box w="full" mb={2}>
+              <Wrap spacing={1}>
+                {selectedModels.map((model) => (
+                  <WrapItem key={model}>
+                    <Tag size="sm" variant="solid" colorScheme="blue">
+                      <TagLabel>{model}</TagLabel>
+                      {selectedModels.length > 1 && <TagCloseButton onClick={() => handleRemoveModel(model)} />}
+                    </Tag>
+                  </WrapItem>
+                ))}
+              </Wrap>
+            </Box>
+          )}
           <Flex flex={1} position="relative" alignItems="flex-end" pt={6}>
             <Textarea
               as={TextareaAutosize}

@@ -7,6 +7,7 @@ import type {
   SocketExceptionData,
   ClientChatMessage,
   ServerStatusMessage,
+  ServerInitMessage,
 } from './Chat.types';
 import { ConnectionStatus, SocketContext, SocketContextState } from './SocketContext';
 import { useAuth } from '../hooks/useAuth';
@@ -22,32 +23,47 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
   const toast = useToast();
   const [socket, setSocket] = useState<SocketClient | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const { appName } = useConfig();
+  const { appName, models } = useConfig();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const [isBotThinking, setIsBotThinking] = useState(false);
   const [currentStatusMessage, setCurrentStatusMessage] = useState<string | null>(null);
   const { isAuthenticated, currentUser } = useAuth();
   const [messages, setMessages] = useState<MessageProps[]>([]);
+  const [modelsToQuery, setModelsToQuery] = useState<string[]>(models);
 
   const userNickname = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
 
   useEffect(() => {
-    if (currentUser?.latestChatMessages) {
-      const initialMessages = currentUser.latestChatMessages.flatMap((msg) => [
-        {
-          text: msg.question.message,
-          nickname: msg.question.nickname,
-          time: msg.question.time,
-        },
-        {
-          text: msg.answer.message,
-          nickname: msg.answer.nickname,
-          time: msg.answer.time,
-        },
-      ]);
+    if (
+      messages.length === 0 &&
+      currentUser?.latestChatMessages &&
+      currentUser.latestChatMessages?.[1] &&
+      'answer' in currentUser.latestChatMessages[1]
+    ) {
+      const initialMessages = currentUser.latestChatMessages.flatMap(
+        (msg) =>
+          [
+            {
+              type: 'user',
+              text: msg.question.message,
+              nickname: msg.question.nickname,
+              time: msg.question.time,
+            },
+            {
+              type: 'bot',
+              answers:
+                // backwards compatible for previous version, delete at some point
+                'message' in msg.answer && typeof msg.answer.message === 'string'
+                  ? [{ text: msg.answer.message, time: msg.answer.time, provider: 'google', model: 'gemini-2.0-flash' }]
+                  : msg.answer.answers,
+              nickname: msg.answer.nickname,
+              time: msg.answer.time,
+            },
+          ] as const,
+      );
       setMessages(initialMessages);
     }
-  }, [currentUser]); // Depend on currentUser
+  }, [currentUser]);
 
   useEffect(() => {
     if (!isAuthenticated || !currentUser) {
@@ -95,7 +111,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
 
     const handleChatMessage = (receivedMsg: ServerChatMessage) => {
       // Check if it's a valid message structure
-      if (receivedMsg && typeof receivedMsg.message === 'string' && typeof receivedMsg.nickname === 'string') {
+      if (receivedMsg && typeof receivedMsg.answers && typeof receivedMsg.nickname === 'string') {
         // Use the ref to check against the latest bot nickname
         if (receivedMsg.nickname === appName) {
           setIsBotThinking(false);
@@ -104,7 +120,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
         setMessages((prev) => [
           ...prev,
           {
-            text: receivedMsg.message,
+            type: 'bot',
+            answers: receivedMsg.answers,
             nickname: receivedMsg.nickname,
             time:
               typeof receivedMsg.time === 'number' || typeof receivedMsg.time === 'string'
@@ -117,7 +134,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       }
     };
 
-    const handleInit = (receivedMsg: ServerChatMessage) => {
+    const handleInit = (receivedMsg: ServerInitMessage) => {
       if (receivedMsg && typeof receivedMsg.message === 'string' && receivedMsg.nickname === appName) {
         toast({
           title: receivedMsg.message,
@@ -217,17 +234,18 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
         nickname: userNickname,
         message: trimmedMessage,
         time: Date.now(),
+        models: modelsToQuery,
       };
 
       setMessages((prev) => [
         ...prev,
-        { text: messageToSend.message, nickname: userNickname, time: messageToSend.time },
+        { text: messageToSend.message, nickname: userNickname, time: messageToSend.time, type: 'user' },
       ]);
       setIsBotThinking(true);
       setCurrentStatusMessage('Thinking');
       socket.emit('chat', messageToSend);
     },
-    [socket, isConnected, userNickname, isBotThinking, isAuthenticated],
+    [socket, isConnected, userNickname, isBotThinking, isAuthenticated, modelsToQuery],
   );
 
   const contextValue: SocketContextState = {
@@ -237,6 +255,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     isBotThinking,
     currentStatusMessage,
     sendMessage,
+    setModelsToQuery,
   };
 
   return <SocketContext.Provider value={contextValue}>{children}</SocketContext.Provider>;

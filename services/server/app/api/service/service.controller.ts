@@ -31,9 +31,11 @@ export class ServiceController {
   config() {
     const app = this.configService.get('app', { infer: true });
     const git = this.configService.get('gitInfo', { infer: true });
+    const models = Object.keys(this.configService.get('aiProviders', { infer: true }));
     return {
       app,
       git,
+      models,
     };
   }
 

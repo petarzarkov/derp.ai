@@ -177,27 +177,30 @@ export const validateConfig = (config: Record<string, unknown>) => {
       credentials: true,
     },
     aiProviders: {
-      googleGemini25ProExp0325: {
+      'gemini-2.0-flash': {
         url: `https://generativelanguage.googleapis.com/v1beta/models`,
-        model: 'gemini-2.5-pro-exp-03-25',
+        provider: 'google',
+        apiType: 'google.api.v1beta',
         apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
       },
-      groqLlama3370b: {
+      'gemini-2.5-pro-exp-03-25': {
+        url: `https://generativelanguage.googleapis.com/v1beta/models`,
+        provider: 'google',
+        apiType: 'google.api.v1beta',
+        apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
+      },
+      'llama-3.3-70b-versatile': {
         url: `https://api.groq.com/openai/v1/chat/completions`,
-        model: 'llama-3.3-70b-versatile',
+        provider: 'groq',
+        apiType: 'groq.api.v1',
         apiKey: validatedConfig.GROQ_API_KEY,
       },
-      openrouterDeepseek3: {
+      'deepseek/deepseek-chat-v3-0324:free': {
         url: `https://openrouter.ai/api/v1/chat/completions`,
-        model: 'deepseek/deepseek-chat-v3-0324:free',
+        provider: 'deepseek',
+        apiType: 'openrouter.api.v1',
         apiKey: validatedConfig.OPENROUTER_API_KEY,
       },
-    },
-    masterAIProvider: {
-      url: `https://generativelanguage.googleapis.com/v1beta/models`,
-      name: 'googleGemini2Flash',
-      model: 'gemini-2.0-flash',
-      apiKey: validatedConfig.GOOGLE_GEMINI_API_KEY,
     },
     auth: {
       jwt: {

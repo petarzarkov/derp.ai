@@ -15,7 +15,7 @@ const StatusMessage: React.FC<{ botName: string; statusText: string }> = ({ botN
 
   useInterval(updateDotsCallback, 500);
 
-  return <Message text={`${statusText}${dots}`} nickname={botName} time={thinkingStartTime} />;
+  return <Message type="system" text={`${statusText}${dots}`} nickname={botName} time={thinkingStartTime} />;
 };
 
 export default StatusMessage;

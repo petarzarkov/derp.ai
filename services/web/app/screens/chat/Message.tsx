@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useMemo } from 'react';
+import { JSX, useMemo } from 'react';
 import {
   useColorModeValue,
   Flex,
@@ -14,17 +14,25 @@ import {
   OrderedList,
   Heading,
   ListItem,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
 } from '@chakra-ui/react';
 import type { MessageProps } from '../../socket/Chat.types';
 import ReactMarkdown, { Components } from 'react-markdown';
 import { FaCopy, FaCheck } from 'react-icons/fa';
 import { UserMessageContent } from './UserMessageContent';
-import { useConfig } from '../../hooks/useConfig';
+import { useThemeProvider } from '@hooks';
 
-const Message = ({ text, nickname, time }: MessageProps) => {
-  const { appName } = useConfig();
+const Message = (props: MessageProps) => {
+  const { theme } = useThemeProvider();
+  const { type, nickname, time } = props;
 
-  const isUser = nickname !== 'error' && nickname !== 'system' && nickname !== appName;
+  const { text } = props.type === 'user' && props.text ? { text: props.text } : { text: null };
+  const { answers } = props.type === 'bot' && props.answers ? { answers: props.answers } : { answers: [] };
+  const isUser = type === 'user';
   const isError = nickname === 'error';
 
   const userBg = useColorModeValue('primary.700', 'primary.300');
@@ -173,6 +181,23 @@ const Message = ({ text, nickname, time }: MessageProps) => {
     [useColorModeValue, useClipboard],
   );
 
+  const { tabs, tabPanels } = useMemo(() => {
+    const generatedTabs: JSX.Element[] = [];
+    const generatedTabPanels: JSX.Element[] = [];
+
+    answers.forEach((answer, index) => {
+      generatedTabs.push(<Tab key={`${index}-${answer.model}-${answer.provider}-tab`}>{answer.model}</Tab>);
+
+      generatedTabPanels.push(
+        <TabPanel key={`${answer.time}-${answer.model}-${answer.provider}-tab-panel`}>
+          {<ReactMarkdown components={markdownComponents}>{answer.text}</ReactMarkdown>}
+        </TabPanel>,
+      );
+    });
+
+    return { tabs: generatedTabs, tabPanels: generatedTabPanels };
+  }, [answers, markdownComponents]);
+
   return (
     <Flex
       p={3}
@@ -206,10 +231,14 @@ const Message = ({ text, nickname, time }: MessageProps) => {
           </Text>
         )}
         <Box wordBreak="break-word" overflowX="hidden" fontSize="sm">
-          {isUser ? (
+          {isUser && text ? (
             <UserMessageContent text={text} />
           ) : (
-            <ReactMarkdown components={markdownComponents}>{text}</ReactMarkdown>
+            <Tabs variant="line" colorScheme={theme}>
+              <TabList>{tabs}</TabList>
+
+              <TabPanels>{tabPanels}</TabPanels>
+            </Tabs>
           )}
         </Box>
       </Flex>
