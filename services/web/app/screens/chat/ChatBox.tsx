@@ -22,14 +22,13 @@ import {
   WrapItem,
 } from '@chakra-ui/react';
 import { FiSend, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
-import { useSocket } from '@hooks';
+import { useSocket, useThemeProvider } from '@hooks';
 import { useScrollContext } from '../../scroll/ScrollContext';
 import Message from './Message';
 import StatusMessage from './StatusMessage';
 import TextareaAutosize from 'react-textarea-autosize';
 import { useConfig } from '../../hooks/useConfig';
 import { ChevronDownIcon } from '@chakra-ui/icons';
-import { getData, storeData } from '@store';
 
 interface ChatBoxProps {
   isFixedInput?: boolean;
@@ -46,7 +45,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
     setModelsToQuery,
   } = useSocket();
   const { scrollableRef } = !isFixedInput ? useScrollContext() : { scrollableRef: { current: null } };
-
+  const { theme } = useThemeProvider();
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [messageInput, setMessageInput] = useState('');
@@ -54,17 +53,12 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
   const { appName, models } = useConfig();
 
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
-
   useEffect(() => {
-    if (models && models.length > 0) {
-      const onInitModels = getData<string[]>('selected_models') || [models[0]];
-      setSelectedModels(onInitModels);
-    }
+    setSelectedModels([models[0]]);
   }, [models]);
 
   useEffect(() => {
     setModelsToQuery(selectedModels);
-    storeData('selected_models', selectedModels);
   }, [selectedModels, setModelsToQuery]);
 
   const scrollToBottom = () => {
@@ -129,7 +123,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
 
   if (isFixedInput) {
     const textareaMinHeight = '40px';
-    const textareaMaxHeight = '200px'; // Define a max height for auto-sizing
+    const textareaMaxHeight = '200px';
     const expandedHeight = '300px';
 
     return (
@@ -139,14 +133,13 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
         left={0}
         right={0}
         transition="margin-left 0.2s ease-in-out"
-        p={4}
         bg={useColorModeValue('primary.50', 'primary.900')}
         zIndex={5}
         justifyContent="center"
         alignItems="flex-end"
       >
         <Flex
-          p={2}
+          p={1}
           bg={inputBgColor}
           borderRadius="xl"
           borderWidth="1px"
@@ -156,9 +149,9 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
           maxW="container.xl"
           position="relative"
           minH={textareaMinHeight}
-          flexDirection="column" // Use column direction
+          flexDirection="column"
         >
-          <HStack spacing={1} w="full" justifyContent="space-between" alignItems="center" px={2} pt={2}>
+          <HStack spacing={1} w="full" justifyContent="space-between" alignItems="center">
             <HStack spacing={1} alignItems="center">
               <Flex boxSize="8px" borderRadius="full" bg={statusColor} transition="background-color 0.3s ease" />
               <Text fontSize="xs" color={useColorModeValue('primary.600', 'whiteAlpha.600')}>
@@ -166,7 +159,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               </Text>
 
               {models && models.length > 0 && (
-                <Menu closeOnSelect={false}>
+                <Menu closeOnSelect={false} colorScheme={theme}>
                   <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="xs" variant="outline">
                     Models
                   </MenuButton>
@@ -193,25 +186,9 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
             />
           </HStack>
 
-          {selectedModels.length > 0 && (
-            <Box w="full" px={2} pb={2}>
-              <Wrap spacing={1}>
-                {selectedModels.map((model) => (
-                  <WrapItem key={model}>
-                    <Tag size="sm" variant="solid" colorScheme="blue">
-                      <TagLabel>{model}</TagLabel>
-                      {selectedModels.length > (models?.length === 1 ? 0 : 1) && (
-                        <TagCloseButton onClick={() => handleRemoveModel(model)} />
-                      )}
-                    </Tag>
-                  </WrapItem>
-                ))}
-              </Wrap>
-            </Box>
-          )}
-
-          <Flex flex={1} position="relative" alignItems="flex-end" w="full" px={2} pb={2}>
+          <Flex flex={1} position="relative" alignItems="flex-end" w="full">
             <Textarea
+              p={1}
               as={TextareaAutosize}
               ref={inputRef}
               value={messageInput}
@@ -228,7 +205,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               isDisabled={connectionStatus !== 'connected'}
               variant="unstyled"
               textAlign="left"
-              pr="40px" // Add padding to the right for the send button
+              pr="40px"
             />
 
             <IconButton
@@ -249,6 +226,25 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               aria-label={isBotThinking ? 'Sending message' : 'Send message'}
             />
           </Flex>
+
+          {selectedModels.length > 0 && (
+            <Flex w="full" pt={selectedModels.length > 0 ? 1 : 0} justifyContent="space-between" alignItems="center">
+              <Box w="full">
+                <Wrap spacing={1}>
+                  {selectedModels.map((model) => (
+                    <WrapItem key={model}>
+                      <Tag size="sm" variant="solid" colorScheme="blue">
+                        <TagLabel>{model}</TagLabel>
+                        {selectedModels.length > (models?.length === 1 ? 0 : 1) && (
+                          <TagCloseButton onClick={() => handleRemoveModel(model)} />
+                        )}
+                      </Tag>
+                    </WrapItem>
+                  ))}
+                </Wrap>
+              </Box>
+            </Flex>
+          )}
         </Flex>
       </Flex>
     );

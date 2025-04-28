@@ -182,9 +182,16 @@ export class AIService {
       const model = models[index];
       const { apiType, provider } = this.#config[model];
 
-      if (result.status === 'fulfilled' && result.value) {
-        this.#logger.log(`Response from ${apiType}:`, { response: result.value.text.length });
-        responses.push(result.value);
+      if (result.status === 'fulfilled') {
+        this.#logger.log(`Response from ${apiType}:`, { response: result });
+        responses.push(
+          result.value || {
+            model,
+            provider,
+            text: 'Sorry, I had trouble thinking about that.',
+            time: Date.now(),
+          },
+        );
       } else if (result.status === 'rejected') {
         const reason = result.reason instanceof Error ? result.reason.message : result.reason;
         this.#logger.error(`Error querying ${apiType}: ${reason}`);
