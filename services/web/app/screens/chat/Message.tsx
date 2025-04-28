@@ -234,7 +234,7 @@ const Message = (props: MessageProps) => {
           {isUser && text ? (
             <UserMessageContent text={text} />
           ) : (
-            <Tabs variant="line" colorScheme={theme}>
+            <Tabs variant="line" colorScheme={theme} isFitted>
               <TabList>{tabs}</TabList>
 
               <TabPanels>{tabPanels}</TabPanels>

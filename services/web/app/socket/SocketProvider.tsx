@@ -45,14 +45,18 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
           [
             {
               type: 'user',
-              text: msg.question.message,
+              // TODO: backwards compatible for previous version, delete in near future
+              text:
+                'message' in msg.answer && typeof msg.answer.message === 'string'
+                  ? msg.answer.message
+                  : msg.question.prompt,
               nickname: msg.question.nickname,
               time: msg.question.time,
             },
             {
               type: 'bot',
               answers:
-                // backwards compatible for previous version, delete at some point
+                // TODO backwards compatible for previous version, delete in near future
                 'message' in msg.answer && typeof msg.answer.message === 'string'
                   ? [{ text: msg.answer.message, time: msg.answer.time, provider: 'google', model: 'gemini-2.0-flash' }]
                   : msg.answer.answers,
@@ -109,7 +113,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       console.log(`Socket connection error`, error);
     };
 
-    const handleChatMessage = (receivedMsg: ServerChatMessage) => {
+    const handleServerMessage = (receivedMsg: ServerChatMessage) => {
       // Check if it's a valid message structure
       if (receivedMsg && typeof receivedMsg.answers && typeof receivedMsg.nickname === 'string') {
         // Use the ref to check against the latest bot nickname
@@ -198,7 +202,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
 
     // App listeners
     newSocket.on('init', handleInit);
-    newSocket.on('chat', handleChatMessage);
+    newSocket.on('chat', handleServerMessage);
     newSocket.on('exception', handleException);
     newSocket.on('statusUpdate', handleStatusUpdate);
 
@@ -210,7 +214,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       newSocket.io.off('reconnect_attempt', handleReconnectAttempt);
 
       newSocket.off('init', handleInit);
-      newSocket.off('chat', handleChatMessage);
+      newSocket.off('chat', handleServerMessage);
       newSocket.off('exception', handleException);
       newSocket.off('statusUpdate', handleStatusUpdate);
       newSocket.disconnect();
@@ -232,17 +236,18 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
 
       const messageToSend: ClientChatMessage = {
         nickname: userNickname,
-        message: trimmedMessage,
+        prompt: trimmedMessage,
         time: Date.now(),
         models: modelsToQuery,
       };
 
       setMessages((prev) => [
         ...prev,
-        { text: messageToSend.message, nickname: userNickname, time: messageToSend.time, type: 'user' },
+        { text: messageToSend.prompt, nickname: userNickname, time: messageToSend.time, type: 'user' },
       ]);
       setIsBotThinking(true);
       setCurrentStatusMessage('Thinking');
+
       socket.emit('chat', messageToSend);
     },
     [socket, isConnected, userNickname, isBotThinking, isAuthenticated, modelsToQuery],

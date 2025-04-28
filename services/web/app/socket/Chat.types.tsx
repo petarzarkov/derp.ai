@@ -2,7 +2,7 @@ import { Socket } from 'socket.io-client';
 
 export interface ClientChatMessage {
   nickname: string;
-  message: string;
+  prompt: string;
   time: number;
   models: string[];
 }

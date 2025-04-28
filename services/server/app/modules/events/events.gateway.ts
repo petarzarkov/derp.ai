@@ -40,6 +40,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
   #botName;
   readonly #logger = new ContextLogger(this.constructor.name);
   readonly #sessionConfig: ValidatedConfig['auth']['session'];
+  #validModels;
 
   @WebSocketServer()
   server: Server<DefaultEventsMap, EmitEvents, DefaultEventsMap, { user: SanitizedUser }>;
@@ -53,6 +54,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
     this.#sessionConfig = this.configService.get('auth.session', { infer: true });
     const appConfig = this.configService.get('app', { infer: true });
     this.#botName = appConfig.name;
+    this.#validModels = Object.keys(this.configService.get('aiProviders', { infer: true }));
   }
 
   wrapMiddlewareForSocketIo =
@@ -128,7 +130,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
   async handleMessage(@MessageBody() event: ChatMessage, @ConnectedSocket() socket: ExtendedSocket) {
     const user = socket.data.user;
 
-    this.#logger.log(`Received prompt from ${user.email} (${socket.id}): ${event.prompt}`);
+    this.#logger.log(`Received prompt from ${user.email} (${socket.id}): ${`${event.prompt}`.slice(0, 50)}`);
+    if (event.models.some((model) => !this.#validModels.includes(model))) {
+      throw new WsException('Invalid models received.');
+    }
 
     try {
       const aiAnswers = await this.aiService.generateMultiProviderResponse(

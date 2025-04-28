@@ -29,6 +29,7 @@ import StatusMessage from './StatusMessage';
 import TextareaAutosize from 'react-textarea-autosize';
 import { useConfig } from '../../hooks/useConfig';
 import { ChevronDownIcon } from '@chakra-ui/icons';
+import { getData, storeData } from '@store';
 
 interface ChatBoxProps {
   isFixedInput?: boolean;
@@ -56,12 +57,14 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
 
   useEffect(() => {
     if (models && models.length > 0) {
-      setSelectedModels([models[0]]);
+      const onInitModels = getData<string[]>('selected_models') || [models[0]];
+      setSelectedModels(onInitModels);
     }
   }, [models]);
 
   useEffect(() => {
     setModelsToQuery(selectedModels);
+    storeData('selected_models', selectedModels);
   }, [selectedModels, setModelsToQuery]);
 
   const scrollToBottom = () => {
@@ -88,7 +91,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
 
   const handleSendMessage = () => {
     const trimmedMessage = messageInput.trim();
-    if (trimmedMessage && isConnected && !isBotThinking) {
+    if (trimmedMessage && isConnected && !isBotThinking && selectedModels.length > 0) {
       sendMessage(trimmedMessage);
       setMessageInput('');
       if (isFixedInput) {
@@ -153,57 +156,61 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
           maxW="container.xl"
           position="relative"
           minH={textareaMinHeight}
+          flexDirection="column" // Use column direction
         >
-          <HStack spacing={1} position="absolute" top={2} left={4} zIndex={1} alignItems="center">
-            <Flex boxSize="8px" borderRadius="full" bg={statusColor} transition="background-color 0.3s ease" />
-            <Text fontSize="xs" color={useColorModeValue('primary.600', 'whiteAlpha.600')}>
-              {statusText}
-            </Text>
+          <HStack spacing={1} w="full" justifyContent="space-between" alignItems="center" px={2} pt={2}>
+            <HStack spacing={1} alignItems="center">
+              <Flex boxSize="8px" borderRadius="full" bg={statusColor} transition="background-color 0.3s ease" />
+              <Text fontSize="xs" color={useColorModeValue('primary.600', 'whiteAlpha.600')}>
+                {statusText}
+              </Text>
 
-            {models && models.length > 0 && (
-              <Menu closeOnSelect={false}>
-                <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="xs" variant="outline">
-                  Models
-                </MenuButton>
-                <MenuList>
-                  <MenuOptionGroup type="checkbox" value={selectedModels} onChange={handleModelSelect}>
-                    {models.map((model) => (
-                      <MenuItemOption key={model} value={model}>
-                        {model}
-                      </MenuItemOption>
-                    ))}
-                  </MenuOptionGroup>
-                </MenuList>
-              </Menu>
-            )}
+              {models && models.length > 0 && (
+                <Menu closeOnSelect={false}>
+                  <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="xs" variant="outline">
+                    Models
+                  </MenuButton>
+                  <MenuList>
+                    <MenuOptionGroup type="checkbox" value={selectedModels} onChange={handleModelSelect}>
+                      {models.map((model) => (
+                        <MenuItemOption key={model} value={model}>
+                          {model}
+                        </MenuItemOption>
+                      ))}
+                    </MenuOptionGroup>
+                  </MenuList>
+                </Menu>
+              )}
+            </HStack>
+
+            <IconButton
+              size="xs"
+              icon={isExpanded ? <FiMinimize2 /> : <FiMaximize2 />}
+              variant="ghost"
+              aria-label={isExpanded ? 'Collapse input' : 'Expand input'}
+              onClick={toggleExpand}
+              zIndex={1}
+            />
           </HStack>
 
-          <IconButton
-            size="xs"
-            icon={isExpanded ? <FiMinimize2 /> : <FiMaximize2 />}
-            variant="ghost"
-            aria-label={isExpanded ? 'Collapse input' : 'Expand input'}
-            onClick={toggleExpand}
-            position="absolute"
-            top={1}
-            right={1}
-            zIndex={1}
-          />
           {selectedModels.length > 0 && (
-            <Box w="full" mb={2}>
+            <Box w="full" px={2} pb={2}>
               <Wrap spacing={1}>
                 {selectedModels.map((model) => (
                   <WrapItem key={model}>
                     <Tag size="sm" variant="solid" colorScheme="blue">
                       <TagLabel>{model}</TagLabel>
-                      {selectedModels.length > 1 && <TagCloseButton onClick={() => handleRemoveModel(model)} />}
+                      {selectedModels.length > (models?.length === 1 ? 0 : 1) && (
+                        <TagCloseButton onClick={() => handleRemoveModel(model)} />
+                      )}
                     </Tag>
                   </WrapItem>
                 ))}
               </Wrap>
             </Box>
           )}
-          <Flex flex={1} position="relative" alignItems="flex-end" pt={6}>
+
+          <Flex flex={1} position="relative" alignItems="flex-end" w="full" px={2} pb={2}>
             <Textarea
               as={TextareaAutosize}
               ref={inputRef}
@@ -211,7 +218,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               onChange={(e) => setMessageInput(e.target.value)}
               onKeyDown={handleKeyDown}
               flex={1}
-              minRows={1}
+              minRows={selectedModels.length > 0 ? 1 : 1}
               maxRows={isExpanded ? undefined : 10}
               height={isExpanded ? expandedHeight : undefined}
               maxH={isExpanded ? expandedHeight : textareaMaxHeight}
@@ -221,11 +228,14 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               isDisabled={connectionStatus !== 'connected'}
               variant="unstyled"
               textAlign="left"
+              pr="40px" // Add padding to the right for the send button
             />
 
             <IconButton
               onClick={handleSendMessage}
-              isDisabled={!messageInput.trim() || connectionStatus !== 'connected' || isBotThinking}
+              isDisabled={
+                !messageInput.trim() || connectionStatus !== 'connected' || isBotThinking || selectedModels.length === 0
+              }
               isLoading={isBotThinking}
               spinner={<Spinner size="xs" />}
               icon={<FiSend />}
@@ -233,7 +243,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               size="sm"
               position="absolute"
               bottom="5px"
-              right="15px"
+              right="5px"
               zIndex={1}
               borderRadius="md"
               aria-label={isBotThinking ? 'Sending message' : 'Send message'}

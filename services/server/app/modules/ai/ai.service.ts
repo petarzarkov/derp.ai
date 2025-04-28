@@ -183,7 +183,7 @@ export class AIService {
       const { apiType, provider } = this.#config[model];
 
       if (result.status === 'fulfilled' && result.value) {
-        this.#logger.log(`Response from ${apiType}:`, { response: result.value });
+        this.#logger.log(`Response from ${apiType}:`, { response: result.value.text.length });
         responses.push(result.value);
       } else if (result.status === 'rejected') {
         const reason = result.reason instanceof Error ? result.reason.message : result.reason;
