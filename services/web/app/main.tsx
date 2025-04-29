@@ -6,6 +6,7 @@ import App from './App';
 import { ThemeProvider } from '@theme';
 import { AuthProvider } from './auth/AuthProvider';
 import { ConfigProvider } from './config/ConfigProvider';
+import { AcknowledgeCookies } from './components/AcknowledgeCookies';
 
 const container = document.getElementById('app');
 const root = createRoot(container!);
@@ -15,6 +16,7 @@ root.render(
     <BrowserRouter>
       <ConfigProvider>
         <ThemeProvider>
+          <AcknowledgeCookies />
           <AuthProvider>
             <App />
           </AuthProvider>
