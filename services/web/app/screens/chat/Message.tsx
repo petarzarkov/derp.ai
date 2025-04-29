@@ -26,6 +26,8 @@ import ReactMarkdown, { Components } from 'react-markdown';
 import { FaCopy, FaCheck } from 'react-icons/fa';
 import { UserMessageContent } from './UserMessageContent';
 import { useThemeProvider } from '@hooks';
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 const Message = (props: MessageProps) => {
   const { theme } = useThemeProvider();
@@ -104,9 +106,6 @@ const Message = (props: MessageProps) => {
           <Box
             as="pre"
             position="relative"
-            p={4}
-            pt={8}
-            my={2}
             bg={useColorModeValue('primary.100', 'primary.800')}
             color={useColorModeValue('primary.800', 'primary.100')}
             borderRadius="md"
@@ -133,9 +132,25 @@ const Message = (props: MessageProps) => {
                 zIndex="1"
               />
             </Tooltip>
-            <Code bg="transparent" display="block" className={`language-${lang}`}>
+            <SyntaxHighlighter
+              style={atomOneDark}
+              language={lang}
+              PreTag="div"
+              showLineNumbers={false}
+              customStyle={{
+                padding: '16px',
+                margin: '0',
+                backgroundColor: useColorModeValue('primary.800', 'primary.100'),
+                color: useColorModeValue('primary.100', 'primary.800'),
+                borderRadius: 'md',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+              }}
+              wrapLines={true}
+              wrapLongLines={true}
+            >
               {codeString}
-            </Code>
+            </SyntaxHighlighter>
           </Box>
         );
       },
@@ -240,10 +255,10 @@ const Message = (props: MessageProps) => {
           {isUser && text ? (
             <UserMessageContent text={text} />
           ) : isSystem ? (
-            <>
+            <HStack>
               <Spinner size="sm" speed="0.65s" emptyColor="gray.200" color="blue.500" />
               <Text>{text}</Text>
-            </>
+            </HStack>
           ) : (
             <Tabs variant="line" colorScheme={theme} size={'sm'} align="start">
               <TabList>{tabs}</TabList>

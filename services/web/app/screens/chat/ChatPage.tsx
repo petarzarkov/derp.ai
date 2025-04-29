@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import { Flex, Box } from '@chakra-ui/react';
 import { SocketProvider } from '../../socket/SocketProvider';
-import { ScrollContextProvider } from '../../scroll/ScrollContext';
 import { ChatBox } from './ChatBox';
 import { useConfig } from '../../hooks/useConfig';
 
@@ -20,9 +19,7 @@ export function ChatPage() {
           flexDirection="column"
         >
           <Flex ref={scrollableMessagesRef} flexGrow={1} overflowY="auto" direction="column" pb={4}>
-            <ScrollContextProvider scrollableRef={scrollableMessagesRef}>
-              <ChatBox isFixedInput={false} />
-            </ScrollContextProvider>
+            <ChatBox isFixedInput={false} />
           </Flex>
         </Box>
       </Flex>
