@@ -7,7 +7,7 @@
     "email": "derpai.app@gmail.com"
   },
   "license": "MIT",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "./build/server/main.js",
   "repository": {
     "type": "git",
