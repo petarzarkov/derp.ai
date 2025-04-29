@@ -23,7 +23,6 @@ import {
 } from '@chakra-ui/react';
 import { FiSend, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import { useSocket, useThemeProvider } from '@hooks';
-import { useScrollContext } from '../../scroll/ScrollContext';
 import Message from './Message';
 import StatusMessage from './StatusMessage';
 import TextareaAutosize from 'react-textarea-autosize';
@@ -44,10 +43,8 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
     sendMessage,
     setModelsToQuery,
   } = useSocket();
-  const { scrollableRef } = !isFixedInput ? useScrollContext() : { scrollableRef: { current: null } };
   const { theme } = useThemeProvider();
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const { appName, models } = useConfig();
@@ -62,11 +59,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
   }, [selectedModels, setModelsToQuery]);
 
   const scrollToBottom = () => {
-    requestAnimationFrame(() => {
-      if (messagesEndRef.current && scrollableRef.current) {
-        messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }
-    });
+    window.scrollTo({ left: 0, top: document.body.scrollHeight, behavior: 'smooth' });
   };
 
   const statusCtx: Record<typeof connectionStatus, { color: string; text: string }> = {
@@ -78,9 +71,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
   const { color: statusColor, text: statusText } = statusCtx[connectionStatus];
 
   useEffect(() => {
-    if (!isFixedInput) {
-      scrollToBottom();
-    }
+    scrollToBottom();
   }, [messages, isBotThinking, isFixedInput]);
 
   const handleSendMessage = () => {
@@ -132,6 +123,8 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
         bottom={0}
         left={0}
         right={0}
+        pr={1}
+        pl={2}
         transition="margin-left 0.2s ease-in-out"
         bg={useColorModeValue('primary.50', 'primary.900')}
         zIndex={5}
@@ -202,28 +195,10 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               overflowY="auto"
               resize="none"
               placeholder={inputPlaceholder}
-              isDisabled={connectionStatus !== 'connected'}
+              isDisabled={connectionStatus !== 'connected' || isBotThinking || selectedModels.length === 0}
               variant="unstyled"
               textAlign="left"
               pr="40px"
-            />
-
-            <IconButton
-              onClick={handleSendMessage}
-              isDisabled={
-                !messageInput.trim() || connectionStatus !== 'connected' || isBotThinking || selectedModels.length === 0
-              }
-              isLoading={isBotThinking}
-              spinner={<Spinner size="xs" />}
-              icon={<FiSend />}
-              colorScheme="blue"
-              size="sm"
-              position="absolute"
-              bottom="5px"
-              right="5px"
-              zIndex={1}
-              borderRadius="md"
-              aria-label={isBotThinking ? 'Sending message' : 'Send message'}
             />
           </Flex>
 
@@ -245,6 +220,24 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               </Box>
             </Flex>
           )}
+
+          <IconButton
+            onClick={handleSendMessage}
+            isDisabled={
+              !messageInput.trim() || connectionStatus !== 'connected' || isBotThinking || selectedModels.length === 0
+            }
+            isLoading={isBotThinking}
+            spinner={<Spinner size="xs" />}
+            icon={<FiSend />}
+            colorScheme="blue"
+            size="sm"
+            position="absolute"
+            bottom="5px"
+            right="5px"
+            zIndex={1}
+            borderRadius="md"
+            aria-label={isBotThinking ? 'Sending message' : 'Send message'}
+          />
         </Flex>
       </Flex>
     );
@@ -258,8 +251,6 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
         ))}
 
         {isBotThinking && currentStatusMessage && <StatusMessage botName={appName} statusText={currentStatusMessage} />}
-
-        <div ref={messagesEndRef} />
       </Stack>
     </Flex>
   );

@@ -49,7 +49,7 @@ export interface MessageFromUserProps {
 export interface MessageFromAIProps {
   type: 'bot';
   answers: AIAnswer[];
-  nickname: 'system' | 'error' | string;
+  nickname: string;
   time: number;
 }
 

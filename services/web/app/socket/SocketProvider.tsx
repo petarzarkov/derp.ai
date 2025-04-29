@@ -167,28 +167,26 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
 
     const handleStatusUpdate = (statusData: ServerStatusMessage) => {
       if (statusData && typeof statusData.message === 'string') {
-        if (statusData.nickname === appName) {
-          if (toast.isActive(statusData.id)) {
-            toast.update(statusData.id, {
-              title: statusData.message,
-              status: statusData.status || 'info',
-              duration: 2000,
-            });
-          } else {
-            toast({
-              id: statusData.id,
-              title: statusData.message,
-              status: statusData.status || 'info',
-              duration: 2000,
-              isClosable: true,
-              position: 'top-right',
-              orientation: 'vertical',
-              variant: 'subtle',
-            });
-          }
-
-          setCurrentStatusMessage(statusData.message);
+        if (toast.isActive(statusData.id)) {
+          toast.update(statusData.id, {
+            title: statusData.message,
+            status: statusData.status || 'info',
+            duration: 2000,
+          });
+        } else {
+          toast({
+            id: statusData.id,
+            title: statusData.message,
+            status: statusData.status || 'info',
+            duration: 2000,
+            isClosable: true,
+            position: 'top-right',
+            orientation: 'vertical',
+            variant: 'subtle',
+          });
         }
+
+        setCurrentStatusMessage(statusData.message);
       } else {
         console.warn('Received invalid status update format:', statusData);
       }

@@ -19,6 +19,7 @@ import {
   TabPanel,
   TabPanels,
   Tabs,
+  Spinner,
 } from '@chakra-ui/react';
 import type { MessageProps } from '../../socket/Chat.types';
 import ReactMarkdown, { Components } from 'react-markdown';
@@ -30,10 +31,11 @@ const Message = (props: MessageProps) => {
   const { theme } = useThemeProvider();
   const { type, nickname, time } = props;
 
-  const { text } = props.type === 'user' && props.text ? { text: props.text } : { text: null };
+  const { text } =
+    (props.type === 'user' || props.type === 'system') && props.text ? { text: props.text } : { text: null };
   const { answers } = props.type === 'bot' && props.answers ? { answers: props.answers } : { answers: [] };
   const isUser = type === 'user';
-  const isError = nickname === 'error';
+  const isSystem = type === 'system';
 
   const userBg = useColorModeValue('primary.700', 'primary.300');
   const userText = useColorModeValue('primary.100', 'primary.700');
@@ -186,10 +188,19 @@ const Message = (props: MessageProps) => {
     const generatedTabPanels: JSX.Element[] = [];
 
     answers.forEach((answer, index) => {
-      generatedTabs.push(<Tab key={`${index}-${answer.model}-${answer.provider}-tab`}>{answer.model}</Tab>);
+      generatedTabs.push(
+        <Tab key={`${index}-${answer.model}-${answer.provider}-tab`} fontSize={'sm'}>
+          <Heading size="sm" noOfLines={1} fontSize={'sm'} as="h6">
+            {answer.model}
+          </Heading>
+        </Tab>,
+      );
 
       generatedTabPanels.push(
         <TabPanel key={`${answer.time}-${answer.model}-${answer.provider}-tab-panel`}>
+          <Heading size="sm" mb={2} as="h6">
+            {answer.provider} - {answer.model}
+          </Heading>
           {<ReactMarkdown components={markdownComponents}>{answer.text}</ReactMarkdown>}
         </TabPanel>,
       );
@@ -205,7 +216,7 @@ const Message = (props: MessageProps) => {
       color={textColor}
       borderRadius="lg"
       w="fit-content"
-      maxW="80%" // Max width for message bubble
+      maxW="90%"
       alignSelf={align}
       boxShadow="sm"
       flexDirection="column"
@@ -225,16 +236,16 @@ const Message = (props: MessageProps) => {
       </HStack>
 
       <Flex align="flex-start" flexDirection="row" mt={isUser ? 1 : 0}>
-        {isError && (
-          <Text fontWeight="bold" mr={2} mt="1px" display="inline-block">
-            ⚠️
-          </Text>
-        )}
         <Box wordBreak="break-word" overflowX="hidden" fontSize="sm">
           {isUser && text ? (
             <UserMessageContent text={text} />
+          ) : isSystem ? (
+            <>
+              <Spinner size="sm" speed="0.65s" emptyColor="gray.200" color="blue.500" />
+              <Text>{text}</Text>
+            </>
           ) : (
-            <Tabs variant="line" colorScheme={theme} isFitted>
+            <Tabs variant="line" colorScheme={theme} size={'sm'} align="start">
               <TabList>{tabs}</TabList>
 
               <TabPanels>{tabPanels}</TabPanels>

@@ -57,7 +57,6 @@ export const Layout: FC = () => {
           pt="80px"
           pb={4}
           w="100%"
-          px={4}
         >
           <Outlet />
         </Flex>
