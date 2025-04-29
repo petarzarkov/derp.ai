@@ -7,6 +7,12 @@ import { Repository, QueryFailedError } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { describe } from 'node:test';
 
+describe('empty describe', () => {
+  it('adds 1 + 1', () => {
+    expect(1 + 1).toBe(2);
+  });
+});
+
 describe(
   'DB Integration Test Suite',
   {
