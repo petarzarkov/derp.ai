@@ -253,6 +253,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
         isClosable: true,
         position: 'top-right',
       });
+      setIsBotThinking(false);
     };
 
     const handleException = (errorData: SocketExceptionData) => {
