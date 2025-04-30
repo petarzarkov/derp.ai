@@ -218,7 +218,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       updateBotMessageAnswer(receivedMsg.queryId, receivedMsg.model, (existingAnswer) => ({
         ...existingAnswer,
         model: receivedMsg.model,
-        provider: existingAnswer?.provider || receivedMsg.model,
+        provider: receivedMsg.provider,
         text: (existingAnswer?.text || '') + receivedMsg.text,
         status: 'streaming',
         time: null,

@@ -22,6 +22,7 @@ import {
   Spinner,
   Badge,
   Stack,
+  useColorMode,
 } from '@chakra-ui/react';
 import type { MessageProps } from '../../socket/Chat.types';
 import ReactMarkdown, { Components } from 'react-markdown';
@@ -29,7 +30,7 @@ import { FaCopy, FaCheck } from 'react-icons/fa';
 import { UserMessageContent } from './UserMessageContent';
 import { useThemeProvider } from '@hooks';
 import SyntaxHighlighter from 'react-syntax-highlighter';
-import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import { atomOneDark, atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { MAX_COLLAPSED_HEIGHT_CODE_PX } from '../../config/const';
 import { MdExpandLess, MdExpandMore } from 'react-icons/md';
 
@@ -49,6 +50,7 @@ const Message = (props: MessageProps) => {
   const systemText = useColorModeValue('white', 'primary.900');
   const defaultBg = useColorModeValue('primary.300', 'primary.600');
   const defaultText = useColorModeValue('primary.600', 'primary.100');
+  const defaultHover = useColorModeValue('primary.200', 'primary.500');
   const colorStyles = useMemo(
     () => ({
       user: { bg: userBg, text: userText },
@@ -108,6 +110,7 @@ const Message = (props: MessageProps) => {
         const expandButtonBg = useColorModeValue('primary.300', 'primary.400');
         const expandButtonHoverBg = useColorModeValue('primary.600', 'primary.300');
 
+        const { colorMode } = useColorMode();
         useEffect(() => {
           setIsCollapsible(false);
           setIsExpanded(false);
@@ -178,7 +181,7 @@ const Message = (props: MessageProps) => {
             </Tooltip>
 
             <SyntaxHighlighter
-              style={atomOneDark}
+              style={colorMode === 'light' ? atomOneLight : atomOneDark}
               language={lang}
               PreTag="div"
               showLineNumbers={false}
@@ -256,25 +259,34 @@ const Message = (props: MessageProps) => {
     if (answers) {
       Object.values(answers).forEach((answer, index) => {
         generatedTabs.push(
-          <Tab key={`${index}-${answer.model}-${answer.provider}-tab`} fontSize={'sm'}>
-            {answer.status === 'streaming' && (
-              <Spinner size="sm" speed="0.33s" emptyColor="gray.200" color="primary.500" />
+          <Stack key={`${index}-${answer.model}-${answer.provider}-tab`} _hover={{ bg: defaultHover }}>
+            {(answer.status === 'streaming' || answer.status === 'waiting') && (
+              <Spinner
+                position={'absolute'}
+                size="sm"
+                speed="2.5s"
+                emptyColor="gray.200"
+                color="primary.500"
+                m={0}
+                p={0}
+              />
             )}
-            <Heading size="sm" noOfLines={1} fontSize={'sm'} as="h6">
-              {answer.model}
-            </Heading>
-          </Tab>,
+            <Tab fontSize={'sm'}>
+              <Heading size="sm" noOfLines={1} fontSize={'sm'} as="h6">
+                {answer.model}
+              </Heading>
+            </Tab>
+          </Stack>,
         );
 
         generatedTabPanels.push(
           <TabPanel key={`${answer.time}-${answer.model}-${answer.provider}-tab-panel`}>
-            <Stack direction="row">
+            <Stack bg={defaultHover} borderRadius={'5px'} textAlign={'center'}>
+              <Badge colorScheme={answerStatusToBadgeColor[answer.status]}>{answer.status}</Badge>
               <Heading size="sm" mb={2} as="h6">
                 {answer.provider} - {answer.model}
               </Heading>
-              <Badge colorScheme={answerStatusToBadgeColor[answer.status]}>{answer.status}</Badge>
             </Stack>
-
             {<ReactMarkdown components={markdownComponents}>{answer.text}</ReactMarkdown>}
           </TabPanel>,
         );

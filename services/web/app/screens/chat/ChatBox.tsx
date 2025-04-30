@@ -70,8 +70,16 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
   const { color: statusColor, text: statusText } = statusCtx[connectionStatus];
 
   useEffect(() => {
-    if (!isBotThinking) {
-      scrollToBottom();
+    if (!isBotThinking && messages.length > 0) {
+      const completedMessages = messages.filter(
+        (msg) =>
+          msg.type === 'bot' &&
+          msg.answers &&
+          Object.values(msg.answers).every((answer) => answer.status === 'complete'),
+      );
+      if (completedMessages.length > 0) {
+        scrollToBottom();
+      }
     }
   }, [messages, isBotThinking, isFixedInput]);
 
@@ -84,7 +92,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
         setTimeout(() => inputRef.current?.focus(), 0);
       }
     }
-    scrollToBottom();
+    setImmediate(() => scrollToBottom());
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -190,6 +198,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               onChange={(e) => setMessageInput(e.target.value)}
               onKeyDown={handleKeyDown}
               flex={1}
+              minHeight={textareaMinHeight}
               minRows={selectedModels.length > 0 ? 1 : 1}
               maxRows={isExpanded ? undefined : 10}
               height={isExpanded ? expandedHeight : undefined}

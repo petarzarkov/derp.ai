@@ -41,6 +41,7 @@ export interface SocketExceptionData {
 export interface ServerChatChunkMessage {
   queryId: string;
   model: string;
+  provider: string;
   text: string;
   nickname: string;
 }
@@ -48,6 +49,7 @@ export interface ServerChatChunkMessage {
 export interface ServerChatEndMessage {
   queryId: string;
   model: string;
+  provider: string;
   nickname: string;
   time: number;
 }
@@ -55,6 +57,7 @@ export interface ServerChatEndMessage {
 export interface ServerChatErrorMessage {
   queryId: string;
   model: string;
+  provider: string;
   error: string;
   nickname: string;
   time: number;
