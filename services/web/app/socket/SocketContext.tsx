@@ -8,8 +8,9 @@ export interface SocketContextState {
   isConnected: boolean;
   isBotThinking: boolean;
   connectionStatus: ConnectionStatus;
+  thinkingModels: Record<string, boolean> | null;
   currentStatusMessage: string | null;
-  sendMessage: (messageText: string, models?: string[]) => void;
+  sendMessage: (messageText: string) => void;
   setModelsToQuery: React.Dispatch<React.SetStateAction<string[]>>;
 }
 

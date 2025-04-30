@@ -10,7 +10,15 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { DefaultEventsMap, Server, Socket } from 'socket.io';
-import { ChatAnswersReply, ChatMessage, ChatMessageReply, StatusMessageReply } from './chat.entity';
+import {
+  ChatAnswersReply,
+  ChatChunkReply,
+  ChatEndReply,
+  ChatErrorReply,
+  ChatMessage,
+  ChatMessageReply,
+  StatusMessageReply,
+} from './chat.entity';
 import { WebsocketsExceptionFilter } from './events.filter';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { ContextLogger } from 'nestjs-context-logger';
@@ -24,14 +32,18 @@ import passport from 'passport';
 import { NextFunction, Request, Response } from 'express';
 import { AIService } from '../ai/ai.service';
 import { RedisService } from '../redis/redis.service';
+import { v4 as uuidv4 } from 'uuid';
 
 interface EmitEvents {
   init: (message: ChatMessageReply) => void;
   chat: (message: ChatAnswersReply) => void;
   statusUpdate: (message: StatusMessageReply) => void;
+  streamChunk: (message: ChatChunkReply) => void;
+  streamEnd: (message: ChatEndReply) => void;
+  streamError: (message: ChatErrorReply) => void;
 }
 
-export type EmitToClientCallback = (ev: 'statusUpdate', message: StatusMessageReply) => void;
+export type EmitToClient = <K extends keyof EmitEvents>(ev: K, message: Parameters<EmitEvents[K]>[0]) => void;
 
 type ExtendedSocket = Socket<DefaultEventsMap, EmitEvents, DefaultEventsMap, { user: SanitizedUser }>;
 
@@ -125,48 +137,63 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
     this.#logger.log(`WSClient disconnected: ${socket.id}, UserID: ${userId}`);
   }
 
-  @SubscribeMessage('chat')
-  @UsePipes(new ValidationPipe())
-  async handleMessage(@MessageBody() event: ChatMessage, @ConnectedSocket() socket: ExtendedSocket) {
+  @SubscribeMessage('chat-stream')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async handleMessageStream(@MessageBody() event: ChatMessage, @ConnectedSocket() socket: ExtendedSocket) {
     const user = socket.data.user;
+    const queryId = event.queryId || uuidv4();
 
-    this.#logger.log(`Received prompt from ${user.email} (${socket.id}): ${`${event.prompt}`.slice(0, 50)}`);
+    this.#logger.log(
+      `Received v2 prompt from ${user.email} (${socket.id}) - ${queryId}: ${`${event.prompt}`.slice(0, 50)}...`,
+      { queryId },
+    );
     if (event.models.some((model) => !this.#validModels.includes(model))) {
       throw new WsException('Invalid models received.');
     }
 
     try {
-      const aiAnswers = await this.aiService.generateMultiProviderResponse(
+      const aiAnswers = await this.aiService.streamMultiProviderResponse(
+        queryId,
         event.prompt,
         event.models,
-        (ev, message) => {
-          this.server.to(socket.id).emit(ev, {
-            status: 'info',
-            ...message,
-          });
+        (ev, data) => {
+          // @ts-expect-error type validation of socket io is weird
+          this.server.to(socket.id).emit(ev, data);
         },
       );
 
-      this.#logger.log(`Sending answers to WSClient: ${socket.id}`);
-      const reply: ChatAnswersReply = {
-        answers: aiAnswers,
-        nickname: this.#botName,
-        time: Date.now(),
-      };
-      this.server.to(socket.id).emit('chat', reply);
-
-      void this.redisService.addMessageToHistory(user.id, event, reply);
-    } catch (error) {
-      this.#logger.error(`Error getting AI answers for user ${user.email}:`, error as Error);
-      this.server.to(socket.id).emit('chat', {
-        answers: event.models.map((model) => ({
-          model,
-          provider: model,
-          text: 'Sorry, I had trouble thinking about that.',
+      void this.redisService.addMessageToHistory(
+        user.id,
+        {
+          ...event,
+          queryId,
+        },
+        {
+          answers: aiAnswers,
+          nickname: this.#botName,
           time: Date.now(),
-        })),
-        nickname: this.#botName,
-        time: Date.now(),
+        },
+      );
+    } catch (error) {
+      this.#logger.error(
+        `Error processing chat message for user ${user.email} (${socket.id}) - ${queryId}:`,
+        error as Error,
+      );
+
+      event.models.forEach((model) => {
+        this.server.to(socket.id).emit('streamError', {
+          queryId,
+          model,
+          error: `An unexpected backend error occurred`,
+          nickname: this.#botName,
+          time: Date.now(),
+        });
+        this.server.to(socket.id).emit('streamEnd', {
+          queryId,
+          model,
+          nickname: this.#botName,
+          time: Date.now(),
+        });
       });
     }
   }

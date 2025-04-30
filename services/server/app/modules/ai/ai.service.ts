@@ -3,8 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { validateConfig, ValidatedConfig } from '../../const';
 import { AIAnswer, AIModel } from './ai.entity';
 import { ContextLogger } from 'nestjs-context-logger';
-import { EmitToClientCallback } from '../events/events.gateway';
-import { v4 as uuidv4 } from 'uuid';
+import { EmitToClient } from '../events/events.gateway';
 
 @Injectable()
 export class AIService {
@@ -25,24 +24,19 @@ export class AIService {
     this.#config = providers;
   }
 
-  private async queryProvider(
+  private async queryProviderStream(
+    queryId: string,
     model: AIModel,
     prompt: string,
-    emitToClient: EmitToClientCallback,
+    emitToClient: EmitToClient,
   ): Promise<AIAnswer | null> {
     const config = this.#config[model];
-    if (!config) {
-      this.#logger.warn(`Configuration for model "${model}" not found.`);
-      return null;
-    }
-
     const { provider, apiType } = config;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
     let requestBody: string | null = null;
     let targetUrl = `${config.url}`;
-
     if (apiType === 'google.api.v1beta') {
       requestBody = JSON.stringify({
         systemInstruction: {
@@ -55,10 +49,8 @@ export class AIService {
           },
         ],
       });
-      targetUrl = `${config.url}/${model}:generateContent?key=${config.apiKey}`;
-    }
-
-    if (apiType === 'groq.api.v1' || apiType === 'openrouter.api.v1') {
+      targetUrl = `${config.url}/${model}:streamGenerateContent?key=${config.apiKey}&alt=sse`;
+    } else if (apiType === 'groq.api.v1' || apiType === 'openrouter.api.v1') {
       requestBody = JSON.stringify({
         model,
         messages: [
@@ -71,23 +63,33 @@ export class AIService {
             content: prompt,
           },
         ],
+        stream: true,
       });
       targetUrl = `${config.url}`;
       headers['Authorization'] = `Bearer ${config.apiKey}`;
-    }
-
-    const statusId = uuidv4();
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.configService.get('app.aiReqTimeout', { infer: true }));
-    try {
-      this.#logger.log(`Querying ${model} with prompt: ${prompt.substring(0, 50)}...`);
-      emitToClient('statusUpdate', {
-        id: statusId,
-        message: `Querying ${model}`,
+    } else {
+      this.#logger.warn(`Unsupported API type "${apiType}" for model "${model}". Cannot stream.`);
+      emitToClient('streamError', {
+        queryId,
+        model,
+        error: `Unsupported API type ${apiType}`,
         nickname: this.#botName,
-        status: 'info',
         time: Date.now(),
       });
+      emitToClient('streamEnd', { queryId, model, nickname: this.#botName, time: Date.now() });
+      return null;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.configService.get('app.aiReqTimeout', { infer: true }));
+    const sseResponseLineRE = /^data: (.*)(?:\n\n|\r\r|\r\n\r\n)/;
+    let receivedText = '';
+    let finalAnswer: AIAnswer | null = null;
+    try {
+      this.#logger.log(`Streaming query to ${model} (${apiType}) with prompt: ${prompt.substring(0, 50)}...`, {
+        queryId,
+      });
+
       const response = await fetch(targetUrl, {
         method: 'POST',
         body: requestBody,
@@ -95,115 +97,240 @@ export class AIService {
         signal: controller.signal,
       });
 
-      emitToClient('statusUpdate', {
-        id: statusId,
-        message: `Processing answer from ${model}`,
-        status: 'info',
-        nickname: this.#botName,
-        time: Date.now(),
-      });
       if (!response.ok) {
         const errorBody = await response.text();
-        this.#logger.error(`Error response from ${model} (${response.status}): ${errorBody}`);
+        this.#logger.error(`Error response from ${model} (${apiType}) (${response.status})`, { errorBody, queryId });
+        emitToClient('streamError', {
+          queryId,
+          model,
+          error: `API error (${response.status}): ${errorBody.slice(0, 50)}`,
+          nickname: this.#botName,
+          time: Date.now(),
+        });
+        emitToClient('streamEnd', { queryId, model, nickname: this.#botName, time: Date.now() });
         return null;
       }
 
-      const data = await response.json();
-
-      let text: string | null = null;
-      if (apiType === 'google.api.v1beta') {
-        text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
-      }
-
-      if (apiType === 'groq.api.v1' || apiType === 'openrouter.api.v1') {
-        text = data?.choices?.[0]?.message?.content ?? null;
-      }
-
-      if (!text) {
-        this.#logger.warn(`Could not extract text from ${model} response: ${JSON.stringify(data)}`);
+      if (!response.body) {
+        this.#logger.error(`Response body is null for ${model} (${apiType})`, { queryId });
+        emitToClient('streamError', {
+          queryId,
+          model,
+          error: `Empty response body`,
+          nickname: this.#botName,
+          time: Date.now(),
+        });
+        emitToClient('streamEnd', { queryId, model, nickname: this.#botName, time: Date.now() });
         return null;
       }
 
-      return {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          if (buffer.trim().length > 0) {
+            throw new Error('Incomplete JSON segment at the end');
+          }
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true }); // Decode chunk and add to buffer
+        if (apiType === 'groq.api.v1' || apiType === 'openrouter.api.v1') {
+          const events = buffer.split('\n\n');
+          buffer = events.pop() || '';
+
+          for (const event of events) {
+            if (!event.startsWith('data: ')) {
+              continue;
+            }
+            const jsonString = event.substring('data: '.length);
+
+            if (jsonString === '[DONE]') {
+              break;
+            }
+
+            try {
+              const data = JSON.parse(jsonString);
+              const chunk: string | undefined = data?.choices?.[0]?.delta?.content;
+              if (chunk) {
+                receivedText += chunk;
+                emitToClient('streamChunk', {
+                  queryId,
+                  model,
+                  text: chunk,
+                  nickname: this.#botName,
+                });
+              }
+            } catch (parseError) {
+              this.#logger.error(`Failed to parse stream chunk from ${model} (${apiType}): ${parseError}`, {
+                queryId,
+                chunk: event.substring(0, 100),
+              });
+            }
+          }
+        } else if (apiType === 'google.api.v1beta') {
+          let match: RegExpMatchArray | null;
+          // Process all complete SSE messages in the buffer
+          while ((match = buffer.match(sseResponseLineRE))) {
+            const jsonString = match[1]; // Extract the JSON payload
+
+            try {
+              const data = JSON.parse(jsonString);
+              // Check for embedded errors within the stream chunk itself (like the SDK does)
+              if ('error' in data) {
+                const errorJson = JSON.parse(JSON.stringify(data['error'])) as Record<string, unknown>;
+                const status = errorJson['status'] as string | undefined;
+                const code = errorJson['code'] as number | undefined;
+                const errorMessage = `Stream error chunk: status=${status}, code=${code}. ${JSON.stringify(data)}`;
+                // You might want to throw a specific error type or just a generic one
+                this.#logger.error(errorMessage, { queryId });
+                // Throwing here will break the stream and trigger the catch block below
+                throw new Error(errorMessage);
+              }
+
+              // Extract the content from the valid data chunk
+              // Note: Google's stream often sends chunks that might not have text initially (e.g., safety ratings)
+              // So, we only process chunks that actually contain text parts.
+              const chunk: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+              if (chunk) {
+                receivedText += chunk;
+                emitToClient('streamChunk', {
+                  queryId,
+                  model,
+                  text: chunk,
+                  nickname: this.#botName,
+                });
+              }
+
+              // Remove the processed match from the buffer
+              buffer = buffer.slice(match[0].length);
+            } catch (parseError: unknown) {
+              // Handle errors during parsing or embedded errors
+              if (parseError instanceof Error) {
+                // If it was an embedded error, it's already logged and we re-throw
+                if (parseError.message.startsWith('Stream error chunk:')) {
+                  throw parseError;
+                }
+                // Handle JSON parsing errors
+                this.#logger.error(`Failed to parse stream chunk from ${model} (${apiType}): ${parseError.message}`, {
+                  queryId,
+                  chunk: jsonString.substring(0, 100), // Log the problematic string
+                  stack: parseError.stack,
+                });
+              } else {
+                this.#logger.error(`Unknown error parsing stream chunk from ${model} (${apiType})`, {
+                  queryId,
+                  chunk: jsonString.substring(0, 100),
+                  error: parseError,
+                });
+              }
+              throw new Error(`Stream parsing failed for ${model}`);
+            }
+          }
+        }
+      }
+
+      finalAnswer = {
         model,
         provider,
-        text,
+        text: receivedText,
         time: Date.now(),
       };
+
+      this.#logger.log(`Stream from ${model} (${apiType}) finished. Total text length: ${receivedText.length}`, {
+        queryId,
+      });
+      emitToClient('streamEnd', { queryId, model, nickname: this.#botName, time: Date.now() });
+
+      return finalAnswer;
     } catch (error: unknown) {
+      const errorTime = Date.now();
       if (error instanceof Error && error.name === 'AbortError') {
-        this.#logger.warn(`Request to ${model} timed out: ${error.message}`);
-        emitToClient('statusUpdate', {
-          id: statusId,
-          message: `${model} took too long to answer`,
-          status: 'warning',
+        this.#logger.warn(`Request to ${model} (${apiType}) timed out: ${error.message}`, { queryId });
+        emitToClient('streamError', {
+          queryId,
+          model,
+          error: `${model} took too long to respond`,
           nickname: this.#botName,
-          time: Date.now(),
+          time: errorTime,
         });
       } else if (error instanceof Error) {
-        this.#logger.error(`Network or parsing error with ${model}: ${error.message}, ${error.stack}`);
-        emitToClient('statusUpdate', {
-          id: statusId,
-          message: `Network error with  ${model}`,
-          status: 'error',
+        this.#logger.error(`Network, parsing, or stream error with ${model} (${apiType}): ${error.message}`, {
+          queryId,
+          stack: error.stack,
+        });
+        emitToClient('streamError', {
+          queryId,
+          model,
+          error: `Communication error with ${model}`,
           nickname: this.#botName,
-          time: Date.now(),
+          time: errorTime,
         });
       } else {
-        this.#logger.error(`Network or parsing error with ${model}: ${String(error)}`);
-        emitToClient('statusUpdate', {
-          id: statusId,
-          message: `Network error with ${model}`,
-          status: 'error',
+        this.#logger.error(`Unknown error with ${model} (${apiType})`, { error, queryId });
+        emitToClient('streamError', {
+          queryId,
+          model,
+          error: `An unexpected error occurred with ${model}`,
           nickname: this.#botName,
-          time: Date.now(),
+          time: errorTime,
         });
       }
+      emitToClient('streamEnd', { queryId, model, nickname: this.#botName, time: errorTime });
+
       return null;
     } finally {
       clearTimeout(timeoutId);
-      void emitToClient('statusUpdate', {
-        id: statusId,
-        message: `Synthesizing answer from ${model}`,
-        status: 'info',
-        nickname: this.#botName,
-        time: Date.now(),
-      });
     }
   }
 
-  async generateMultiProviderResponse(originalPrompt: string, models: AIModel[], emitToClient: EmitToClientCallback) {
+  async streamMultiProviderResponse(
+    queryId: string,
+    originalPrompt: string,
+    models: AIModel[],
+    emitToClient: EmitToClient,
+  ): Promise<AIAnswer[]> {
     const settledResults = await Promise.allSettled(
-      models.map((provider) => this.queryProvider(provider, originalPrompt, emitToClient)),
+      models.map((model) => this.queryProviderStream(queryId, model, originalPrompt, emitToClient)),
     );
 
-    const responses: AIAnswer[] = [];
+    const finalResponses: AIAnswer[] = [];
     for (const [index, result] of settledResults.entries()) {
       const model = models[index];
-      const { apiType, provider } = this.#config[model];
+      const providerInfo = this.#config[model] || { provider: 'unknown', apiType: 'unknown' };
 
       if (result.status === 'fulfilled') {
-        this.#logger.log(`Response from ${apiType}:`, { response: result });
-        responses.push(
-          result.value || {
+        if (result.value) {
+          this.#logger.log(`Query for ${model} finished. Final text length: ${result.value.text.length}`, { queryId });
+          finalResponses.push(result.value);
+        } else {
+          this.#logger.warn(
+            `Query for ${model} fulfilled with null result (likely config error or initial check failed)`,
+            { queryId },
+          );
+          // Add a placeholder or default error if needed, although streamError should cover client view
+          finalResponses.push({
             model,
-            provider,
-            text: 'Sorry, I had trouble thinking about that.',
+            provider: providerInfo.provider,
+            text: 'Sorry, I had trouble getting a final answer.',
             time: Date.now(),
-          },
-        );
+          });
+        }
       } else if (result.status === 'rejected') {
-        const reason = result.reason instanceof Error ? result.reason.message : result.reason;
-        this.#logger.error(`Error querying ${apiType}: ${reason}`);
-        responses.push({
+        const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        this.#logger.error(`Promise rejected for ${model}: ${reason}`, { queryId });
+        finalResponses.push({
           model,
-          provider,
-          text: 'Sorry, I had trouble thinking about that.',
+          provider: providerInfo.provider,
+          text: 'Sorry, an unexpected error occurred.',
           time: Date.now(),
         });
       }
     }
 
-    return responses;
+    return finalResponses;
   }
 }

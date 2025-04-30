@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, ArrayNotEmpty, ArrayUnique } from 'class-validator';
+import { IsNotEmpty, IsString, ArrayNotEmpty, ArrayUnique, IsOptional, IsUUID } from 'class-validator';
 import { AIAnswer, AIModel } from '../ai/ai.entity';
 
 export class ChatMessage {
@@ -14,6 +14,11 @@ export class ChatMessage {
   @ArrayNotEmpty()
   @ArrayUnique()
   models: AIModel[];
+
+  @IsString()
+  @IsOptional()
+  @IsUUID()
+  queryId?: string;
 }
 
 export class ChatMessageReply {
@@ -39,4 +44,26 @@ export class StatusMessageReply {
 export class ChatHistoryItem {
   question: ChatMessage;
   answer: ChatAnswersReply;
+}
+
+export interface ChatChunkReply {
+  queryId: string;
+  model: string;
+  text: string;
+  nickname: string;
+}
+
+export interface ChatEndReply {
+  queryId: string;
+  model: string;
+  nickname: string;
+  time: number;
+}
+
+export interface ChatErrorReply {
+  queryId: string;
+  model: string;
+  error: string;
+  nickname: string;
+  time: number;
 }

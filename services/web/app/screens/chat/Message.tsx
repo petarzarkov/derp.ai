@@ -33,11 +33,9 @@ const Message = (props: MessageProps) => {
   const { theme } = useThemeProvider();
   const { type, nickname, time } = props;
 
-  const { text } =
-    (props.type === 'user' || props.type === 'system') && props.text ? { text: props.text } : { text: null };
-  const { answers } = props.type === 'bot' && props.answers ? { answers: props.answers } : { answers: [] };
+  const { text } = props.type === 'user' && props.text ? { text: props.text } : { text: null };
+  const { answers } = props.type === 'bot' && props.answers ? { answers: props.answers } : { answers: null };
   const isUser = type === 'user';
-  const isSystem = type === 'system';
 
   const userBg = useColorModeValue('primary.700', 'primary.300');
   const userText = useColorModeValue('primary.100', 'primary.700');
@@ -202,24 +200,29 @@ const Message = (props: MessageProps) => {
     const generatedTabs: JSX.Element[] = [];
     const generatedTabPanels: JSX.Element[] = [];
 
-    answers.forEach((answer, index) => {
-      generatedTabs.push(
-        <Tab key={`${index}-${answer.model}-${answer.provider}-tab`} fontSize={'sm'}>
-          <Heading size="sm" noOfLines={1} fontSize={'sm'} as="h6">
-            {answer.model}
-          </Heading>
-        </Tab>,
-      );
+    if (answers) {
+      Object.values(answers).forEach((answer, index) => {
+        generatedTabs.push(
+          <Tab key={`${index}-${answer.model}-${answer.provider}-tab`} fontSize={'sm'}>
+            {answer.status === 'streaming' && (
+              <Spinner size="sm" speed="0.65s" emptyColor="gray.200" color="blue.500" />
+            )}
+            <Heading size="sm" noOfLines={1} fontSize={'sm'} as="h6">
+              {answer.model}
+            </Heading>
+          </Tab>,
+        );
 
-      generatedTabPanels.push(
-        <TabPanel key={`${answer.time}-${answer.model}-${answer.provider}-tab-panel`}>
-          <Heading size="sm" mb={2} as="h6">
-            {answer.provider} - {answer.model}
-          </Heading>
-          {<ReactMarkdown components={markdownComponents}>{answer.text}</ReactMarkdown>}
-        </TabPanel>,
-      );
-    });
+        generatedTabPanels.push(
+          <TabPanel key={`${answer.time}-${answer.model}-${answer.provider}-tab-panel`}>
+            <Heading size="sm" mb={2} as="h6">
+              {answer.provider} - {answer.model}
+            </Heading>
+            {<ReactMarkdown components={markdownComponents}>{answer.text}</ReactMarkdown>}
+          </TabPanel>,
+        );
+      });
+    }
 
     return { tabs: generatedTabs, tabPanels: generatedTabPanels };
   }, [answers, markdownComponents]);
@@ -254,11 +257,6 @@ const Message = (props: MessageProps) => {
         <Box wordBreak="break-word" overflowX="hidden" fontSize="sm">
           {isUser && text ? (
             <UserMessageContent text={text} />
-          ) : isSystem ? (
-            <HStack>
-              <Spinner size="sm" speed="0.65s" emptyColor="gray.200" color="blue.500" />
-              <Text>{text}</Text>
-            </HStack>
           ) : (
             <Tabs variant="line" colorScheme={theme} size={'sm'} align="start">
               <TabList>{tabs}</TabList>

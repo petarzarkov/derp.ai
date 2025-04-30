@@ -24,7 +24,6 @@ import {
 import { FiSend, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import { useSocket, useThemeProvider } from '@hooks';
 import Message from './Message';
-import StatusMessage from './StatusMessage';
 import TextareaAutosize from 'react-textarea-autosize';
 import { useConfig } from '../../hooks/useConfig';
 import { ChevronDownIcon } from '@chakra-ui/icons';
@@ -47,7 +46,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
-  const { appName, models } = useConfig();
+  const { models } = useConfig();
 
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   useEffect(() => {
@@ -71,7 +70,9 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
   const { color: statusColor, text: statusText } = statusCtx[connectionStatus];
 
   useEffect(() => {
-    scrollToBottom();
+    if (!isBotThinking) {
+      scrollToBottom();
+    }
   }, [messages, isBotThinking, isFixedInput]);
 
   const handleSendMessage = () => {
@@ -249,8 +250,6 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
         {messages.map((msg, idx) => (
           <Message key={`msg-${idx}-${msg.time}-${msg.nickname}`} {...msg} />
         ))}
-
-        {isBotThinking && currentStatusMessage && <StatusMessage botName={appName} statusText={currentStatusMessage} />}
       </Stack>
     </Flex>
   );
