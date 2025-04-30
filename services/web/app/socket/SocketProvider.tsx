@@ -10,6 +10,7 @@ import type {
   ServerChatChunkMessage,
   ServerChatEndMessage,
   ServerChatErrorMessage,
+  AIAnswer,
 } from './Chat.types';
 import { ConnectionStatus, SocketContext, SocketContextState } from './SocketContext';
 import { useAuth } from '../hooks/useAuth';
@@ -36,53 +37,33 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
 
   const userNickname = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
 
+  // Initialize messages when user data is available (and messages are empty)
   useEffect(() => {
-    if (
-      messages.length === 0 &&
-      currentUser?.latestChatMessages &&
-      currentUser.latestChatMessages?.[1] &&
-      'answer' in currentUser.latestChatMessages[1]
-    ) {
+    if (messages.length === 0 && currentUser?.latestChatMessages) {
       const initialMessages = currentUser.latestChatMessages.flatMap(
         (msg) =>
           [
             {
               type: 'user',
-              // TODO: backwards compatible for previous version, delete in near future
-              text:
-                'message' in msg.answer && typeof msg.answer.message === 'string'
-                  ? msg.answer.message
-                  : msg.question.prompt,
+              text: msg.question.prompt,
               nickname: msg.question.nickname,
               time: msg.question.time,
               queryId: msg.question.queryId,
             },
             {
               type: 'bot',
-              answers:
-                // TODO backwards compatible for previous version, delete in near future
-                'message' in msg.answer && typeof msg.answer.message === 'string'
-                  ? {
-                      'gemini-2.0-flash': {
-                        text: msg.answer.message,
-                        time: msg.answer.time,
-                        provider: 'google',
-                        model: 'gemini-2.0-flash',
-                        status: 'complete',
-                      } as const,
-                    }
-                  : Object.fromEntries(
-                      msg.answer.answers.map((answer) => [
-                        answer.model,
-                        {
-                          text: answer.text,
-                          time: answer.time,
-                          provider: answer.provider,
-                          model: answer.model,
-                          status: answer.status,
-                        },
-                      ]),
-                    ),
+              answers: Object.fromEntries(
+                msg.answer.answers.map((answer) => [
+                  answer.model,
+                  {
+                    text: answer.text,
+                    time: answer.time,
+                    provider: answer.provider,
+                    model: answer.model,
+                    status: answer.status,
+                  },
+                ]),
+              ),
               nickname: msg.answer.nickname,
               time: msg.answer.time,
               queryId: msg.question.queryId,
@@ -110,12 +91,14 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     if (socket) {
       return;
     }
+
     setConnectionStatus('connecting');
 
     const newSocket = io(serverUrl, {
       requestTimeout: 10000,
       withCredentials: true,
     });
+
     setSocket(newSocket);
 
     const handleConnect = () => {
@@ -154,146 +137,85 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       }
     };
 
-    const handleChatChunk = (receivedMsg: ServerChatChunkMessage) => {
+    const updateBotMessageAnswer = (
+      queryId: string,
+      model: string,
+      updateFn: (existingAnswer: AIAnswer) => AIAnswer,
+    ) => {
       setMessages((prevMessages) => {
-        // Find the bot message associated with this queryId
-        const messageIndex = prevMessages.findIndex((msg) => msg.type === 'bot' && msg.queryId === receivedMsg.queryId);
+        const messageIndex = prevMessages.findIndex((msg) => msg.type === 'bot' && msg.queryId === queryId);
 
         if (messageIndex === -1) {
-          console.warn(
-            `Received chunk for unknown queryId: ${receivedMsg.queryId}. Chunk: "${receivedMsg.text.slice(0, 50)}..."`,
-          );
-          // Potentially create a new message entry if this is the first chunk received and the placeholder wasn't added
-          // (less ideal, should rely on sendMessage adding the placeholder)
-          return prevMessages; // Don't update if message not found
+          console.warn(`Message with queryId ${queryId} not found.`);
+          return prevMessages;
         }
 
         const messageToUpdate = prevMessages[messageIndex];
-        if (messageToUpdate.type !== 'bot') return prevMessages; // Should not happen based on findIndex
+        if (messageToUpdate.type !== 'bot') return prevMessages;
 
-        // Update the specific model's answer within the answers map
         const updatedAnswers = {
           ...messageToUpdate.answers,
-          [receivedMsg.model]: {
-            ...messageToUpdate.answers[receivedMsg.model], // Keep existing props
-            model: receivedMsg.model, // Ensure model is set
-            provider: messageToUpdate.answers[receivedMsg.model]?.provider || receivedMsg.model, // Keep provider if known
-            text: (messageToUpdate.answers[receivedMsg.model]?.text || '') + receivedMsg.text, // Append text
-            status: 'streaming' as const, // Set status to streaming
-            time: null, // Time is null while streaming
-          },
+          [model]: updateFn(messageToUpdate.answers[model] || {}),
         };
 
-        // Return new messages array with the updated message
         return [
           ...prevMessages.slice(0, messageIndex),
           { ...messageToUpdate, answers: updatedAnswers },
           ...prevMessages.slice(messageIndex + 1),
         ];
       });
+    };
 
-      // Update thinking state: this model is definitely thinking/streaming
+    // Centralized function to update thinking models and status message
+    const updateThinkingState = (model: string, isThinking: boolean) => {
+      setThinkingModels((prev) => {
+        const nextThinkingModels = { ...prev, [model]: isThinking };
+        const stillThinking = Object.keys(nextThinkingModels).filter((model) => nextThinkingModels[model]);
+
+        if (stillThinking.length === 0) {
+          setCurrentStatusMessage(null);
+        } else {
+          setCurrentStatusMessage(`Thinking: ${stillThinking.join(', ')}...`);
+        }
+
+        return nextThinkingModels;
+      });
+    };
+
+    const handleChatChunk = (receivedMsg: ServerChatChunkMessage) => {
+      updateBotMessageAnswer(receivedMsg.queryId, receivedMsg.model, (existingAnswer) => ({
+        ...existingAnswer,
+        model: receivedMsg.model,
+        provider: existingAnswer?.provider || receivedMsg.model,
+        text: (existingAnswer?.text || '') + receivedMsg.text,
+        status: 'streaming',
+        time: null,
+      }));
+
       setThinkingModels((prev) => ({ ...prev, [receivedMsg.model]: true }));
-      setCurrentStatusMessage(`Streaming from ${receivedMsg.model}...`); // Update status message
+      setCurrentStatusMessage(`Streaming from ${receivedMsg.model}...`);
     };
 
     const handleChatEnd = (receivedMsg: ServerChatEndMessage) => {
-      setMessages((prevMessages) => {
-        const messageIndex = prevMessages.findIndex((msg) => msg.type === 'bot' && msg.queryId === receivedMsg.queryId);
-
-        if (messageIndex === -1) {
-          console.warn(`Received end for unknown queryId: ${receivedMsg.queryId}. Model: ${receivedMsg.model}`);
-          return prevMessages;
-        }
-
-        const messageToUpdate = prevMessages[messageIndex];
-        if (messageToUpdate.type !== 'bot') return prevMessages;
-
-        // Update the specific model's answer status and time
-        const updatedAnswers = {
-          ...messageToUpdate.answers,
-          [receivedMsg.model]: {
-            ...messageToUpdate.answers[receivedMsg.model], // Keep existing props (text, provider)
-            status: 'complete' as const, // Set status to complete
-            time: receivedMsg.time, // Set final time
-          },
-        };
-
-        // Return new messages array with the updated message
-        return [
-          ...prevMessages.slice(0, messageIndex),
-          { ...messageToUpdate, answers: updatedAnswers },
-          ...prevMessages.slice(messageIndex + 1),
-        ];
-      });
-
-      // Update thinking state: this model is done
-      setThinkingModels((prev) => ({ ...prev, [receivedMsg.model]: false }));
-      // Update overall status message if this was the last thinking model
-      setThinkingModels((prev) => {
-        const nextThinkingModels = { ...prev, [receivedMsg.model]: false };
-        if (Object.values(nextThinkingModels).every((status) => !status)) {
-          setCurrentStatusMessage(null); // No models thinking
-        } else {
-          // Find remaining thinking models and update status message
-          const stillThinking = Object.keys(nextThinkingModels).filter((model) => nextThinkingModels[model]);
-          setCurrentStatusMessage(`Thinking: ${stillThinking.join(', ')}...`);
-        }
-        return nextThinkingModels;
-      });
+      updateBotMessageAnswer(receivedMsg.queryId, receivedMsg.model, (existingAnswer) => ({
+        ...existingAnswer,
+        status: 'complete',
+        time: receivedMsg.time,
+      }));
+      updateThinkingState(receivedMsg.model, false);
     };
 
     const handleChatError = (receivedMsg: ServerChatErrorMessage) => {
-      setMessages((prevMessages) => {
-        // Find the bot message associated with this queryId
-        const messageIndex = prevMessages.findIndex((msg) => msg.type === 'bot' && msg.queryId === receivedMsg.queryId);
+      updateBotMessageAnswer(receivedMsg.queryId, receivedMsg.model, (existingAnswer) => ({
+        ...existingAnswer,
+        status: 'error',
+        time: receivedMsg.time,
+        text: `Error: ${receivedMsg.error}`,
+      }));
+      updateThinkingState(receivedMsg.model, false);
 
-        if (messageIndex === -1) {
-          console.warn(
-            `Received error for unknown queryId: ${receivedMsg.queryId}. Model: ${receivedMsg.model}`,
-            receivedMsg.error,
-          );
-          return prevMessages;
-        }
-
-        const messageToUpdate = prevMessages[messageIndex];
-        if (messageToUpdate.type !== 'bot') return prevMessages;
-
-        // Update the specific model's answer status, time, and text with error
-        const updatedAnswers = {
-          ...messageToUpdate.answers,
-          [receivedMsg.model]: {
-            ...messageToUpdate.answers[receivedMsg.model], // Keep existing props (like initial empty text)
-            status: 'error' as const, // Set status to error
-            time: receivedMsg.time, // Set error time
-            text: messageToUpdate.answers[receivedMsg.model]?.text || `Error: ${receivedMsg.error}`, // Append error or show error
-          },
-        };
-
-        // Return new messages array with the updated message
-        return [
-          ...prevMessages.slice(0, messageIndex),
-          { ...messageToUpdate, answers: updatedAnswers },
-          ...prevMessages.slice(messageIndex + 1),
-        ];
-      });
-
-      // Update thinking state: this model is done (with error)
-      setThinkingModels((prev) => {
-        const nextThinkingModels = { ...prev, [receivedMsg.model]: false };
-        if (Object.values(nextThinkingModels).every((status) => !status)) {
-          setCurrentStatusMessage(null); // No models thinking
-        } else {
-          // Find remaining thinking models and update status message
-          const stillThinking = Object.keys(nextThinkingModels).filter((model) => nextThinkingModels[model]);
-          setCurrentStatusMessage(`Thinking: ${stillThinking.join(', ')}...`);
-        }
-        return nextThinkingModels;
-      });
-
-      // Optionally show a toast for the error
       toast({
-        id: `chat-error-${receivedMsg.queryId}-${receivedMsg.model}`, // Unique ID for toast
+        id: `chat-error-${receivedMsg.queryId}-${receivedMsg.model}`,
         title: `Error from ${receivedMsg.model}`,
         description: receivedMsg.error,
         status: 'error',
@@ -367,9 +289,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       newSocket.off('init', handleInit);
       newSocket.off('statusUpdate', handleStatusUpdate);
       newSocket.off('exception', handleException);
-      newSocket.off('chatChunk', handleChatChunk);
-      newSocket.off('chatEnd', handleChatEnd);
-      newSocket.off('chatError', handleChatError);
+      newSocket.off('streamChunk', handleChatChunk);
+      newSocket.off('streamEnd', handleChatEnd);
+      newSocket.off('streamError', handleChatError);
 
       newSocket.disconnect();
       setSocket(null);
@@ -377,7 +299,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       setThinkingModels(null);
       setConnectionStatus('disconnected');
       setCurrentStatusMessage(null);
-      toast.closeAll();
     };
   }, [serverUrl, isAuthenticated, currentUser]);
 
@@ -399,8 +320,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
         queryId: queryId,
       };
 
-      // Add the user message to the state immediately.
-      // Use the queryId so the echoed message from the server can update it.
       setMessages((prev) => [
         ...prev,
         {
@@ -410,18 +329,26 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
           time: messageToSend.time,
           queryId: messageToSend.queryId,
         },
-        // Add a placeholder bot message entry for this queryId.
-        // Chunks will update the 'answers' map within this entry.
         {
           type: 'bot',
           queryId: messageToSend.queryId,
-          nickname: appName, // Or botName from context
-          time: Date.now(), // Or messageToSend.time
-          answers: {}, // Initialize with empty answers
-        } as MessageProps, // Cast as MessageProps
+          nickname: appName,
+          time: messageToSend.time,
+          answers: Object.fromEntries(
+            modelsToQuery.map((model) => [
+              model,
+              {
+                text: `${model} thinking...`,
+                time: messageToSend.time,
+                provider: 'prompt',
+                model: model,
+                status: 'waiting',
+              },
+            ]),
+          ),
+        },
       ]);
 
-      // Set the thinking state for all selected models
       const initialThinkingState = modelsToQuery.reduce(
         (acc, model) => {
           acc[model] = true;

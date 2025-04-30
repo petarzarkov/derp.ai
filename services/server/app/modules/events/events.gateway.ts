@@ -11,12 +11,11 @@ import {
 } from '@nestjs/websockets';
 import { DefaultEventsMap, Server, Socket } from 'socket.io';
 import {
-  ChatAnswersReply,
   ChatChunkReply,
   ChatEndReply,
   ChatErrorReply,
   ChatMessage,
-  ChatMessageReply,
+  ChatInitReply,
   StatusMessageReply,
 } from './chat.entity';
 import { WebsocketsExceptionFilter } from './events.filter';
@@ -35,12 +34,11 @@ import { RedisService } from '../redis/redis.service';
 import { v4 as uuidv4 } from 'uuid';
 
 interface EmitEvents {
-  init: (message: ChatMessageReply) => void;
-  chat: (message: ChatAnswersReply) => void;
+  init: (message: ChatInitReply) => void;
   statusUpdate: (message: StatusMessageReply) => void;
   streamChunk: (message: ChatChunkReply) => void;
-  streamEnd: (message: ChatEndReply) => void;
   streamError: (message: ChatErrorReply) => void;
+  streamEnd: (message: ChatEndReply) => void;
 }
 
 export type EmitToClient = <K extends keyof EmitEvents>(ev: K, message: Parameters<EmitEvents[K]>[0]) => void;

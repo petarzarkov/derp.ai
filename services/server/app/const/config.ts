@@ -41,7 +41,7 @@ export class EnvVars {
 
   @IsNumber()
   @IsOptional()
-  SESSION_PRUNE_INTERVAL: number = 60 * 15 * 1000;
+  SESSION_PRUNE_INTERVAL: number = 60 * 120 * 1000;
 
   @IsString()
   GOOGLE_GEMINI_API_KEY: string;
@@ -93,7 +93,7 @@ export class EnvVars {
 
   @IsNumber()
   @IsOptional()
-  AI_REQ_TIMEOUT?: number;
+  AI_REQ_TIMEOUT?: number = 100000;
 
   @IsString()
   SLACK_APP_TOKEN: string;
@@ -263,7 +263,10 @@ export const validateConfig = (config: Record<string, unknown>) => {
       serverUrl: validatedConfig.APP_ENV === 'dev' ? localHost : validatedConfig.HOST,
       port: validatedConfig.SERVICE_PORT,
       docsApiPath: validatedConfig.API_DOCS_PATH,
-      aiReqTimeout: validatedConfig.AI_REQ_TIMEOUT || 25000,
+      /**
+       * @default 100000
+       */
+      aiReqTimeout: validatedConfig.AI_REQ_TIMEOUT,
     },
     db: {
       name: validatedConfig.DB_NAME,

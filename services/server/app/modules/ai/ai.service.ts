@@ -14,13 +14,13 @@ export class AIService {
 
   constructor(private configService: ConfigService<ValidatedConfig, true>) {
     const providers = this.configService.get('aiProviders', { infer: true });
-    const appConfig = this.configService.get('app', { infer: true });
-    this.#botName = appConfig.name;
-    this.#context = `Your name is ${this.#botName}. You are a helpful assistant that can answer questions and help with tasks.`;
-
     if (!providers) {
       throw new Error('config aiProviders not set!');
     }
+
+    const appConfig = this.configService.get('app', { infer: true });
+    this.#botName = appConfig.name;
+    this.#context = `Your name is ${this.#botName}. You are a helpful assistant that can answer questions and help with tasks.`;
     this.#config = providers;
   }
 
@@ -50,7 +50,8 @@ export class AIService {
         ],
       });
       targetUrl = `${config.url}/${model}:streamGenerateContent?key=${config.apiKey}&alt=sse`;
-    } else if (apiType === 'groq.api.v1' || apiType === 'openrouter.api.v1') {
+    }
+    if (apiType === 'groq.api.v1' || apiType === 'openrouter.api.v1') {
       requestBody = JSON.stringify({
         model,
         messages: [
@@ -67,22 +68,11 @@ export class AIService {
       });
       targetUrl = `${config.url}`;
       headers['Authorization'] = `Bearer ${config.apiKey}`;
-    } else {
-      this.#logger.warn(`Unsupported API type "${apiType}" for model "${model}". Cannot stream.`);
-      emitToClient('streamError', {
-        queryId,
-        model,
-        error: `Unsupported API type ${apiType}`,
-        nickname: this.#botName,
-        time: Date.now(),
-      });
-      emitToClient('streamEnd', { queryId, model, nickname: this.#botName, time: Date.now() });
-      return null;
     }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.configService.get('app.aiReqTimeout', { infer: true }));
-    const sseResponseLineRE = /^data: (.*)(?:\n\n|\r\r|\r\n\r\n)/;
+    const responseLineRE = /^data: (.*)(?:\n\n|\r\r|\r\n\r\n)/;
     let receivedText = '';
     let finalAnswer: AIAnswer | null = null;
     try {
@@ -98,12 +88,20 @@ export class AIService {
       });
 
       if (!response.ok) {
-        const errorBody = await response.text();
-        this.#logger.error(`Error response from ${model} (${apiType}) (${response.status})`, { errorBody, queryId });
+        const error = await response.text();
+        const msg = `Error response from ${model} (${apiType}) (${response.status})`;
+        let errorBody: { message?: string };
+        try {
+          errorBody = JSON.parse(error)?.error;
+        } catch (error) {
+          errorBody = { message: error as string };
+        }
+
+        this.#logger.error(msg, { errorBody, queryId });
         emitToClient('streamError', {
           queryId,
           model,
-          error: `API error (${response.status}): ${errorBody.slice(0, 50)}`,
+          error: errorBody?.message || msg,
           nickname: this.#botName,
           time: Date.now(),
         });
@@ -136,7 +134,7 @@ export class AIService {
           break;
         }
 
-        buffer += decoder.decode(value, { stream: true }); // Decode chunk and add to buffer
+        buffer += decoder.decode(value, { stream: true });
         if (apiType === 'groq.api.v1' || apiType === 'openrouter.api.v1') {
           const events = buffer.split('\n\n');
           buffer = events.pop() || '';
@@ -164,7 +162,8 @@ export class AIService {
                 });
               }
             } catch (parseError) {
-              this.#logger.error(`Failed to parse stream chunk from ${model} (${apiType}): ${parseError}`, {
+              this.#logger.error(`Failed to parse stream chunk from ${model} (${apiType})`, {
+                parseError,
                 queryId,
                 chunk: event.substring(0, 100),
               });
@@ -172,29 +171,21 @@ export class AIService {
           }
         } else if (apiType === 'google.api.v1beta') {
           let match: RegExpMatchArray | null;
-          // Process all complete SSE messages in the buffer
-          while ((match = buffer.match(sseResponseLineRE))) {
-            const jsonString = match[1]; // Extract the JSON payload
+          while ((match = buffer.match(responseLineRE))) {
+            const jsonString = match[1];
 
             try {
               const data = JSON.parse(jsonString);
-              // Check for embedded errors within the stream chunk itself (like the SDK does)
               if ('error' in data) {
                 const errorJson = JSON.parse(JSON.stringify(data['error'])) as Record<string, unknown>;
                 const status = errorJson['status'] as string | undefined;
                 const code = errorJson['code'] as number | undefined;
-                const errorMessage = `Stream error chunk: status=${status}, code=${code}. ${JSON.stringify(data)}`;
-                // You might want to throw a specific error type or just a generic one
-                this.#logger.error(errorMessage, { queryId });
-                // Throwing here will break the stream and trigger the catch block below
+                const errorMessage = `Stream error chunk: status=${status}, code=${code}`;
+                this.#logger.error(errorMessage, { queryId, data });
                 throw new Error(errorMessage);
               }
 
-              // Extract the content from the valid data chunk
-              // Note: Google's stream often sends chunks that might not have text initially (e.g., safety ratings)
-              // So, we only process chunks that actually contain text parts.
               const chunk: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
               if (chunk) {
                 receivedText += chunk;
                 emitToClient('streamChunk', {
@@ -205,19 +196,15 @@ export class AIService {
                 });
               }
 
-              // Remove the processed match from the buffer
               buffer = buffer.slice(match[0].length);
             } catch (parseError: unknown) {
-              // Handle errors during parsing or embedded errors
               if (parseError instanceof Error) {
-                // If it was an embedded error, it's already logged and we re-throw
                 if (parseError.message.startsWith('Stream error chunk:')) {
                   throw parseError;
                 }
-                // Handle JSON parsing errors
                 this.#logger.error(`Failed to parse stream chunk from ${model} (${apiType}): ${parseError.message}`, {
                   queryId,
-                  chunk: jsonString.substring(0, 100), // Log the problematic string
+                  chunk: jsonString.substring(0, 100),
                   stack: parseError.stack,
                 });
               } else {
@@ -311,7 +298,6 @@ export class AIService {
             `Query for ${model} fulfilled with null result (likely config error or initial check failed)`,
             { queryId },
           );
-          // Add a placeholder or default error if needed, although streamError should cover client view
           finalResponses.push({
             model,
             provider: providerInfo.provider,

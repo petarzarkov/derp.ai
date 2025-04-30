@@ -21,7 +21,7 @@ export class ChatMessage {
   queryId?: string;
 }
 
-export class ChatMessageReply {
+export class ChatInitReply {
   nickname: string;
   message: string;
   time: number;

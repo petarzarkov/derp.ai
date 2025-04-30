@@ -84,6 +84,7 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
         setTimeout(() => inputRef.current?.focus(), 0);
       }
     }
+    scrollToBottom();
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
