@@ -1,16 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { validateConfig, ValidatedConfig } from '../../const';
-import { AIAnswer, AIModel } from './ai.entity';
+import { ValidatedConfig } from '../../const';
+import { AIAnswer, AIModel, AIProvidersConfig } from './ai.entity';
 import { ContextLogger } from 'nestjs-context-logger';
 import { EmitToClient } from '../events/events.gateway';
+import { GoogleProvider } from './providers/google.provider';
+import { OpenAIProvider } from './providers/openai.provider';
 
 @Injectable()
 export class AIService {
-  #botName;
-  #context;
+  #botName: string;
+  #context: string;
   #logger = new ContextLogger(AIService.name);
-  #config: ReturnType<typeof validateConfig>['aiProviders'];
+  #config: AIProvidersConfig;
 
   constructor(private configService: ConfigService<ValidatedConfig, true>) {
     const providers = this.configService.get('aiProviders', { infer: true });
@@ -24,254 +26,36 @@ export class AIService {
     this.#config = providers;
   }
 
+  createProviderInstance(model: AIModel, emit: EmitToClient, queryId: string) {
+    const config = this.#config[model];
+    switch (config.apiType) {
+      case 'google.api.v1beta':
+        return new GoogleProvider(model, config, this.#context, emit, queryId, this.#botName);
+      case 'openrouter.api.v1':
+      case 'groq.api.v1':
+        return new OpenAIProvider(model, config, this.#context, emit, queryId, this.#botName);
+      default:
+        throw new Error(`Unsupported API model: ${model}`);
+    }
+  }
+
   private async queryProviderStream(
     queryId: string,
     model: AIModel,
     prompt: string,
     emitToClient: EmitToClient,
-  ): Promise<AIAnswer | null> {
+  ): Promise<AIAnswer> {
     const config = this.#config[model];
-    const { provider, apiType } = config;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+    const handler = this.createProviderInstance(model, emitToClient, queryId);
+    const timeout = this.configService.get('app.aiReqTimeout', { infer: true });
+
+    const receivedText = await handler.queryProviderStream(prompt, timeout);
+    return {
+      model,
+      provider: config.provider,
+      text: receivedText,
+      time: Date.now(),
     };
-    let requestBody: string | null = null;
-    let targetUrl = `${config.url}`;
-    if (apiType === 'google.api.v1beta') {
-      requestBody = JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: this.#context }],
-        },
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: prompt }],
-          },
-        ],
-      });
-      targetUrl = `${config.url}/${model}:streamGenerateContent?key=${config.apiKey}&alt=sse`;
-    }
-    if (apiType === 'groq.api.v1' || apiType === 'openrouter.api.v1') {
-      requestBody = JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: this.#context,
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        stream: true,
-      });
-      targetUrl = `${config.url}`;
-      headers['Authorization'] = `Bearer ${config.apiKey}`;
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.configService.get('app.aiReqTimeout', { infer: true }));
-    const responseLineRE = /^data: (.*)(?:\n\n|\r\r|\r\n\r\n)/;
-    let receivedText = '';
-    let finalAnswer: AIAnswer | null = null;
-    try {
-      this.#logger.log(`Streaming query to ${model} (${apiType}) with prompt: ${prompt.substring(0, 50)}...`, {
-        queryId,
-      });
-
-      const response = await fetch(targetUrl, {
-        method: 'POST',
-        body: requestBody,
-        headers: headers,
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        const msg = `Error response from ${model} (${apiType}) (${response.status})`;
-        let errorBody: { message?: string };
-        try {
-          errorBody = JSON.parse(error)?.error;
-        } catch (error) {
-          errorBody = { message: error as string };
-        }
-
-        this.#logger.error(msg, { errorBody, queryId });
-        emitToClient('streamError', {
-          queryId,
-          model,
-          error: errorBody?.message || msg,
-          nickname: this.#botName,
-          time: Date.now(),
-        });
-        emitToClient('streamEnd', { queryId, model, nickname: this.#botName, time: Date.now() });
-        return null;
-      }
-
-      if (!response.body) {
-        this.#logger.error(`Response body is null for ${model} (${apiType})`, { queryId });
-        emitToClient('streamError', {
-          queryId,
-          model,
-          error: `Empty response body`,
-          nickname: this.#botName,
-          time: Date.now(),
-        });
-        emitToClient('streamEnd', { queryId, model, nickname: this.#botName, time: Date.now() });
-        return null;
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          if (buffer.trim().length > 0) {
-            throw new Error('Incomplete JSON segment at the end');
-          }
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        if (apiType === 'groq.api.v1' || apiType === 'openrouter.api.v1') {
-          const events = buffer.split('\n\n');
-          buffer = events.pop() || '';
-
-          for (const event of events) {
-            if (!event.startsWith('data: ')) {
-              continue;
-            }
-            const jsonString = event.substring('data: '.length);
-
-            if (jsonString === '[DONE]') {
-              break;
-            }
-
-            try {
-              const data = JSON.parse(jsonString);
-              const chunk: string | undefined = data?.choices?.[0]?.delta?.content;
-              if (chunk) {
-                receivedText += chunk;
-                emitToClient('streamChunk', {
-                  queryId,
-                  model,
-                  text: chunk,
-                  nickname: this.#botName,
-                });
-              }
-            } catch (parseError) {
-              this.#logger.error(`Failed to parse stream chunk from ${model} (${apiType})`, {
-                parseError,
-                queryId,
-                chunk: event.substring(0, 100),
-              });
-            }
-          }
-        } else if (apiType === 'google.api.v1beta') {
-          let match: RegExpMatchArray | null;
-          while ((match = buffer.match(responseLineRE))) {
-            const jsonString = match[1];
-
-            try {
-              const data = JSON.parse(jsonString);
-              if ('error' in data) {
-                const errorJson = JSON.parse(JSON.stringify(data['error'])) as Record<string, unknown>;
-                const status = errorJson['status'] as string | undefined;
-                const code = errorJson['code'] as number | undefined;
-                const errorMessage = `Stream error chunk: status=${status}, code=${code}`;
-                this.#logger.error(errorMessage, { queryId, data });
-                throw new Error(errorMessage);
-              }
-
-              const chunk: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (chunk) {
-                receivedText += chunk;
-                emitToClient('streamChunk', {
-                  queryId,
-                  model,
-                  text: chunk,
-                  nickname: this.#botName,
-                });
-              }
-
-              buffer = buffer.slice(match[0].length);
-            } catch (parseError: unknown) {
-              if (parseError instanceof Error) {
-                if (parseError.message.startsWith('Stream error chunk:')) {
-                  throw parseError;
-                }
-                this.#logger.error(`Failed to parse stream chunk from ${model} (${apiType}): ${parseError.message}`, {
-                  queryId,
-                  chunk: jsonString.substring(0, 100),
-                  stack: parseError.stack,
-                });
-              } else {
-                this.#logger.error(`Unknown error parsing stream chunk from ${model} (${apiType})`, {
-                  queryId,
-                  chunk: jsonString.substring(0, 100),
-                  error: parseError,
-                });
-              }
-              throw new Error(`Stream parsing failed for ${model}`);
-            }
-          }
-        }
-      }
-
-      finalAnswer = {
-        model,
-        provider,
-        text: receivedText,
-        time: Date.now(),
-      };
-
-      this.#logger.log(`Stream from ${model} (${apiType}) finished. Total text length: ${receivedText.length}`, {
-        queryId,
-      });
-      emitToClient('streamEnd', { queryId, model, nickname: this.#botName, time: Date.now() });
-
-      return finalAnswer;
-    } catch (error: unknown) {
-      const errorTime = Date.now();
-      if (error instanceof Error && error.name === 'AbortError') {
-        this.#logger.warn(`Request to ${model} (${apiType}) timed out: ${error.message}`, { queryId });
-        emitToClient('streamError', {
-          queryId,
-          model,
-          error: `${model} took too long to respond`,
-          nickname: this.#botName,
-          time: errorTime,
-        });
-      } else if (error instanceof Error) {
-        this.#logger.error(`Network, parsing, or stream error with ${model} (${apiType}): ${error.message}`, {
-          queryId,
-          stack: error.stack,
-        });
-        emitToClient('streamError', {
-          queryId,
-          model,
-          error: `Communication error with ${model}`,
-          nickname: this.#botName,
-          time: errorTime,
-        });
-      } else {
-        this.#logger.error(`Unknown error with ${model} (${apiType})`, { error, queryId });
-        emitToClient('streamError', {
-          queryId,
-          model,
-          error: `An unexpected error occurred with ${model}`,
-          nickname: this.#botName,
-          time: errorTime,
-        });
-      }
-      emitToClient('streamEnd', { queryId, model, nickname: this.#botName, time: errorTime });
-
-      return null;
-    } finally {
-      clearTimeout(timeoutId);
-    }
   }
 
   async streamMultiProviderResponse(
@@ -283,29 +67,15 @@ export class AIService {
     const settledResults = await Promise.allSettled(
       models.map((model) => this.queryProviderStream(queryId, model, originalPrompt, emitToClient)),
     );
-
     const finalResponses: AIAnswer[] = [];
     for (const [index, result] of settledResults.entries()) {
       const model = models[index];
-      const providerInfo = this.#config[model] || { provider: 'unknown', apiType: 'unknown' };
+      const providerInfo = this.#config[model];
 
       if (result.status === 'fulfilled') {
-        if (result.value) {
-          this.#logger.log(`Query for ${model} finished. Final text length: ${result.value.text.length}`, { queryId });
-          finalResponses.push(result.value);
-        } else {
-          this.#logger.warn(
-            `Query for ${model} fulfilled with null result (likely config error or initial check failed)`,
-            { queryId },
-          );
-          finalResponses.push({
-            model,
-            provider: providerInfo.provider,
-            text: 'Sorry, I had trouble getting a final answer.',
-            time: Date.now(),
-          });
-        }
-      } else if (result.status === 'rejected') {
+        this.#logger.log(`Query for ${model} finished. Final text length: ${result.value.text.length}`, { queryId });
+        finalResponses.push(result.value);
+      } else {
         const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
         this.#logger.error(`Promise rejected for ${model}: ${reason}`, { queryId });
         finalResponses.push({

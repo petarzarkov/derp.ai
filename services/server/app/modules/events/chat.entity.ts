@@ -33,14 +33,6 @@ export class ChatAnswersReply {
   time: number;
 }
 
-export class StatusMessageReply {
-  id: string;
-  nickname: string;
-  message: string;
-  time: number;
-  status?: 'error' | 'info' | 'warning' | 'success' | 'loading';
-}
-
 export class ChatHistoryItem {
   question: ChatMessage;
   answer: ChatAnswersReply;
@@ -49,6 +41,7 @@ export class ChatHistoryItem {
 export interface ChatChunkReply {
   queryId: string;
   model: string;
+  provider: string;
   text: string;
   nickname: string;
 }
@@ -56,6 +49,7 @@ export interface ChatChunkReply {
 export interface ChatEndReply {
   queryId: string;
   model: string;
+  provider: string;
   nickname: string;
   time: number;
 }
@@ -63,6 +57,7 @@ export interface ChatEndReply {
 export interface ChatErrorReply {
   queryId: string;
   model: string;
+  provider: string;
   error: string;
   nickname: string;
   time: number;

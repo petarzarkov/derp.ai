@@ -1,8 +1,7 @@
 import { Box, Button, useColorModeValue } from '@chakra-ui/react';
+import { MAX_COLLAPSED_HEIGHT_PX } from '../../config/const';
 import { useState, useRef, useEffect } from 'react';
 import { MdExpandLess, MdExpandMore } from 'react-icons/md';
-
-const MAX_COLLAPSED_HEIGHT_PX = 50;
 
 export const UserMessageContent = ({ text }: { text: string }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -31,16 +30,6 @@ export const UserMessageContent = ({ text }: { text: string }) => {
 
   return (
     <>
-      <Box
-        ref={contentRef}
-        maxHeight={isCollapsible && !isExpanded ? `${MAX_COLLAPSED_HEIGHT_PX}px` : 'none'}
-        overflow="hidden"
-        transition="max-height 0.2s ease-out"
-        whiteSpace="pre-wrap"
-        wordBreak="break-word"
-      >
-        {text}
-      </Box>
       {isCollapsible && (
         <Button
           variant="ghost"
@@ -56,6 +45,16 @@ export const UserMessageContent = ({ text }: { text: string }) => {
           {isExpanded ? 'Collapse' : 'Expand'}
         </Button>
       )}
+      <Box
+        ref={contentRef}
+        maxHeight={isCollapsible && !isExpanded ? `${MAX_COLLAPSED_HEIGHT_PX}px` : 'none'}
+        overflow="hidden"
+        transition="max-height 0.2s ease-out"
+        whiteSpace="pre-wrap"
+        wordBreak="break-word"
+      >
+        {text}
+      </Box>
     </>
   );
 };

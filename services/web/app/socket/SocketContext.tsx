@@ -6,9 +6,8 @@ export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 're
 export interface SocketContextState {
   messages: MessageProps[];
   isConnected: boolean;
-  isBotThinking: boolean;
   connectionStatus: ConnectionStatus;
-  thinkingModels: Record<string, boolean> | null;
+  isBotThinking: boolean;
   currentStatusMessage: string | null;
   sendMessage: (messageText: string) => void;
   setModelsToQuery: React.Dispatch<React.SetStateAction<string[]>>;

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { JSX, useMemo } from 'react';
+import { JSX, useEffect, useMemo, useRef, useState } from 'react';
 import {
   useColorModeValue,
   Flex,
@@ -20,6 +20,8 @@ import {
   TabPanels,
   Tabs,
   Spinner,
+  Badge,
+  Stack,
 } from '@chakra-ui/react';
 import type { MessageProps } from '../../socket/Chat.types';
 import ReactMarkdown, { Components } from 'react-markdown';
@@ -28,6 +30,8 @@ import { UserMessageContent } from './UserMessageContent';
 import { useThemeProvider } from '@hooks';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import { MAX_COLLAPSED_HEIGHT_CODE_PX } from '../../config/const';
+import { MdExpandLess, MdExpandMore } from 'react-icons/md';
 
 const Message = (props: MessageProps) => {
   const { theme } = useThemeProvider();
@@ -98,6 +102,29 @@ const Message = (props: MessageProps) => {
           );
         }
 
+        const [isExpanded, setIsExpanded] = useState(false);
+        const [isCollapsible, setIsCollapsible] = useState(false);
+        const contentRef = useRef<HTMLDivElement>(null);
+        const expandButtonBg = useColorModeValue('primary.300', 'primary.400');
+        const expandButtonHoverBg = useColorModeValue('primary.600', 'primary.300');
+
+        useEffect(() => {
+          setIsCollapsible(false);
+          setIsExpanded(false);
+
+          const timeoutId = setTimeout(() => {
+            if (contentRef.current) {
+              const exceedsThreshold = contentRef.current.scrollHeight > MAX_COLLAPSED_HEIGHT_CODE_PX;
+              setIsCollapsible(exceedsThreshold);
+            }
+          }, 50);
+
+          return () => clearTimeout(timeoutId);
+        }, [text]);
+
+        const toggleExpansion = () => {
+          setIsExpanded(!isExpanded);
+        };
         // Block Code Logic (with copy button)
         const { hasCopied, onCopy } = useClipboard(codeString);
         return (
@@ -115,7 +142,26 @@ const Message = (props: MessageProps) => {
             wordBreak="break-all" // break long words if needed
             borderWidth="1px"
             borderColor={useColorModeValue('primary.200', 'primary.700')}
+            ref={contentRef}
+            maxHeight={isCollapsible && !isExpanded ? `${MAX_COLLAPSED_HEIGHT_CODE_PX}px` : 'none'}
+            overflow="hidden"
+            transition="max-height 0.2s ease-out"
           >
+            {isCollapsible && (
+              <IconButton
+                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                icon={isExpanded ? <MdExpandLess /> : <MdExpandMore />}
+                size="sm"
+                position="absolute"
+                top="0.5rem"
+                left="0.5rem"
+                variant="ghost"
+                onClick={toggleExpansion}
+                bg={expandButtonBg}
+                _hover={{ bg: expandButtonHoverBg }}
+                zIndex="1"
+              />
+            )}
             <Tooltip label={hasCopied ? 'Copied!' : 'Copy code'} placement="top" hasArrow>
               <IconButton
                 aria-label={hasCopied ? 'Copied!' : 'Copy code'}
@@ -130,6 +176,7 @@ const Message = (props: MessageProps) => {
                 zIndex="1"
               />
             </Tooltip>
+
             <SyntaxHighlighter
               style={atomOneDark}
               language={lang}
@@ -199,13 +246,19 @@ const Message = (props: MessageProps) => {
   const { tabs, tabPanels } = useMemo(() => {
     const generatedTabs: JSX.Element[] = [];
     const generatedTabPanels: JSX.Element[] = [];
+    const answerStatusToBadgeColor = {
+      waiting: 'yellow',
+      streaming: 'blue',
+      complete: 'green',
+      error: 'red',
+    } as const;
 
     if (answers) {
       Object.values(answers).forEach((answer, index) => {
         generatedTabs.push(
           <Tab key={`${index}-${answer.model}-${answer.provider}-tab`} fontSize={'sm'}>
             {answer.status === 'streaming' && (
-              <Spinner size="sm" speed="0.65s" emptyColor="gray.200" color="blue.500" />
+              <Spinner size="sm" speed="0.33s" emptyColor="gray.200" color="primary.500" />
             )}
             <Heading size="sm" noOfLines={1} fontSize={'sm'} as="h6">
               {answer.model}
@@ -215,9 +268,13 @@ const Message = (props: MessageProps) => {
 
         generatedTabPanels.push(
           <TabPanel key={`${answer.time}-${answer.model}-${answer.provider}-tab-panel`}>
-            <Heading size="sm" mb={2} as="h6">
-              {answer.provider} - {answer.model}
-            </Heading>
+            <Stack direction="row">
+              <Heading size="sm" mb={2} as="h6">
+                {answer.provider} - {answer.model}
+              </Heading>
+              <Badge colorScheme={answerStatusToBadgeColor[answer.status]}>{answer.status}</Badge>
+            </Stack>
+
             {<ReactMarkdown components={markdownComponents}>{answer.text}</ReactMarkdown>}
           </TabPanel>,
         );

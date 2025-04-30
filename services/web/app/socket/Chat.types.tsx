@@ -33,14 +33,6 @@ export interface ChatHistoryItem {
   answer: ServerChatMessage;
 }
 
-export interface ServerStatusMessage {
-  id: string;
-  nickname: string;
-  message: string;
-  time: number;
-  status: 'error' | 'info' | 'warning' | 'success' | 'loading';
-}
-
 export interface SocketExceptionData {
   status: 'error';
   message: string;

@@ -5,7 +5,6 @@ import type {
   MessageProps,
   SocketExceptionData,
   ClientChatMessage,
-  ServerStatusMessage,
   ServerInitMessage,
   ServerChatChunkMessage,
   ServerChatEndMessage,
@@ -14,7 +13,7 @@ import type {
 } from './Chat.types';
 import { ConnectionStatus, SocketContext, SocketContextState } from './SocketContext';
 import { useAuth } from '../hooks/useAuth';
-import { useToast } from '@chakra-ui/react';
+import { Spinner, useToast } from '@chakra-ui/react';
 import { useConfig } from '../hooks/useConfig';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -29,50 +28,100 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
   const [isConnected, setIsConnected] = useState(false);
   const { appName, models: defaultModels } = useConfig();
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
-  const [thinkingModels, setThinkingModels] = useState<Record<string, boolean> | null>(null);
+  const [isBotThinking, setIsBotThinking] = useState(false);
   const [currentStatusMessage, setCurrentStatusMessage] = useState<string | null>(null);
   const { isAuthenticated, currentUser } = useAuth();
   const [messages, setMessages] = useState<MessageProps[]>([]);
   const [modelsToQuery, setModelsToQuery] = useState<string[]>(defaultModels);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   const userNickname = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User';
 
   // Initialize messages when user data is available (and messages are empty)
   useEffect(() => {
     if (messages.length === 0 && currentUser?.latestChatMessages) {
-      const initialMessages = currentUser.latestChatMessages.flatMap(
-        (msg) =>
-          [
-            {
-              type: 'user',
-              text: msg.question.prompt,
-              nickname: msg.question.nickname,
-              time: msg.question.time,
-              queryId: msg.question.queryId,
-            },
-            {
-              type: 'bot',
-              answers: Object.fromEntries(
-                msg.answer.answers.map((answer) => [
-                  answer.model,
-                  {
-                    text: answer.text,
-                    time: answer.time,
-                    provider: answer.provider,
-                    model: answer.model,
-                    status: answer.status,
-                  },
-                ]),
-              ),
-              nickname: msg.answer.nickname,
-              time: msg.answer.time,
-              queryId: msg.question.queryId,
-            },
-          ] as const,
-      );
-      setMessages(initialMessages);
+      setIsLoadingHistory(true);
+
+      // Use requestIdleCallback or setTimeout to avoid blocking the main thread
+      const loadMessages = () => {
+        try {
+          const initialMessages = currentUser.latestChatMessages.flatMap((msg) => {
+            // Optimize by creating a minimal answer object first
+            const baseAnswers = Object.fromEntries(
+              msg.answer.answers.map((answer) => [
+                answer.model,
+                {
+                  text: '', // Start with empty text
+                  time: answer.time,
+                  provider: answer.provider,
+                  model: answer.model,
+                  status: answer.status || 'complete',
+                },
+              ]),
+            );
+
+            return [
+              {
+                type: 'user',
+                text: msg.question.prompt,
+                nickname: msg.question.nickname,
+                time: msg.question.time,
+                queryId: msg.question.queryId,
+              },
+              {
+                type: 'bot',
+                answers: baseAnswers,
+                nickname: msg.answer.nickname,
+                time: msg.answer.time,
+                queryId: msg.question.queryId,
+              },
+            ] as const;
+          });
+
+          setMessages(initialMessages);
+
+          // Now populate the text content in a non-blocking way
+          setTimeout(() => {
+            setMessages((prev) => {
+              return prev.map((msg) => {
+                if (msg.type !== 'bot') return msg;
+
+                const updatedAnswers = Object.fromEntries(
+                  Object.entries(msg.answers).map(([model, answer]) => {
+                    const originalAnswer = currentUser.latestChatMessages
+                      .find((m) => m.question.queryId === msg.queryId)
+                      ?.answer.answers.find((a) => a.model === model);
+
+                    return [
+                      model,
+                      {
+                        ...answer,
+                        text: originalAnswer?.text || answer.text,
+                      },
+                    ];
+                  }),
+                );
+
+                return {
+                  ...msg,
+                  answers: updatedAnswers,
+                };
+              });
+            });
+          }, 0);
+        } finally {
+          setIsLoadingHistory(false);
+        }
+      };
+
+      // Use requestIdleCallback if available, otherwise fall back to setTimeout
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(loadMessages, { timeout: 5000 });
+      } else {
+        setTimeout(loadMessages, 0);
+      }
     }
-  }, [currentUser]);
+  }, [currentUser?.latestChatMessages]);
 
   useEffect(() => {
     if (!isAuthenticated || !currentUser) {
@@ -80,7 +129,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
         socket.disconnect();
         setSocket(null);
         setIsConnected(false);
-        setThinkingModels(null);
         setConnectionStatus('disconnected');
         setMessages([]);
         setCurrentStatusMessage(null);
@@ -104,12 +152,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     const handleConnect = () => {
       setIsConnected(true);
       setConnectionStatus(connectionStatus === 'disconnected' ? 'reconnecting' : 'connected');
-      setThinkingModels(null);
+      setIsBotThinking(false);
     };
 
     const handleDisconnect = (reason: string) => {
       setIsConnected(false);
-      setThinkingModels(null);
+      setIsBotThinking(false);
       console.warn('Socket disconnected', reason);
       setConnectionStatus('disconnected');
       setCurrentStatusMessage(null);
@@ -118,7 +166,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
 
     const handleConnectError = (error: Error) => {
       setIsConnected(false);
-      setThinkingModels(null);
+      setIsBotThinking(false);
       setConnectionStatus('disconnected');
       console.warn(`Socket connection error`, error);
     };
@@ -166,22 +214,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       });
     };
 
-    // Centralized function to update thinking models and status message
-    const updateThinkingState = (model: string, isThinking: boolean) => {
-      setThinkingModels((prev) => {
-        const nextThinkingModels = { ...prev, [model]: isThinking };
-        const stillThinking = Object.keys(nextThinkingModels).filter((model) => nextThinkingModels[model]);
-
-        if (stillThinking.length === 0) {
-          setCurrentStatusMessage(null);
-        } else {
-          setCurrentStatusMessage(`Thinking: ${stillThinking.join(', ')}...`);
-        }
-
-        return nextThinkingModels;
-      });
-    };
-
     const handleChatChunk = (receivedMsg: ServerChatChunkMessage) => {
       updateBotMessageAnswer(receivedMsg.queryId, receivedMsg.model, (existingAnswer) => ({
         ...existingAnswer,
@@ -192,17 +224,16 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
         time: null,
       }));
 
-      setThinkingModels((prev) => ({ ...prev, [receivedMsg.model]: true }));
       setCurrentStatusMessage(`Streaming from ${receivedMsg.model}...`);
     };
 
     const handleChatEnd = (receivedMsg: ServerChatEndMessage) => {
       updateBotMessageAnswer(receivedMsg.queryId, receivedMsg.model, (existingAnswer) => ({
         ...existingAnswer,
-        status: 'complete',
+        status: existingAnswer.status === 'error' ? 'error' : 'complete',
         time: receivedMsg.time,
       }));
-      updateThinkingState(receivedMsg.model, false);
+      setIsBotThinking(false);
     };
 
     const handleChatError = (receivedMsg: ServerChatErrorMessage) => {
@@ -212,7 +243,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
         time: receivedMsg.time,
         text: `Error: ${receivedMsg.error}`,
       }));
-      updateThinkingState(receivedMsg.model, false);
 
       toast({
         id: `chat-error-${receivedMsg.queryId}-${receivedMsg.model}`,
@@ -226,7 +256,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     };
 
     const handleException = (errorData: SocketExceptionData) => {
-      setThinkingModels(null);
       setCurrentStatusMessage('An error occurred...');
       console.error('Socket exception:', errorData);
     };
@@ -235,34 +264,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       console.log(`Socket attempting to reconnect... Attempt ${attempt}`);
       setConnectionStatus('reconnecting');
       setIsConnected(false);
-      setThinkingModels(null);
-    };
-
-    const handleStatusUpdate = (statusData: ServerStatusMessage) => {
-      if (statusData && typeof statusData.message === 'string') {
-        if (toast.isActive(statusData.id)) {
-          toast.update(statusData.id, {
-            title: statusData.message,
-            status: statusData.status || 'info',
-            duration: 2000,
-          });
-        } else {
-          toast({
-            id: statusData.id,
-            title: statusData.message,
-            status: statusData.status || 'info',
-            duration: 2000,
-            isClosable: true,
-            position: 'top-right',
-            orientation: 'vertical',
-            variant: 'subtle',
-          });
-        }
-
-        setCurrentStatusMessage(statusData.message);
-      } else {
-        console.warn('Received invalid status update format:', statusData);
-      }
     };
 
     // Attach listeners
@@ -277,7 +278,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     newSocket.on('streamChunk', handleChatChunk);
     newSocket.on('streamEnd', handleChatEnd);
     newSocket.on('streamError', handleChatError);
-    newSocket.on('statusUpdate', handleStatusUpdate);
     newSocket.on('exception', handleException);
 
     return () => {
@@ -287,7 +287,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       newSocket.io.off('reconnect_attempt', handleReconnectAttempt);
 
       newSocket.off('init', handleInit);
-      newSocket.off('statusUpdate', handleStatusUpdate);
       newSocket.off('exception', handleException);
       newSocket.off('streamChunk', handleChatChunk);
       newSocket.off('streamEnd', handleChatEnd);
@@ -296,7 +295,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       newSocket.disconnect();
       setSocket(null);
       setIsConnected(false);
-      setThinkingModels(null);
       setConnectionStatus('disconnected');
       setCurrentStatusMessage(null);
     };
@@ -305,7 +303,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
   const sendMessage = useCallback(
     (messageText: string) => {
       const trimmedMessage = messageText.trim();
-      if (!trimmedMessage || !socket || !isConnected || !!thinkingModels) {
+      if (!trimmedMessage || !socket || !isConnected || isBotThinking) {
         return;
       }
 
@@ -349,33 +347,27 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
         },
       ]);
 
-      const initialThinkingState = modelsToQuery.reduce(
-        (acc, model) => {
-          acc[model] = true;
-          return acc;
-        },
-        {} as Record<string, boolean>,
-      );
-      setThinkingModels(initialThinkingState);
+      setIsBotThinking(true);
       setCurrentStatusMessage(`Thinking: ${modelsToQuery.join(', ')}...`);
 
       socket.emit('chat-stream', messageToSend);
     },
-    [socket, isConnected, userNickname, modelsToQuery, thinkingModels, appName],
+    [socket, isConnected, userNickname, modelsToQuery, appName],
   );
-
-  const isBotThinking = (thinkingModels && Object.values(thinkingModels).some((isThinking) => isThinking)) || false;
 
   const contextValue: SocketContextState = {
     messages,
     isConnected,
     connectionStatus,
-    thinkingModels,
     isBotThinking,
     currentStatusMessage,
     sendMessage,
     setModelsToQuery,
   };
+
+  if (isLoadingHistory) {
+    return <Spinner thickness="4px" speed="0.65s" emptyColor="gray.200" color="blue.500" size="xl" />;
+  }
 
   return <SocketContext.Provider value={contextValue}>{children}</SocketContext.Provider>;
 };

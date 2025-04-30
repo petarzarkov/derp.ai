@@ -10,14 +10,7 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { DefaultEventsMap, Server, Socket } from 'socket.io';
-import {
-  ChatChunkReply,
-  ChatEndReply,
-  ChatErrorReply,
-  ChatMessage,
-  ChatInitReply,
-  StatusMessageReply,
-} from './chat.entity';
+import { ChatChunkReply, ChatEndReply, ChatErrorReply, ChatMessage, ChatInitReply } from './chat.entity';
 import { WebsocketsExceptionFilter } from './events.filter';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { ContextLogger } from 'nestjs-context-logger';
@@ -35,10 +28,9 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface EmitEvents {
   init: (message: ChatInitReply) => void;
-  statusUpdate: (message: StatusMessageReply) => void;
   streamChunk: (message: ChatChunkReply) => void;
-  streamError: (message: ChatErrorReply) => void;
   streamEnd: (message: ChatEndReply) => void;
+  streamError: (message: ChatErrorReply) => void;
 }
 
 export type EmitToClient = <K extends keyof EmitEvents>(ev: K, message: Parameters<EmitEvents[K]>[0]) => void;
@@ -182,6 +174,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
         this.server.to(socket.id).emit('streamError', {
           queryId,
           model,
+          provider: model,
           error: `An unexpected backend error occurred`,
           nickname: this.#botName,
           time: Date.now(),
@@ -189,6 +182,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, 
         this.server.to(socket.id).emit('streamEnd', {
           queryId,
           model,
+          provider: model,
           nickname: this.#botName,
           time: Date.now(),
         });
