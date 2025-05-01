@@ -286,12 +286,13 @@ export const validateConfig = (config: Record<string, unknown>) => {
     },
     gitInfo: {
       commit: {
-        sha: process.env.GIT_COMMIT || process.env.KOYEB_GIT_SHA,
-        message: process.env.GIT_COMMIT_MESSAGE || process.env.KOYEB_GIT_COMMIT_MESSAGE,
-        author: process.env.GIT_COMMIT_AUTHOR || process.env.KOYEB_GIT_COMMIT_AUTHOR,
+        sha: process.env.GIT_COMMIT || process.env.COMMIT_SHA,
+        message: process.env.GIT_COMMIT_MESSAGE || process.env.COMMIT_MESSAGE,
+        author: process.env.GIT_COMMIT_AUTHOR || process.env.COMMIT_AUTHOR,
       },
-      branch: process.env.GIT_BRANCH,
-      repository: process.env.GIT_REPOSITORY,
+      branch: process.env.GIT_BRANCH || process.env.BRANCH_NAME,
+      repository: process.env.GIT_REPOSITORY || process.env.REPO_NAME,
+      tag: process.env.GIT_TAG || process.env.TAG_NAME,
     },
     redis: {
       host: validatedConfig.REDIS_HOST,

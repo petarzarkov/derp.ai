@@ -12,7 +12,7 @@ import {
 import { FC } from 'react';
 import { useConfig } from '../../hooks/useConfig';
 
-export const PrivacyPolicy: FC = () => {
+const PrivacyPolicy: FC = () => {
   const { appName } = useConfig();
   const lastUpdated = 'April 22, 2025';
 
@@ -178,3 +178,5 @@ export const PrivacyPolicy: FC = () => {
     </VStack>
   );
 };
+
+export default PrivacyPolicy;

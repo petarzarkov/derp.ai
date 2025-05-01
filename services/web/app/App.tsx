@@ -2,9 +2,11 @@ import { Layout } from './components/Layout';
 import './index.css';
 import { Route, Routes } from 'react-router-dom';
 import { ChatPage } from './screens/chat/ChatPage';
-import { NotFound } from './screens/NotFound';
 import { AuthWrapper } from './auth/AuthWrapper';
-import { LegalPage } from './screens/legal/LegalPage';
+import { lazy } from 'react';
+
+const LegalPage = lazy(() => import('./screens/legal/LegalPage'));
+const NotFound = lazy(() => import('./screens/NotFound'));
 
 const App: React.FC = () => {
   return (

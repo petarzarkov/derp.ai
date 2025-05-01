@@ -1,8 +1,9 @@
-import { useRef } from 'react';
+import { lazy, useRef } from 'react';
 import { Flex, Box } from '@chakra-ui/react';
 import { SocketProvider } from '../../socket/SocketProvider';
-import { ChatBox } from './ChatBox';
 import { useConfig } from '../../hooks/useConfig';
+
+const ChatBox = lazy(() => import('./ChatBox'));
 
 export function ChatPage() {
   const scrollableMessagesRef = useRef<HTMLDivElement>(null);

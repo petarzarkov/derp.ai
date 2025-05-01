@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, lazy } from 'react';
 import {
   Flex,
   Stack,
@@ -23,16 +23,17 @@ import {
 } from '@chakra-ui/react';
 import { FiSend, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import { useSocket, useThemeProvider } from '@hooks';
-import Message from './Message';
 import TextareaAutosize from 'react-textarea-autosize';
 import { useConfig } from '../../hooks/useConfig';
 import { ChevronDownIcon } from '@chakra-ui/icons';
+
+const Message = lazy(() => import('./Message'));
 
 interface ChatBoxProps {
   isFixedInput?: boolean;
 }
 
-export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
+function ChatBox({ isFixedInput = false }: ChatBoxProps) {
   const {
     messages,
     isConnected,
@@ -264,3 +265,5 @@ export function ChatBox({ isFixedInput = false }: ChatBoxProps) {
     </Flex>
   );
 }
+
+export default ChatBox;

@@ -1,14 +1,15 @@
 import { Box, Flex, Heading, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/react';
-import { FC, useCallback, useMemo } from 'react';
+import { FC, lazy, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { TermsOfService } from './TermsOfService';
-import { PrivacyPolicy } from './PrivacyPolicy';
 import { useThemeProvider } from '@hooks';
 import { CustomTab } from '../../components/CustomTab';
 import { NavLink } from '../../components/NavBar/NavLink';
 import { IoIosArrowBack } from 'react-icons/io';
 
-export const LegalPage: FC = () => {
+const PrivacyPolicy = lazy(() => import('./PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./TermsOfService'));
+
+const LegalPage: FC = () => {
   const { theme } = useThemeProvider();
   const location = useLocation();
   const navigate = useNavigate();
@@ -58,3 +59,5 @@ export const LegalPage: FC = () => {
     </Box>
   );
 };
+
+export default LegalPage;

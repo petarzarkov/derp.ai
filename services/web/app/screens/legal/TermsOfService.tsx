@@ -2,7 +2,7 @@ import { Heading, Text, VStack, UnorderedList, ListItem, Link as ChakraLink } fr
 import { useConfig } from '../../hooks/useConfig';
 import { FC } from 'react';
 
-export const TermsOfService: FC = () => {
+const TermsOfService: FC = () => {
   const effectiveDate = 'April 25, 2025';
   const { appName: companyName, supportEmail } = useConfig();
 
@@ -131,3 +131,5 @@ export const TermsOfService: FC = () => {
     </VStack>
   );
 };
+
+export default TermsOfService;
