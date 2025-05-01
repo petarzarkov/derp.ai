@@ -114,8 +114,8 @@ export const getNewVersion = (version: string) => {
     // In CI, we create a single commit for all the version bumps
     if (process.env.CI) {
       const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
-      // Create a subject line summarizing the bumped packages and including [skip ci]
-      const commitSubject = `[branch|${branch}] Version bumps for ${bumpedPackages.join(', ')} [skip ci]`;
+      // Create a subject line summarizing the bumped packages
+      const commitSubject = `[branch|${branch}] Version bumps for ${bumpedPackages.join(', ')}`;
       const commitBody = `\n\nTriggered by commit:\nSHA: ${originalCommitSha}\nMessage: ${originalCommitMessage}`;
 
       // Stage all modified package.json files. This handles all packages updated in the loop.
