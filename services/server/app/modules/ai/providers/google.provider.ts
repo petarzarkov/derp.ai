@@ -31,6 +31,9 @@ export class GoogleProvider extends BaseProvider {
       const data = JSON.parse(jsonString);
 
       if ('error' in data) {
+        if (!data.error.message) {
+          this.logger.error('Unknown provider error', { error: data.error });
+        }
         throw new Error(data.error.message || 'Unknown provider error');
       }
 

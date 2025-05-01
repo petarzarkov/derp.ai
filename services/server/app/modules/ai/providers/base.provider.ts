@@ -3,7 +3,7 @@ import { EmitToClient } from '../../events/events.gateway';
 import { AIConfig, AIModel } from '../ai.entity';
 
 export abstract class BaseProvider {
-  #logger: ContextLogger;
+  logger: ContextLogger;
   protected received = '';
   protected processedBufferIndex = 0; // Add state to track processed buffer index
 
@@ -15,7 +15,7 @@ export abstract class BaseProvider {
     protected readonly queryId: string,
     protected readonly nickname: string,
   ) {
-    this.#logger = new ContextLogger(this.constructor.name);
+    this.logger = new ContextLogger(this.constructor.name);
   }
 
   abstract prepareRequest(prompt: string): {
@@ -43,7 +43,7 @@ export abstract class BaseProvider {
 
       if (!res.ok || !res.body) {
         const message = 'Bad response from provider';
-        this.#logger.error(message, { res, queryId: this.queryId, model: this.model });
+        this.logger.error(message, { res, queryId: this.queryId, model: this.model });
         this.emit('streamError', {
           model: this.model,
           provider: this.config.provider,
@@ -68,7 +68,7 @@ export abstract class BaseProvider {
           this.received += newlyProcessedText;
         } catch (error) {
           const message = 'Parse error';
-          this.#logger.error(message, { error, queryId: this.queryId, model: this.model });
+          this.logger.error(message, { error, queryId: this.queryId, model: this.model });
           this.emit('streamError', {
             model: this.model,
             provider: this.config.provider,
@@ -92,7 +92,7 @@ export abstract class BaseProvider {
     } catch (err) {
       const isTimeout = err instanceof Error && err.name === 'AbortError';
       const message = isTimeout ? 'Request timed out' : 'Unexpected failure';
-      this.#logger.error(message, { err, queryId: this.queryId, model: this.model });
+      this.logger.error(message, { err, queryId: this.queryId, model: this.model });
       this.emit('streamError', {
         model: this.model,
         provider: this.config.provider,
