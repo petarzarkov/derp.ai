@@ -77,15 +77,13 @@ function ChatBox({ isFixedInput = false }: ChatBoxProps) {
 
     let shouldScroll = false;
     const lastMessage = messages[messages.length - 1];
-    if (lastMessage.type === 'user') {
-      shouldScroll = true;
-    } else if (
-      lastMessage.type === 'bot' &&
-      lastMessage.answers &&
-      Object.keys(lastMessage.answers).length > 0 &&
-      Object.values(lastMessage.answers).every((answer) => answer.status === 'complete')
-    ) {
-      shouldScroll = true;
+    if (lastMessage.type === 'bot' && lastMessage.answers) {
+      const hasStreamingAnswers = Object.values(lastMessage.answers).some((answer) => answer.status === 'streaming');
+      const allAnswersComplete = Object.values(lastMessage.answers).every((answer) => answer.status === 'complete');
+
+      if (hasStreamingAnswers || allAnswersComplete) {
+        shouldScroll = true;
+      }
     }
 
     if (shouldScroll) {
@@ -106,7 +104,7 @@ function ChatBox({ isFixedInput = false }: ChatBoxProps) {
         setTimeout(() => inputRef.current?.focus(), 0);
       }
     }
-    setImmediate(() => scrollToBottom());
+    scrollToBottom();
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
