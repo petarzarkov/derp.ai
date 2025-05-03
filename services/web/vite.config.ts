@@ -14,8 +14,7 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom', 'react-router-dom', 'react-icons'],
-            '@chakra-ui/icons': ['@chakra-ui/icons'],
-            '@chakra-ui/react': ['@chakra-ui/react'],
+            ui: ['@chakra-ui/icons', '@chakra-ui/react'],
             ...langs.reduce((acc: Record<string, string[]>, lang: string) => {
               acc[`react-syntax-highlighter/dist/esm/languages/hljs/${lang}`] = [
                 `react-syntax-highlighter/dist/esm/languages/hljs/${lang}`,
