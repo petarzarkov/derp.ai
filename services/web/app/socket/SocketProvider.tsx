@@ -24,6 +24,7 @@ export interface SocketProviderProps {
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children, serverUrl }) => {
   const toast = useToast();
+  const defaultBotStartText = 'thinking...';
   const [socket, setSocket] = useState<SocketClient | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { appName, models: defaultModels } = useConfig();
@@ -219,7 +220,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
         ...existingAnswer,
         model: receivedMsg.model,
         provider: receivedMsg.provider,
-        text: (existingAnswer?.text || '') + receivedMsg.text,
+        text:
+          (existingAnswer?.text
+            ? existingAnswer?.text?.includes(defaultBotStartText)
+              ? ''
+              : existingAnswer.text
+            : '') + receivedMsg.text,
         status: 'streaming',
         time: null,
       }));
@@ -337,7 +343,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
             modelsToQuery.map((model) => [
               model,
               {
-                text: `${model} thinking...`,
+                text: `${model} ${defaultBotStartText}`,
                 time: messageToSend.time,
                 provider: 'prompt',
                 model: model,

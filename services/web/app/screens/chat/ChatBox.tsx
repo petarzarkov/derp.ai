@@ -71,18 +71,31 @@ function ChatBox({ isFixedInput = false }: ChatBoxProps) {
   const { color: statusColor, text: statusText } = statusCtx[connectionStatus];
 
   useEffect(() => {
-    if (!isBotThinking && messages.length > 0) {
-      const completedMessages = messages.filter(
-        (msg) =>
-          msg.type === 'bot' &&
-          msg.answers &&
-          Object.values(msg.answers).every((answer) => answer.status === 'complete'),
-      );
-      if (completedMessages.length > 0) {
-        scrollToBottom();
-      }
+    if (messages.length === 0) {
+      return;
     }
-  }, [messages, isBotThinking, isFixedInput]);
+
+    let shouldScroll = false;
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.type === 'user') {
+      shouldScroll = true;
+    } else if (
+      lastMessage.type === 'bot' &&
+      lastMessage.answers &&
+      Object.keys(lastMessage.answers).length > 0 &&
+      Object.values(lastMessage.answers).every((answer) => answer.status === 'complete')
+    ) {
+      shouldScroll = true;
+    }
+
+    if (shouldScroll) {
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [messages]);
 
   const handleSendMessage = () => {
     const trimmedMessage = messageInput.trim();

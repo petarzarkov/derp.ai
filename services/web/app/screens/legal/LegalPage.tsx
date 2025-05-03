@@ -13,19 +13,16 @@ const LegalPage: FC = () => {
   const { theme } = useThemeProvider();
   const location = useLocation();
   const navigate = useNavigate();
-  // Determine the active tab index based on the current URL path
   const activeIndex = useMemo(() => {
     if (location.pathname.includes('/terms-of-service')) {
-      return 1; // Index of the Terms of Service tab
+      return 1;
     }
-    return 0; // Default to Privacy Policy tab (index 0)
+    return 0;
   }, [location.pathname]);
 
   const handleTabsChange = useCallback(
     (index: number) => {
-      // Update the URL based on the selected tab index
       const path = index === 1 ? '/terms-of-service' : '/privacy-policy';
-      // Use replace to avoid adding multiple history entries for tab switching
       navigate(path, { replace: true });
     },
     [navigate],
