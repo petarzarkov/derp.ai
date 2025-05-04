@@ -157,15 +157,13 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
           <VStack spacing={4} alignSelf="stretch">
             <Popover placement="right-start" trigger="click" isOpen={isSettingsOpen} onClose={onSettingsClose}>
               <PopoverTrigger>
-                <Tooltip label="Settings" placement="right" hasArrow>
-                  <IconButton
-                    aria-label="Settings"
-                    icon={<Icon as={FiSettings} />}
-                    variant="ghost"
-                    onClick={onSettingsOpen}
-                    size="lg"
-                  />
-                </Tooltip>
+                <IconButton
+                  aria-label="Settings"
+                  icon={<Icon as={FiSettings} />}
+                  variant="ghost"
+                  onClick={onSettingsOpen}
+                  size="lg"
+                />
               </PopoverTrigger>
               <PopoverContent zIndex="popover" bg={popoverBg} width="auto" _focus={{ boxShadow: 'lg' }}>
                 <PopoverArrow bg={popoverBg} />
