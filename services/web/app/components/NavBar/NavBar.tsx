@@ -306,6 +306,7 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
                 </PopoverContent>
               </Popover>
             )}
+            <Box py={5} />
           </VStack>
         </Flex>
 
