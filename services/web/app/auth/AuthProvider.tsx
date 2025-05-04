@@ -1,4 +1,5 @@
 import { ReactNode, useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthState, UserProfile, AuthContextValue, AuthContext, AuthProviderType } from './AuthContext';
 import { useConfig } from '../hooks/useConfig';
 
@@ -8,6 +9,7 @@ export interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const { serverUrl } = useConfig();
+  const navigate = useNavigate();
   const [authState, setAuthState] = useState<AuthState>({
     currentUser: null,
     isAuthenticated: false,
@@ -179,6 +181,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isLoading: false,
         error: null,
       });
+
+      navigate('/');
     }
   }, [serverUrl]);
 

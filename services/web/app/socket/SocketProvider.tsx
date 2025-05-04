@@ -181,7 +181,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
           isClosable: true,
           position: 'top-left',
           orientation: 'vertical',
-          variant: 'solid',
+          variant: 'subtle',
         });
       }
     };
@@ -373,7 +373,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
   };
 
   if (isLoadingHistory) {
-    return <Spinner thickness="4px" speed="0.65s" emptyColor="gray.200" color="blue.500" size="xl" />;
+    return <Spinner thickness="4px" speed="0.65s" emptyColor="primary.200" color="primary.500" size="xl" />;
   }
 
   return <SocketContext.Provider value={contextValue}>{children}</SocketContext.Provider>;

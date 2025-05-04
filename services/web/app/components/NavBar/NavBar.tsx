@@ -35,7 +35,9 @@ import {
   Divider,
   useToast,
   Link,
+  Icon,
 } from '@chakra-ui/react';
+import { Link as RouterLink } from 'react-router-dom';
 import { MoonIcon, SunIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { ColorTheme, themes } from '@theme';
 import { BsPaletteFill } from 'react-icons/bs';
@@ -48,6 +50,7 @@ import { SiSwagger } from 'react-icons/si';
 import { useConfig } from '../../hooks/useConfig';
 import { NavLink } from './NavLink';
 import { PiPackageThin } from 'react-icons/pi';
+import { FiSettings } from 'react-icons/fi';
 
 interface NavBarProps {
   isNavOpen: boolean;
@@ -57,6 +60,7 @@ interface NavBarProps {
 export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
   const { swaggerDocsUrl, appName } = useConfig();
   const { isOpen: isPalOpen, onOpen: palOnOpen, onClose: palOnClose } = useDisclosure();
+  const { isOpen: isSettingsOpen, onOpen: onSettingsOpen, onClose: onSettingsClose } = useDisclosure(); // Disclosure for Settings Popover
   const { theme, setTheme } = useThemeProvider();
   const { toggleColorMode } = useColorMode();
   const { logout, deleteAccount, currentUser, isAuthenticated } = useAuth();
@@ -141,41 +145,111 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
           px={2}
           opacity={isNavOpen ? 1 : 0}
           visibility={isNavOpen ? 'visible' : 'hidden'}
-          pointerEvents={isNavOpen ? 'auto' : 'none'} // Disable interaction when collapsed
-          transition="opacity 0.2s 0.1s, visibility 0.2s 0.1s" // Delay transition slightly
+          pointerEvents={isNavOpen ? 'auto' : 'none'}
+          transition="opacity 0.2s 0.1s, visibility 0.2s 0.1s"
         >
           <VStack spacing={5} alignSelf="stretch">
             <NavLink label={'Chat'} key={'chat'} to={'/'} icon={<IoMdChatbubbles />}>
               {'Chat'}
             </NavLink>
-            <Tooltip label="Change Theme" placement="right" hasArrow>
-              <IconButton
-                aria-label="Change Theme"
-                icon={<BsPaletteFill />}
-                variant="ghost"
-                onClick={palOnOpen}
-                size="lg"
-              />
-            </Tooltip>
-            <Tooltip label="Toggle Color Mode" placement="right" hasArrow>
-              <IconButton
-                aria-label="Toggle Color Mode"
-                icon={ColorModeIcon}
-                variant="ghost"
-                onClick={toggleColorMode}
-                size="lg"
-              />
-            </Tooltip>
           </VStack>
 
           <VStack spacing={4} alignSelf="stretch">
-            <NavLink label={'Legal'} key={'Legal'} to={'/privacy-policy'} icon={<MdPrivacyTip />}>
-              {'Legal'}
-            </NavLink>
+            <Popover placement="right-start" trigger="click" isOpen={isSettingsOpen} onClose={onSettingsClose}>
+              <PopoverTrigger>
+                <Tooltip label="Settings" placement="right" hasArrow>
+                  <IconButton
+                    aria-label="Settings"
+                    icon={<Icon as={FiSettings} />}
+                    variant="ghost"
+                    onClick={onSettingsOpen}
+                    size="lg"
+                  />
+                </Tooltip>
+              </PopoverTrigger>
+              <PopoverContent zIndex="popover" bg={popoverBg} width="auto" _focus={{ boxShadow: 'lg' }}>
+                <PopoverArrow bg={popoverBg} />
+                <PopoverCloseButton />
+                <PopoverHeader fontWeight="semibold" borderBottomWidth="1px">
+                  Settings
+                </PopoverHeader>
+                <PopoverBody>
+                  <VStack align="start" spacing={2}>
+                    <Button
+                      leftIcon={<BsPaletteFill />}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        onSettingsClose();
+                        palOnOpen();
+                      }}
+                      width="full"
+                      justifyContent="start"
+                    >
+                      Change Theme
+                    </Button>
+                    <Divider />
 
-            <Tooltip label={`App Version: ${import.meta.env.VITE_VERSION}`} placement="right" hasArrow>
-              <IconButton aria-label="App Version" icon={<PiPackageThin />} variant="ghost" size="lg" />
-            </Tooltip>
+                    <Button
+                      leftIcon={ColorModeIcon}
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleColorMode}
+                      width="full"
+                      justifyContent="start"
+                    >
+                      Toggle Color Mode
+                    </Button>
+                    <Divider />
+
+                    <Tooltip label={'Legal'} placement="right" hasArrow>
+                      <Button
+                        as={RouterLink}
+                        key={'Legal-settings'}
+                        to={'/privacy-policy'}
+                        leftIcon={<MdPrivacyTip />}
+                        variant="ghost"
+                        size="sm"
+                        width="full"
+                        justifyContent="start"
+                        aria-label="Legal"
+                      >
+                        Legal
+                      </Button>
+                    </Tooltip>
+                    <Divider />
+
+                    <Tooltip label={`App Version: ${import.meta.env.VITE_VERSION}`} placement="right" hasArrow>
+                      <Button
+                        leftIcon={<PiPackageThin />}
+                        variant="ghost"
+                        size="sm"
+                        width="full"
+                        justifyContent="start"
+                        aria-label="App Version"
+                      >
+                        App Version: {import.meta.env.VITE_VERSION}
+                      </Button>
+                    </Tooltip>
+                    <Divider />
+
+                    <Button
+                      as={Link}
+                      leftIcon={<SiSwagger />}
+                      variant="ghost"
+                      href={swaggerDocsUrl}
+                      isExternal
+                      size="sm"
+                      width="full"
+                      justifyContent="start"
+                    >
+                      API Docs
+                    </Button>
+                  </VStack>
+                </PopoverBody>
+              </PopoverContent>
+            </Popover>
+
             {isAuthenticated && currentUser && (
               <Popover placement="right-start" trigger="click" isLazy>
                 <PopoverTrigger>
@@ -234,18 +308,6 @@ export const NavBar: FC<NavBarProps> = ({ isNavOpen, onToggle }) => {
                 </PopoverContent>
               </Popover>
             )}
-
-            <Tooltip label="API Docs" placement="right" hasArrow>
-              <IconButton
-                as={Link}
-                aria-label="API Docs"
-                icon={<SiSwagger />}
-                variant="ghost"
-                href={swaggerDocsUrl}
-                isExternal
-                size="lg"
-              />
-            </Tooltip>
           </VStack>
         </Flex>
 

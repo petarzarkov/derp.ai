@@ -14,12 +14,6 @@ import {
   MenuItemOption,
   MenuList,
   MenuOptionGroup,
-  Box,
-  Tag,
-  TagCloseButton,
-  TagLabel,
-  Wrap,
-  WrapItem,
 } from '@chakra-ui/react';
 import { FiSend, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
 import { useSocket, useThemeProvider } from '@hooks';
@@ -51,7 +45,7 @@ function ChatBox({ isFixedInput = false }: ChatBoxProps) {
 
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   useEffect(() => {
-    setSelectedModels([models[0]]);
+    setSelectedModels(models);
   }, [models]);
 
   useEffect(() => {
@@ -122,10 +116,6 @@ function ChatBox({ isFixedInput = false }: ChatBoxProps) {
     setSelectedModels(Array.isArray(values) ? values : [values]);
   };
 
-  const handleRemoveModel = (modelToRemove: string) => {
-    setSelectedModels(selectedModels.filter((model) => model !== modelToRemove));
-  };
-
   const inputBgColor = useColorModeValue('white', 'primary.700');
   const inputPlaceholder =
     connectionStatus !== 'connected'
@@ -176,7 +166,7 @@ function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               {models && models.length > 0 && (
                 <Menu closeOnSelect={false} colorScheme={theme}>
                   <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="xs" variant="outline">
-                    Models
+                    {`Models (${selectedModels.length})`}
                   </MenuButton>
                   <MenuList>
                     <MenuOptionGroup type="checkbox" value={selectedModels} onChange={handleModelSelect}>
@@ -224,25 +214,6 @@ function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               pr="40px"
             />
           </Flex>
-
-          {selectedModels.length > 0 && (
-            <Flex w="full" pt={selectedModels.length > 0 ? 1 : 0} justifyContent="space-between" alignItems="center">
-              <Box w="full">
-                <Wrap spacing={1}>
-                  {selectedModels.map((model) => (
-                    <WrapItem key={model}>
-                      <Tag size="sm" variant="solid" colorScheme="blue">
-                        <TagLabel>{model}</TagLabel>
-                        {selectedModels.length > (models?.length === 1 ? 0 : 1) && (
-                          <TagCloseButton onClick={() => handleRemoveModel(model)} />
-                        )}
-                      </Tag>
-                    </WrapItem>
-                  ))}
-                </Wrap>
-              </Box>
-            </Flex>
-          )}
 
           <IconButton
             onClick={handleSendMessage}
