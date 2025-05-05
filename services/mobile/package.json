@@ -1,0 +1,34 @@
+{
+  "name": "derp-ai-mobile",
+  "version": "0.0.0",
+  "main": "index.ts",
+  "author": {
+    "name": "Petar Zarkov",
+    "email": "derpai.app@gmail.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/petarzarkov/derp.ai.git"
+  },
+  "homepage": "https://github.com/petarzarkov/derp.ai/tree/main/services/mobile",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "expo": "~53.0.7",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-native": "0.79.2"
+  },
+  "devDependencies": {
+    "eas-cli": "^16.4.0",
+    "@babel/core": "^7.25.2",
+    "@types/react": "~19.0.10",
+    "typescript": "~5.8.3"
+  },
+  "private": true
+}
