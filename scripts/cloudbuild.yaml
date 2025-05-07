@@ -1,17 +1,4 @@
 steps:
-  # Step 1: Extract Git metadata
-  - name: 'alpine/git'
-    id: Git Metadata
-    entrypoint: sh
-    args:
-      - -c
-      - |
-        mkdir -p /workspace
-        echo "GIT_COMMIT=$(git rev-parse HEAD)" > /workspace/git.env
-        echo "GIT_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> /workspace/git.env
-        echo "GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> /workspace/git.env
-
-  # Step 2: Docker build with metadata passed as build-args
   - name: gcr.io/cloud-builders/docker
     env:
       - DOCKER_BUILDKIT=1
@@ -19,29 +6,15 @@ steps:
     args:
       - -c
       - |
-        set -e
-
-        echo "Sourcing /workspace/git.env..."
-        if [ -f /workspace/git.env ]; then
-          . /workspace/git.env
-        else
-          echo "Error: /workspace/git.env not found!"
-          exit 1
-        fi
-
-        echo "Starting Docker build..."
-        # Use $$ to escape variables intended for shell expansion (those from git.env)
         docker build --no-cache \
-          --build-arg GIT_COMMIT="$${GIT_COMMIT}" \
-          --build-arg GIT_COMMIT_AUTHOR="$${GIT_COMMIT_AUTHOR}" \
-          --build-arg GIT_BRANCH="$${GIT_BRANCH}" \
+          --build-arg GIT_COMMIT="$COMMIT_SHA" \
+          --build-arg GIT_COMMIT_AUTHOR="$TRIGGER_NAME" \
+          --build-arg GIT_BRANCH="$BRANCH_NAME" \
           --build-arg GIT_REPOSITORY="$REPO_NAME" \
           -t $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA \
           -f Dockerfile .
-        echo "Docker build completed."
     id: Build
 
-  # Step 3: Docker push
   - name: gcr.io/cloud-builders/docker
     args:
       - push
@@ -49,7 +22,6 @@ steps:
         $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
     id: Push
 
-  # Step 4: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
     args:
       - run
