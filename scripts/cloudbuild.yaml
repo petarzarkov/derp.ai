@@ -8,8 +8,6 @@ steps:
       - |
         mkdir -p /workspace
         echo "GIT_COMMIT=$(git rev-parse HEAD)" > /workspace/git.env
-        COMMIT_MESSAGE_CONTENT=$(git log -1 --pretty=%B | tr '\n' ' ')
-        echo GIT_COMMIT_MESSAGE="\"$${COMMIT_MESSAGE_CONTENT}\"" >> /workspace/git.env
         echo "GIT_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> /workspace/git.env
         echo "GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> /workspace/git.env
 
@@ -35,10 +33,9 @@ steps:
         # Use $$ to escape variables intended for shell expansion (those from git.env)
         docker build --no-cache \
           --build-arg GIT_COMMIT="$${GIT_COMMIT}" \
-          --build-arg GIT_COMMIT_MESSAGE="$${GIT_COMMIT_MESSAGE}" \
           --build-arg GIT_COMMIT_AUTHOR="$${GIT_COMMIT_AUTHOR}" \
           --build-arg GIT_BRANCH="$${GIT_BRANCH}" \
-          --build-arg GIT_REPOSITORY="$REPO_NAME" \ # Using built-in $REPO_NAME
+          --build-arg GIT_REPOSITORY="$REPO_NAME" \
           -t $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA \
           -f Dockerfile .
         echo "Docker build completed."
