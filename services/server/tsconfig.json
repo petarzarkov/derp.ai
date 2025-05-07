@@ -4,7 +4,8 @@
     "outDir": "./build",
     "lib": ["ESNext", "DOM"],
     "typeRoots": ["@types", "node_modules/@types"],
-    "baseUrl": "."
+    "baseUrl": ".",
+    "removeComments": true
   },
   "files": ["@types/express.d.ts", "@types/express-session.d.ts"],
   "include": ["app"]

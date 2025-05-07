@@ -19,13 +19,14 @@ steps:
     args:
       - -c
       - |
-        source /workspace/git.env
+        set -e
+        . /workspace/git.env
         docker build --no-cache \
-          --build-arg GIT_COMMIT="$GIT_COMMIT" \
-          --build-arg GIT_COMMIT_MESSAGE="$GIT_COMMIT_MESSAGE" \
-          --build-arg GIT_COMMIT_AUTHOR="$GIT_COMMIT_AUTHOR" \
-          --build-arg GIT_BRANCH="$GIT_BRANCH" \
-          --build-arg GIT_REPOSITORY="$REPO_NAME" \
+          --build-arg GIT_COMMIT="${GIT_COMMIT}" \
+          --build-arg GIT_COMMIT_MESSAGE="${GIT_COMMIT_MESSAGE}" \
+          --build-arg GIT_COMMIT_AUTHOR="${GIT_COMMIT_AUTHOR}" \
+          --build-arg GIT_BRANCH="${GIT_BRANCH}" \
+          --build-arg GIT_REPOSITORY="${REPO_NAME}" \
           -t $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA \
           -f Dockerfile .
     id: Build
