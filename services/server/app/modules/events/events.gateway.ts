@@ -10,7 +10,7 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { DefaultEventsMap, Server, Socket } from 'socket.io';
-import { ChatChunkReply, ChatEndReply, ChatErrorReply, ChatMessage, ChatInitReply } from './chat.entity';
+import { ChatMessage } from './chat.entity';
 import { WebsocketsExceptionFilter } from './events.filter';
 import { SanitizedUser } from '../../db/entities/users/user.entity';
 import { ContextLogger } from 'nestjs-context-logger';
@@ -25,17 +25,18 @@ import { NextFunction, Request, Response } from 'express';
 import { AIService } from '../ai/ai.service';
 import { RedisService } from '../redis/redis.service';
 import { v4 as uuidv4 } from 'uuid';
+import { WSChunkMessage, WSEndMessage, WSErrorMessage, WSExceptionMessage, WSInitMessage } from '@derpai/common';
 
 interface EmitEvents {
-  init: (message: ChatInitReply) => void;
-  streamChunk: (message: ChatChunkReply) => void;
-  streamEnd: (message: ChatEndReply) => void;
-  streamError: (message: ChatErrorReply) => void;
+  init: (message: WSInitMessage) => void;
+  streamChunk: (message: WSChunkMessage) => void;
+  streamEnd: (message: WSEndMessage) => void;
+  streamError: (message: WSErrorMessage) => void;
+  exception: (message: WSExceptionMessage) => void;
 }
 
 export type EmitToClient = <K extends keyof EmitEvents>(ev: K, message: Parameters<EmitEvents[K]>[0]) => void;
-
-type ExtendedSocket = Socket<DefaultEventsMap, EmitEvents, DefaultEventsMap, { user: SanitizedUser }>;
+export type ExtendedSocket = Socket<DefaultEventsMap, EmitEvents, DefaultEventsMap, { user: SanitizedUser }>;
 
 @UseFilters(new WebsocketsExceptionFilter())
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, OnApplicationShutdown {

@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { AuthProvider } from '../auth/auth-provider.entity';
 import { ApiProperty, OmitType } from '@nestjs/swagger';
-import { ChatHistoryItem } from '../../../modules/events/chat.entity';
+import { ChatHistoryItem } from '@derpai/common';
 
 @Entity('users')
 export class User {

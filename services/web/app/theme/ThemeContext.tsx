@@ -1,5 +1,5 @@
 import React from 'react';
-import { Expand } from '@common';
+import { Expand } from '@derpai/common';
 import { ColorTheme } from '@theme';
 
 export interface ContextSettings {

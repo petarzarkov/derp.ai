@@ -69,7 +69,8 @@
     "rxjs": "7.5.7",
     "socket.io": "^4.8.1",
     "typeorm": "^0.3.22",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "@derpai/common": "workspace:*"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.6",

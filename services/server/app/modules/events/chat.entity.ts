@@ -1,7 +1,8 @@
-import { IsNotEmpty, IsString, ArrayNotEmpty, ArrayUnique, IsOptional, IsUUID } from 'class-validator';
-import { AIAnswer, AIModel } from '../ai/ai.entity';
+import { IsNotEmpty, IsString, ArrayNotEmpty, ArrayUnique, IsUUID, IsNumber } from 'class-validator';
+import { AIModel } from '../ai/ai.entity';
+import { WSPromptMessage } from '@derpai/common';
 
-export class ChatMessage {
+export class ChatMessage implements WSPromptMessage {
   @IsNotEmpty()
   @IsString()
   nickname: string;
@@ -16,49 +17,9 @@ export class ChatMessage {
   models: AIModel[];
 
   @IsString()
-  @IsOptional()
   @IsUUID()
-  queryId?: string;
-}
-
-export class ChatInitReply {
-  nickname: string;
-  message: string;
-  time: number;
-}
-
-export class ChatAnswersReply {
-  nickname: string;
-  answers: AIAnswer[];
-  time: number;
-}
-
-export class ChatHistoryItem {
-  question: ChatMessage;
-  answer: ChatAnswersReply;
-}
-
-export interface ChatChunkReply {
   queryId: string;
-  model: string;
-  provider: string;
-  text: string;
-  nickname: string;
-}
 
-export interface ChatEndReply {
-  queryId: string;
-  model: string;
-  provider: string;
-  nickname: string;
-  time: number;
-}
-
-export interface ChatErrorReply {
-  queryId: string;
-  model: string;
-  provider: string;
-  error: string;
-  nickname: string;
+  @IsNumber()
   time: number;
 }

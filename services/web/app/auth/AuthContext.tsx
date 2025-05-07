@@ -1,4 +1,4 @@
-import { ChatHistoryItem } from '../socket/Chat.types';
+import { ChatHistoryItem } from '@derpai/common';
 import { createContext } from 'react';
 
 export interface UserProfile {

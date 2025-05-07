@@ -1,5 +1,5 @@
 {
-  "name": "@common",
+  "name": "@derpai/common",
   "description": "Derp AI Common",
   "author": {
     "name": "Petar Zarkov",
@@ -18,8 +18,7 @@
   "scripts": {
     "clean": "rm -rf build",
     "prebuild": "npm run clean",
-    "build": "tsc -p tsconfig.json --diagnostics",
-    "build:watch": "npm run build:speed -- --watch",
+    "build": "tsc -p tsconfig.json",
     "start": "node build/index.js",
     "dev": "ts-node ./src/index.ts",
     "test": "echo tests to be implemented"

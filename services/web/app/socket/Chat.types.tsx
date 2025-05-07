@@ -1,66 +1,8 @@
+import { AIAnswer } from '@derpai/common';
 import { Socket } from 'socket.io-client';
 
-export interface ClientChatMessage {
-  nickname: string;
-  prompt: string;
-  time: number;
-  models: string[];
-  queryId: string;
-}
-
-export interface AIAnswer {
-  model: string;
-  provider: string;
+export class ClientAIAnswer extends AIAnswer {
   status: 'waiting' | 'streaming' | 'complete' | 'error';
-  text: string;
-  time: number | null;
-}
-
-export interface ServerInitMessage {
-  nickname: string;
-  message: string;
-  time: number;
-}
-
-export interface ServerChatMessage {
-  nickname: string;
-  answers: AIAnswer[];
-  time: number;
-}
-
-export interface ChatHistoryItem {
-  question: ClientChatMessage;
-  answer: ServerChatMessage;
-}
-
-export interface SocketExceptionData {
-  status: 'error';
-  message: string;
-}
-
-export interface ServerChatChunkMessage {
-  queryId: string;
-  model: string;
-  provider: string;
-  text: string;
-  nickname: string;
-}
-
-export interface ServerChatEndMessage {
-  queryId: string;
-  model: string;
-  provider: string;
-  nickname: string;
-  time: number;
-}
-
-export interface ServerChatErrorMessage {
-  queryId: string;
-  model: string;
-  provider: string;
-  error: string;
-  nickname: string;
-  time: number;
 }
 
 export type MessageProps =
@@ -75,7 +17,7 @@ export type MessageProps =
       queryId: string;
       nickname: string;
       time: number;
-      answers: Record<string, AIAnswer>;
+      answers: Record<string, ClientAIAnswer>;
     };
 
 export type SocketClient = Socket;

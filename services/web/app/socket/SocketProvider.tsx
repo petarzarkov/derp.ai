@@ -1,21 +1,19 @@
 import React, { useState, useEffect, useCallback, ReactNode } from 'react';
 import { io } from 'socket.io-client';
-import type {
-  SocketClient,
-  MessageProps,
-  SocketExceptionData,
-  ClientChatMessage,
-  ServerInitMessage,
-  ServerChatChunkMessage,
-  ServerChatEndMessage,
-  ServerChatErrorMessage,
-  AIAnswer,
-} from './Chat.types';
+import type { SocketClient, MessageProps, ClientAIAnswer } from './Chat.types';
 import { ConnectionStatus, SocketContext, SocketContextState } from './SocketContext';
 import { useAuth } from '../hooks/useAuth';
 import { Spinner, useToast } from '@chakra-ui/react';
 import { useConfig } from '../hooks/useConfig';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  WSChunkMessage,
+  WSInitMessage,
+  WSEndMessage,
+  WSErrorMessage,
+  WSPromptMessage,
+  WSExceptionMessage,
+} from '@derpai/common';
 
 export interface SocketProviderProps {
   children: ReactNode;
@@ -49,16 +47,19 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
           const initialMessages = currentUser.latestChatMessages.flatMap((msg) => {
             // Optimize by creating a minimal answer object first
             const baseAnswers = Object.fromEntries(
-              msg.answer.answers.map((answer) => [
-                answer.model,
-                {
-                  text: '', // Start with empty text
-                  time: answer.time,
-                  provider: answer.provider,
-                  model: answer.model,
-                  status: answer.status || 'complete',
-                },
-              ]),
+              msg.answer.answers.map(
+                (answer) =>
+                  [
+                    answer.model,
+                    {
+                      text: '', // Start with empty text
+                      time: answer.time,
+                      provider: answer.provider,
+                      model: answer.model,
+                      status: 'complete',
+                    },
+                  ] as const,
+              ),
             );
 
             return [
@@ -172,7 +173,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       console.warn(`Socket connection error`, error);
     };
 
-    const handleInit = (receivedMsg: ServerInitMessage) => {
+    const handleInit = (receivedMsg: WSInitMessage) => {
       if (receivedMsg && typeof receivedMsg.message === 'string' && receivedMsg.nickname === appName) {
         toast({
           title: receivedMsg.message,
@@ -189,7 +190,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
     const updateBotMessageAnswer = (
       queryId: string,
       model: string,
-      updateFn: (existingAnswer: AIAnswer) => AIAnswer,
+      updateFn: (existingAnswer: ClientAIAnswer) => ClientAIAnswer,
     ) => {
       setMessages((prevMessages) => {
         const messageIndex = prevMessages.findIndex((msg) => msg.type === 'bot' && msg.queryId === queryId);
@@ -215,7 +216,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       });
     };
 
-    const handleChatChunk = (receivedMsg: ServerChatChunkMessage) => {
+    const handleChatChunk = (receivedMsg: WSChunkMessage) => {
       updateBotMessageAnswer(receivedMsg.queryId, receivedMsg.model, (existingAnswer) => ({
         ...existingAnswer,
         model: receivedMsg.model,
@@ -233,7 +234,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       setCurrentStatusMessage(`Streaming from ${receivedMsg.model}...`);
     };
 
-    const handleChatEnd = (receivedMsg: ServerChatEndMessage) => {
+    const handleChatEnd = (receivedMsg: WSEndMessage) => {
       updateBotMessageAnswer(receivedMsg.queryId, receivedMsg.model, (existingAnswer) => ({
         ...existingAnswer,
         status: existingAnswer.status === 'error' ? 'error' : 'complete',
@@ -242,7 +243,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       setIsBotThinking(false);
     };
 
-    const handleChatError = (receivedMsg: ServerChatErrorMessage) => {
+    const handleChatError = (receivedMsg: WSErrorMessage) => {
       updateBotMessageAnswer(receivedMsg.queryId, receivedMsg.model, (existingAnswer) => ({
         ...existingAnswer,
         status: 'error',
@@ -262,7 +263,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       setIsBotThinking(false);
     };
 
-    const handleException = (errorData: SocketExceptionData) => {
+    const handleException = (errorData: WSExceptionMessage) => {
       setCurrentStatusMessage('An error occurred...');
       console.error('Socket exception:', errorData);
     };
@@ -317,7 +318,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children, server
       // Generate a unique query ID for this message turn
       const queryId = uuidv4();
 
-      const messageToSend: ClientChatMessage = {
+      const messageToSend: WSPromptMessage = {
         nickname: userNickname,
         prompt: trimmedMessage,
         time: Date.now(),

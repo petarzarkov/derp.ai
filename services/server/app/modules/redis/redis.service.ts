@@ -3,7 +3,8 @@ import { createClient, RedisClientType } from 'redis';
 import { ContextLogger } from 'nestjs-context-logger';
 import { ConfigService } from '@nestjs/config';
 import { ValidatedConfig } from '../../const';
-import { ChatAnswersReply, ChatHistoryItem, ChatMessage } from '../events/chat.entity';
+import { ChatMessage } from '../events/chat.entity';
+import { ChatHistoryItem, WsPromptResponse } from '@derpai/common';
 
 @Injectable()
 export class RedisService {
@@ -43,7 +44,7 @@ export class RedisService {
     return `chat-history:${userId}`;
   }
 
-  async addMessageToHistory(userId: string, question: ChatMessage, answer: ChatAnswersReply): Promise<void> {
+  async addMessageToHistory(userId: string, question: ChatMessage, answer: WsPromptResponse): Promise<void> {
     const listKey = this.getHistoryListKey(userId);
     const historyEntry: ChatHistoryItem = {
       question,

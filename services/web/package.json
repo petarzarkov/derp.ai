@@ -33,7 +33,7 @@
     "react-router-dom": "^7.3.0",
     "uuid": "^11.1.0",
     "react-textarea-autosize": "^8.5.9",
-    "@common": "workspace:*"
+    "@derpai/common": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

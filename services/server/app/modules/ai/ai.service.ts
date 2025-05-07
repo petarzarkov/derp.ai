@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ValidatedConfig } from '../../const';
-import { AIAnswer, AIModel, AIProvidersConfig } from './ai.entity';
+import { AIModel, AIProvidersConfig } from './ai.entity';
 import { ContextLogger } from 'nestjs-context-logger';
 import { EmitToClient } from '../events/events.gateway';
 import { GoogleProvider } from './providers/google.provider';
 import { OpenAIProvider } from './providers/openai.provider';
+import { AIAnswer } from '@derpai/common';
 
 @Injectable()
 export class AIService {
