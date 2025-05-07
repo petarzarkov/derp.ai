@@ -6,10 +6,24 @@ steps:
     args:
       - -c
       - |
-        echo "GIT_COMMIT=$(git rev-parse HEAD)" >> /workspace/git.env
-        echo "GIT_COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> /workspace/git.env
+        # Ensure workspace directory exists
+        mkdir -p /workspace
+
+        # Capture git metadata and write to an environment file
+        echo "GIT_COMMIT=$(git rev-parse HEAD)" > /workspace/git.env # Create/overwrite git.env
+
+        # For GIT_COMMIT_MESSAGE, replace newlines with spaces to ensure it's a single line in git.env
+        # This prevents issues with sourcing the .env file if messages are multi-line.
+        # If true multi-line messages are needed as build-args, consider base64 encoding here
+        # and decoding in the Dockerfile.
+        COMMIT_MESSAGE_CONTENT=$(git log -1 --pretty=%B | tr '\n' ' ')
+        echo "GIT_COMMIT_MESSAGE=${COMMIT_MESSAGE_CONTENT}" >> /workspace/git.env
+
         echo "GIT_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> /workspace/git.env
         echo "GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> /workspace/git.env
+
+        echo "Successfully created /workspace/git.env with content:"
+        cat /workspace/git.env
 
   # Step 2: Docker build with metadata passed as build-args
   - name: gcr.io/cloud-builders/docker
@@ -19,16 +33,35 @@ steps:
     args:
       - -c
       - |
-        set -e
-        . /workspace/git.env
+        set -e # Exit immediately if a command exits with a non-zero status.
+
+        echo "Sourcing /workspace/git.env..."
+        if [ -f /workspace/git.env ]; then
+          . /workspace/git.env # Source the .env file to load GIT_* variables
+          echo "Variables sourced from git.env:"
+          echo "GIT_COMMIT=${GIT_COMMIT}"
+          echo "GIT_COMMIT_MESSAGE=${GIT_COMMIT_MESSAGE}"
+          echo "GIT_COMMIT_AUTHOR=${GIT_COMMIT_AUTHOR}"
+          echo "GIT_BRANCH=${GIT_BRANCH}"
+        else
+          echo "Error: /workspace/git.env not found!"
+          exit 1
+        fi
+
+        echo "Starting Docker build..."
+        # Use $$ to escape variables intended for shell expansion (those from git.env),
+        # so Cloud Build's templating engine ignores them initially.
+        # For $REPO_NAME and $COMMIT_SHA, these are Cloud Build built-in substitutions, so use $ directly.
+        # Your custom substitutions like $_AR_HOSTNAME are also used directly.
         docker build --no-cache \
-          --build-arg GIT_COMMIT="${GIT_COMMIT}" \
-          --build-arg GIT_COMMIT_MESSAGE="${GIT_COMMIT_MESSAGE}" \
-          --build-arg GIT_COMMIT_AUTHOR="${GIT_COMMIT_AUTHOR}" \
-          --build-arg GIT_BRANCH="${GIT_BRANCH}" \
-          --build-arg GIT_REPOSITORY="${REPO_NAME}" \
+          --build-arg GIT_COMMIT="$${GIT_COMMIT}" \
+          --build-arg GIT_COMMIT_MESSAGE="$${GIT_COMMIT_MESSAGE}" \
+          --build-arg GIT_COMMIT_AUTHOR="$${GIT_COMMIT_AUTHOR}" \
+          --build-arg GIT_BRANCH="$${GIT_BRANCH}" \
+          --build-arg GIT_REPOSITORY="$REPO_NAME" \ # Using built-in $REPO_NAME
           -t $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA \
           -f Dockerfile .
+        echo "Docker build completed."
     id: Build
 
   # Step 3: Docker push
@@ -70,7 +103,6 @@ substitutions:
   _DEPLOY_REGION: europe-west1
   _AR_HOSTNAME: europe-west1-docker.pkg.dev
   _AR_REPOSITORY: cloud-run-source-deploy
-  _TRIGGER_ID: 3ef0c7f8-3bc9-46e8-8d84-2ebd929b3139
   _AR_PROJECT_ID: natural-terra-458418-p7
 
 tags:

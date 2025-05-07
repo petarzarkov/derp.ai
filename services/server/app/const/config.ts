@@ -258,6 +258,7 @@ export const validateConfig = (config: Record<string, unknown>) => {
     app: {
       env: validatedConfig.APP_ENV,
       name: validatedConfig.appName,
+      serviceName: process.env._SERVICE_NAME,
       version: validatedConfig.version,
       supportEmail: validatedConfig.supportEmail,
       serverUrl: validatedConfig.APP_ENV === 'dev' ? localHost : validatedConfig.HOST,
