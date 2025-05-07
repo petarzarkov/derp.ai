@@ -20,6 +20,7 @@ WORKDIR /app
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 RUN pnpm run build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 # Stage 4: Prepare production image
 FROM base AS release
@@ -33,7 +34,6 @@ ENV GIT_REPOSITORY=${KOYEB_GIT_REPOSITORY}
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm --filter derp-ai-server deploy --prod /app/deploy/server
-COPY --from=build /app/services/common/build /app/deploy/common/build
 COPY --from=build /app/services/server/build /app/deploy/server/build
 COPY --from=build /app/services/web/dist /app/deploy/web/dist
 
