@@ -8,33 +8,26 @@ steps:
       - |
         echo "GIT_COMMIT=$(git rev-parse HEAD)" >> /workspace/git.env
         echo "GIT_COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> /workspace/git.env
-        echo "GIT_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an <%ae>')" >> /workspace/git.env
+        echo "GIT_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> /workspace/git.env
         echo "GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> /workspace/git.env
-        echo "GIT_REPOSITORY=${REPO_NAME}" >> /workspace/git.env
 
   # Step 2: Docker build with metadata passed as build-args
   - name: gcr.io/cloud-builders/docker
     env:
       - DOCKER_BUILDKIT=1
+    entrypoint: sh
     args:
-      - build
-      - '--no-cache'
-      - '-t'
-      - >-
-        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
-      - '--build-arg'
-      - GIT_COMMIT
-      - '--build-arg'
-      - GIT_COMMIT_MESSAGE
-      - '--build-arg'
-      - GIT_COMMIT_AUTHOR
-      - '--build-arg'
-      - GIT_BRANCH
-      - '--build-arg'
-      - GIT_REPOSITORY
-      - -f
-      - Dockerfile
-      - .
+      - -c
+      - |
+        source /workspace/git.env
+        docker build --no-cache \
+          --build-arg GIT_COMMIT="$GIT_COMMIT" \
+          --build-arg GIT_COMMIT_MESSAGE="$GIT_COMMIT_MESSAGE" \
+          --build-arg GIT_COMMIT_AUTHOR="$GIT_COMMIT_AUTHOR" \
+          --build-arg GIT_BRANCH="$GIT_BRANCH" \
+          --build-arg GIT_REPOSITORY="$REPO_NAME" \
+          -t $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA \
+          -f Dockerfile .
     id: Build
 
   # Step 3: Docker push

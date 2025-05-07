@@ -2,6 +2,7 @@ import { ValidatedConfig } from '../../const';
 import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { RedisService } from '../../modules/redis/redis.service';
 import { DataSource } from 'typeorm';
 
 @ApiTags('service')
@@ -11,6 +12,7 @@ import { DataSource } from 'typeorm';
 export class ServiceController {
   constructor(
     private configService: ConfigService<ValidatedConfig, true>,
+    private redisService: RedisService,
     private dataSource: DataSource,
   ) {}
 
@@ -19,9 +21,13 @@ export class ServiceController {
   @ApiOperation({ summary: 'Check if service is healthy' })
   async healthCheck() {
     const [{ healthy }] = await this.dataSource.query('SELECT case when 1+1 = 2 then true else false end as healthy');
+    const redisHealthy = await this.redisService.redisClient.ping();
     return {
       db: {
-        health: healthy,
+        healthy,
+      },
+      redis: {
+        healthy: redisHealthy === 'PONG',
       },
     };
   }
