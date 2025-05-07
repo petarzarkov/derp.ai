@@ -13,6 +13,8 @@ WORKDIR /app
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 RUN pnpm run build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm --filter derp-ai-server deploy --prod /app/deploy/server
 
 # Stage 4: Prepare production image
 FROM base AS release
@@ -24,12 +26,8 @@ ENV GIT_COMMIT_AUTHOR=${COMMIT_AUTHOR}
 ENV GIT_BRANCH=${BRANCH_NAME}
 ENV GIT_REPOSITORY=${REPO_NAME}
 
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm --filter derp-ai-server deploy --prod /app/deploy/server
-COPY --from=build /app/services/server/build /app/deploy/server/build
+COPY --from=build /app/deploy/server /app/deploy/server
 COPY --from=build /app/services/web/dist /app/deploy/web/dist
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-  pnpm install --prod
 
 # Set final working directory for the deploy pkg
 WORKDIR /app/deploy
@@ -40,4 +38,4 @@ ENV SERVICE_PORT=${SERVICE_PORT}
 EXPOSE ${SERVICE_PORT}
 
 # Run the server directly with Node
-CMD [ "node", "server/build/main.js" ]
+CMD [ "node", "--max-old-space-size=1024", "server/build/main.js" ]
