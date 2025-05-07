@@ -26,8 +26,6 @@ steps:
         echo "Sourcing /workspace/git.env..."
         if [ -f /workspace/git.env ]; then
           . /workspace/git.env
-          echo "Variables sourced from git.env:"
-          cat workspace/git.env
         else
           echo "Error: /workspace/git.env not found!"
           exit 1
