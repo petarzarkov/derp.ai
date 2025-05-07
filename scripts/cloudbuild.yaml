@@ -9,10 +9,9 @@ steps:
         mkdir -p /workspace
         echo "GIT_COMMIT=$(git rev-parse HEAD)" > /workspace/git.env
         COMMIT_MESSAGE_CONTENT=$(git log -1 --pretty=%B | tr '\n' ' ')
-        echo "GIT_COMMIT_MESSAGE=${COMMIT_MESSAGE_CONTENT}" >> /workspace/git.env
+        echo "GIT_COMMIT_MESSAGE=$${COMMIT_MESSAGE_CONTENT}" >> /workspace/git.env
         echo "GIT_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> /workspace/git.env
         echo "GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> /workspace/git.env
-    automapSubstitutions: true
 
   # Step 2: Docker build with metadata passed as build-args
   - name: gcr.io/cloud-builders/docker
