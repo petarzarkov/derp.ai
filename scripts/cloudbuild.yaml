@@ -12,6 +12,7 @@ steps:
         echo "GIT_COMMIT_MESSAGE=${COMMIT_MESSAGE_CONTENT}" >> /workspace/git.env
         echo "GIT_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%ae')" >> /workspace/git.env
         echo "GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> /workspace/git.env
+    automapSubstitutions: true
 
   # Step 2: Docker build with metadata passed as build-args
   - name: gcr.io/cloud-builders/docker
