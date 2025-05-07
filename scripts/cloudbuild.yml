@@ -1,0 +1,85 @@
+steps:
+  # Step 1: Extract Git metadata
+  - name: 'alpine/git'
+    id: Git Metadata
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        echo "GIT_COMMIT=$(git rev-parse HEAD)" >> /workspace/git.env
+        echo "GIT_COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> /workspace/git.env
+        echo "GIT_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an <%ae>')" >> /workspace/git.env
+        echo "GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> /workspace/git.env
+        echo "GIT_REPOSITORY=${REPO_NAME}" >> /workspace/git.env
+
+  # Step 2: Docker build with metadata passed as build-args
+  - name: gcr.io/cloud-builders/docker
+    env:
+      - DOCKER_BUILDKIT=1
+    args:
+      - build
+      - '--no-cache'
+      - '-t'
+      - >-
+        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - '--build-arg'
+      - GIT_COMMIT
+      - '--build-arg'
+      - GIT_COMMIT_MESSAGE
+      - '--build-arg'
+      - GIT_COMMIT_AUTHOR
+      - '--build-arg'
+      - GIT_BRANCH
+      - '--build-arg'
+      - GIT_REPOSITORY
+      - -f
+      - Dockerfile
+      - .
+    id: Build
+
+  # Step 3: Docker push
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - >-
+        $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+    id: Push
+
+  # Step 4: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
+    args:
+      - run
+      - services
+      - update
+      - $_SERVICE_NAME
+      - '--platform=managed'
+      - >-
+        --image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+      - >-
+        --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
+      - '--region=$_DEPLOY_REGION'
+      - '--quiet'
+    id: Deploy
+    entrypoint: gcloud
+
+images:
+  - >-
+    $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+
+options:
+  substitutionOption: ALLOW_LOOSE
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _PLATFORM: managed
+  _SERVICE_NAME: derpai
+  _DEPLOY_REGION: europe-west1
+  _AR_HOSTNAME: europe-west1-docker.pkg.dev
+  _AR_REPOSITORY: cloud-run-source-deploy
+  _TRIGGER_ID: 3ef0c7f8-3bc9-46e8-8d84-2ebd929b3139
+  _AR_PROJECT_ID: natural-terra-458418-p7
+
+tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed
+  - derpai
