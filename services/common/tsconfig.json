@@ -2,7 +2,10 @@
   "exclude": ["../../tsconfig.json"],
   "compilerOptions": {
     "outDir": "./build",
-    "baseUrl": "."
+    "baseUrl": ".",
+    "declaration": true,
+    "sourceMap": true,
+    "removeComments": false
   },
   "include": ["index.ts"]
 }
