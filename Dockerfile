@@ -1,17 +1,10 @@
 FROM public.ecr.aws/docker/library/node:22.15.0-slim AS base
 
-ARG KOYEB_GIT_SHA
-ARG KOYEB_GIT_BRANCH
-ARG KOYEB_GIT_REPOSITORY
-ARG KOYEB_GIT_COMMIT_MESSAGE
-ARG KOYEB_GIT_COMMIT_AUTHOR
-
 ENV NODE_ENV=production
 ENV CI=true
 ENV APP_ENV=prod
 
 RUN npm install -g pnpm@10.9.0
-COPY . /app
 WORKDIR /app
 
 FROM base AS build
@@ -20,20 +13,20 @@ WORKDIR /app
 COPY . .
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 RUN pnpm run build
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 # Stage 4: Prepare production image
 FROM base AS release
 WORKDIR /app
 
-ENV GIT_COMMIT=${KOYEB_GIT_SHA}
-ENV GIT_COMMIT_MESSAGE=${KOYEB_GIT_COMMIT_MESSAGE}
-ENV GIT_COMMIT_AUTHOR=${KOYEB_GIT_COMMIT_AUTHOR}
-ENV GIT_BRANCH=${KOYEB_GIT_BRANCH}
-ENV GIT_REPOSITORY=${KOYEB_GIT_REPOSITORY}
+ENV GIT_COMMIT=${COMMIT_SHA}
+ENV GIT_COMMIT_MESSAGE=${COMMIT_MESSAGE}
+ENV GIT_COMMIT_AUTHOR=${COMMIT_AUTHOR}
+ENV GIT_BRANCH=${BRANCH_NAME}
+ENV GIT_REPOSITORY=${REPO_NAME}
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm --filter derp-ai-server deploy --prod /app/deploy/server
+COPY --from=build /app/services/common /app/deploy/server/node_modules/@derpai/common
 COPY --from=build /app/services/server/build /app/deploy/server/build
 COPY --from=build /app/services/web/dist /app/deploy/web/dist
 
