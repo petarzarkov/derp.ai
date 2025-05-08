@@ -14,12 +14,15 @@ import {
   MenuItemOption,
   MenuList,
   MenuOptionGroup,
+  Tooltip,
 } from '@chakra-ui/react';
 import { FiSend, FiMaximize2, FiMinimize2 } from 'react-icons/fi';
+import { Link as RouterLink } from 'react-router-dom';
 import { useSocket, useThemeProvider } from '@hooks';
 import TextareaAutosize from 'react-textarea-autosize';
 import { useConfig } from '../../hooks/useConfig';
 import { ChevronDownIcon } from '@chakra-ui/icons';
+import { GiCoffeeCup } from 'react-icons/gi';
 
 const Message = lazy(() => import('./Message'));
 
@@ -116,6 +119,8 @@ function ChatBox({ isFixedInput = false }: ChatBoxProps) {
     setSelectedModels(Array.isArray(values) ? values : [values]);
   };
 
+  const linkBgColor = useColorModeValue('primary.500', 'primary.700');
+  const hoverBgColor = useColorModeValue('primary.300', 'primary.500');
   const inputBgColor = useColorModeValue('white', 'primary.700');
   const inputPlaceholder =
     connectionStatus !== 'connected'
@@ -179,6 +184,26 @@ function ChatBox({ isFixedInput = false }: ChatBoxProps) {
                   </MenuList>
                 </Menu>
               )}
+
+              <Tooltip placement="top" label="Buy me a coffee" hasArrow>
+                <IconButton
+                  _hover={{
+                    textDecoration: 'none',
+                    bg: hoverBgColor,
+                  }}
+                  as={RouterLink}
+                  m={0}
+                  p={0}
+                  to={'https://ko-fi.com/M4M3BQLQH'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={'Buy Me a Coffee at ko-fi.com'}
+                  icon={<GiCoffeeCup size={22} />}
+                  variant="ghost"
+                  size="xs"
+                  background={linkBgColor}
+                />
+              </Tooltip>
             </HStack>
 
             <IconButton
@@ -201,8 +226,8 @@ function ChatBox({ isFixedInput = false }: ChatBoxProps) {
               onKeyDown={handleKeyDown}
               flex={1}
               minHeight={textareaMinHeight}
-              minRows={selectedModels.length > 0 ? 1 : 1}
-              maxRows={isExpanded ? undefined : 10}
+              minRows={isExpanded ? 6 : 2}
+              maxRows={isExpanded ? 20 : 6}
               height={isExpanded ? expandedHeight : undefined}
               maxH={isExpanded ? expandedHeight : textareaMaxHeight}
               overflowY="auto"
