@@ -21,6 +21,9 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { Request } from 'express';
 import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import { RedisModule } from './modules/redis/redis.module';
+import { hostname } from 'os';
+
+const host = hostname();
 
 @Module({
   providers: [
@@ -121,9 +124,12 @@ import { RedisModule } from './modules/redis/redis.module';
         contextAdapter(context) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { correlationId, requestMethod: method, requestUrl: path, ...rest } = context;
-          const { env, version } = configService.get('app', { infer: true });
+          const { env, version, region } = configService.get('app', { infer: true });
           return {
             env,
+            region,
+            pid: process.pid,
+            host,
             version,
             method,
             path,
