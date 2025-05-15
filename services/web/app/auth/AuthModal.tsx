@@ -200,6 +200,19 @@ export const AuthModal: React.FC = () => {
                   {isRegisterView ? 'Login' : 'Register'}
                 </Link>
               </Text>
+
+              <Text textAlign="center" mt={2}>
+                <Link
+                  color="blue.500"
+                  href="/privacy-policy"
+                  target="_blank"
+                  _hover={{
+                    color: 'blue.700',
+                  }}
+                >
+                  {'Privacy Policy'}
+                </Link>
+              </Text>
             </VStack>
           </Box>
         </ModalBody>
